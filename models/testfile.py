@@ -1,46 +1,27 @@
 from init import CURSOR, CONN;
-from mycol import mycol;
+from models import mycol;
+from models import MyTestColsClass;
+from models import MyOtherTestClass;
 
-class MyBaseClass:
-    #mytablename = "basetablename";
-
-    #it needs an object and its class
-    def getMyCols(self):
-        return [getattr(self, attr) for attr in dir(type(self))
-                if (not attr.startswith("_") and (type(getattr(self, attr)) == mycol))];
-
-    def getTableName(self):
-        ptablenames = ["mytablename", "tablename", "table_name", "my_table_name"];
-        for attr in dir(type(self)):
-            for pnm in ptablenames:
-                if (pnm in attr): return getattr(self, attr);
-        raise AttributeError("the table must have a tablename in it!");
-
-class MyTestColsClass(MyBaseClass):
-    mynewcol = mycol(colname="mynewcol", datatype="Integer", value=None, defaultvalue=None,
-                    isprimarykey=True, isforeignkey=False, isnonnull=True, isunique=True,
-                    autoincrements=True, foreignClass=None, foreignColName=None, constraints=None);
-    myothervar = 2;
-    #__mytablename__ = "testtable";
-    mytablename = "testtable";
-
-class MyOtherTestClass(MyBaseClass):
-    mynewcol = mycol(colname="mynewcol", datatype="Integer", value=None, defaultvalue=None,
-                    isprimarykey=True, isforeignkey=False, isnonnull=True, isunique=True,
-                    autoincrements=True, foreignClass=None, foreignColName=None, constraints=None);
-    myothervar = 2;
-    #__mytablename__ = "testtable";
-    mytablename = "testtable";
+myclasses = [MyOtherTestClass, MyTestColsClass];
+mycol.setMyClassRefs(myclasses);
 
 #print(mynewcol);
 tstobj = MyTestColsClass();
 print(tstobj.getMyCols());
 print(tstobj.getTableName());
 #print(tstobj.mynewcol.value);#error for the moment on this line not done with type enforcement...
+#print(mycol.listMustContainUniqueValuesOnly(["colnamea", "colnameb", "colnamea"], "nonucolnames"));
 
 tstobjb = MyOtherTestClass();
 print(tstobjb.getMyCols());
 print(tstobjb.getTableName());
+
+#the question is how can we get it so the user does not have to create an init?
+#if we assign the foreign key col name in the col constructor,
+#we cannot validate it until later on, but will have access to it.
+#if we assign the class string name, we can get the class reference from the globals() list later on.
+
 
 #we can have more than one database open at the same time
 #but if the base class has a static list of all of them, then
