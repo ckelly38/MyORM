@@ -1,5 +1,6 @@
 from mycol import mycol;
-class MyBaseClass:
+from mycol import myvalidator;
+class mybase:
     #mytablename = "basetablename";
 
     def __init__(self):
@@ -21,7 +22,7 @@ class MyBaseClass:
         for mc in mytempcols:
             mc.foreignKeyInformationMustBeValid(self);
         
-        mycol.listMustContainUniqueValuesOnly(mycolnames, "mycolnames");
+        myvalidator.listMustContainUniqueValuesOnly(mycolnames, "mycolnames");
 
     #it needs an object and its class
     def getMyCols(self):
@@ -30,11 +31,11 @@ class MyBaseClass:
                 if (not attr.startswith("_") and (type(getattr(self, attr)) == mycol))];
 
     def getMyColNames(self, mycols=None):
-        finmycols = (self.getMyCols() if mycol.isvaremptyornull(mycols) else mycols);
+        finmycols = (self.getMyCols() if myvalidator.isvaremptyornull(mycols) else mycols);
         return [mclobj.colname for mclobj in finmycols];
 
     def getMyPrimaryKeyCols(self, mycols=None):
-        finmycols = (self.getMyCols() if mycol.isvaremptyornull(mycols) else mycols);
+        finmycols = (self.getMyCols() if myvalidator.isvaremptyornull(mycols) else mycols);
         return [mclobj for mclobj in finmycols if mclobj.isprimarykey];
 
     def getTableName(self):

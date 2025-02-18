@@ -1,17 +1,27 @@
 from init import CURSOR, CONN;
 from models import mycol;
+from mycol import myvalidator;
 from models import MyTestColsClass;
 from models import MyOtherTestClass;
+#import sys;
+#import inspect;
 
-myclasses = [MyOtherTestClass, MyTestColsClass];
-mycol.setMyClassRefs(myclasses);
+#print("");
+#print("INSIDE OF TEST FILE!");
+#print("list of system modules:");
+#print(sys.modules[__name__]);
+#print(inspect.getmembers(sys.modules[__name__], myvalidator.isClass));#list of tuples
+#myclasses = [MyOtherTestClass, MyTestColsClass];
+#mycol.setMyClassRefs(myclasses);
+mycol.getMyClassRefsMain(True);#will force the fetch of the new list if it has changed by now
 
 #print(mynewcol);
 tstobj = MyTestColsClass();
 print(tstobj.getMyCols());
 print(tstobj.getTableName());
 #print(tstobj.mynewcol.value);#error for the moment on this line not done with type enforcement...
-#print(mycol.listMustContainUniqueValuesOnly(["colnamea", "colnameb", "colnamea"], "nonucolnames"));
+#print(myvalidator.listMustContainUniqueValuesOnly(
+#    ["colnamea", "colnameb", "colnamea"], "nonucolnames"));
 
 tstobjb = MyOtherTestClass();
 print(tstobjb.getMyCols());

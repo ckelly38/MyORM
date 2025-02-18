@@ -1,10 +1,12 @@
-from mybase import MyBaseClass;
+from mybase import mybase;
 from mybase import mycol;
-class MyTestColsClass(MyBaseClass):
-    #def __init__(self):
-        #print("INSIDE OF CONSTRUCTOR ON TEST CLASS A!");
+#MAY NEED TO CHANGE FOREIGN KEYS 2-18-2025
+class MyTestColsClass(mybase):
+    def __init__(self):
+        print("INSIDE OF CONSTRUCTOR ON TEST CLASS A!");
         #self.mynewcol.newForeignKey(MyOtherTestClass, "mynewcol", self);
         #self.mynewcol.newForeignKey(MyOtherTestClass, "mynewcol", self);
+        super().__init__();
 
     mynewcol = mycol(colname="mynewcol", datatype="Integer", value=None,
                     defaultvalue=None, isprimarykey=True, isnonnull=True,
@@ -19,12 +21,13 @@ class MyTestColsClass(MyBaseClass):
     #__mytablename__ = "testtable";
     mytablename = "testtable";
 
-class MyOtherTestClass(MyBaseClass):
+class MyOtherTestClass(mybase):
     def __init__(self):
         print("INSIDE OF CONSTRUCTOR ON TEST CLASS B!");
         #self.mynewcol.newForeignKey(MyTestColsClass, "mynewcol", self);
         #self.mynewcol.newForeignKey(MyTestColsClass, "mynewcol", self);
         #self.mynewcol.setMyForeignKeyClassRef(MyTestColsClass);
+        super().__init__();
 
     mynewcol = mycol(colname="mynewcol", datatype="Integer", value=None,
                     defaultvalue=None, isprimarykey=True, isnonnull=True,

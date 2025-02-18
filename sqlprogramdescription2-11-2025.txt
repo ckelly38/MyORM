@@ -1,5 +1,6 @@
 created: 2-11-2025
-last updated: 2-15-2025
+modified: 2-(11, 12, 13, 14, 15, 17, 18)-2025
+last updated: 2-18-2025
 
 I WANT TO MAKE A PROGRAM AN OBJECT RELATIONSHIP MAPPER (ORM) TO DO SQL OR SQLite
 
@@ -101,6 +102,10 @@ IF NOT PROVIDED, THEN ASCENDING ORDER IS USED
 
 AFTER ALL OF THE CONDITIONS YOU CAN LIMIT# HOW MANY RESULTS YOU WANT
 
+YOU CAN DO LIMIT # for the number of rows you want (offset is zero).
+LIMIT # OFFSET # so it starts at row number in the offset + 1 and gives you the number of rows you want
+LIMIT a, b where a and b are numbers. a is the offset, and b is the number of rows you want.
+
 
 THE PROGRAM MUST BE ABLE TO CREATE NEW TABLES:
 
@@ -118,6 +123,15 @@ CREATE TABLE Orders (
     FOREIGN KEY (PersonID) REFERENCES Persons(PersonID)
 );
 
+A FOREIGN KEY CAN HAVE MORE THAN ONE COLUM BECAUSE IT CAN REFER TO UNIQUE DATA (NOT JUST A PRIMARY KEY).
+A PRIMARY KEY CAN ALSO BE COMPOSITE (COMPOSED OF MORE THAN ONE COLUMN).
+HOWEVER, THIS MUST REFER TO A SPECIFIC ROW.
+
+ForeignKey(tablename, [cola, colb]) = value
+value usually just the rowid or id on the refered table, but when there are multiple columns?
+does the value hold the row# which can change? OR does the value hold the value of the cols?
+THE VALUE HOLDS THE VALUE OF THE COLS.
+https://www.sqlite.org/foreignkeys.html
 
 THE PROGRAM MUST BE ABLE TO ADD STUFF INTO THE DATABASE:
 
@@ -130,7 +144,7 @@ INSERT INTO cats (name, breed, age) VALUES ('Hana', 'tortoiseshell', 1);
 THE PROGRAM MUST BE ABLE TO REMOVE STUFF FROM THE DATABASE (CONDITIONALLY OR NOT)
 THE PROGRAM MUST BE ABLE TO REMOVE ENTIRE TABLES FROM THE DATABASE
 (DELETION OF ANY KIND SHOULD TRIGGER A BACKUP BEFORE HAND)
-THE USER SHOULD BE ALLOWED TO TRIGGER A BACKUP WHENEVER THE USER WANTS TOO.
+THE USER SHOULD BE ALLOWED TO TRIGGER A BACKUP WHENEVER THE USER WANTS TO TOO.
 
 UPDATE tablename SET colname = newvalue WHERE colname = oldvalue; sets the value for a specific column to a new value
 UPDATE tablename SET colnamea = newvalue, colnameb = newvalue, ... WHERE colnamea = oldvalue; (or just use the primary key to access it).
@@ -232,6 +246,7 @@ Primary Key: a column in a table with an identifier (ID) that uniquely identifie
 Foreign Key: a column in one table that refers to a primary key in another table
 
 https://www.w3schools.com/sql/sql_datatypes.asp
+https://www.w3resource.com/sqlite/sqlite-data-types.php
 
 -----------------------------------------------------------------------------------------------------------------------
 

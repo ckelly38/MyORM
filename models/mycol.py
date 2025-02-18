@@ -1,57 +1,7 @@
+from myvalidator import myvalidator;
+import sys;
+import inspect;
 class mycol:
-    @classmethod
-    def varmustbethetypeandornull(clsnm, val, tpcls, canbenull, varnm="varname"):
-        if (varnm == None or (type(varnm) == str and len(varnm) < 1)):
-            return clsnm.varmustbethetypeornull(val, tpcls, "varname");
-        elif (type(varnm) == str): pass;
-        else: raise TypeError("varname must be a string!");
-        if (val == None):
-            if (canbenull): return True;
-            else: raise TypeError(varnm + " was not the correct type!");
-        else:
-            if (type(val) == tpcls): return True;
-            else: raise TypeError(varnm + " was not the correct type!");
-    @classmethod
-    def varmustbethetypeonly(clsnm, val, tpcls, varnm="varname"):
-        return clsnm.varmustbethetypeandornull(val, tpcls, False, varnm);
-    @classmethod
-    def varmustbeboolean(clsnm, val, varnm="varname"):
-        return clsnm.varmustbethetypeonly(val, bool, varnm);
-    
-    @classmethod
-    def varmustnotbenull(clsnm, val, varnm="varname"):
-        if (varnm == None or type(varnm) == str and len(varnm) < 1):
-            return clsnm.varmustnotbenull(val, "varname");
-        elif (type(varnm) == str): pass;
-        else: raise TypeError("varname must be a string!");
-        if (val == None): raise ValueError(varnm + " must not be null!");
-        else: return True;
-
-    @classmethod
-    def isvaremptyornull(clsnm, val): return (val == None or len(val) < 1);
-
-    @classmethod
-    def varmustnotbeempty(clsnm, val, varnm="varname"):
-        if (varnm == None or type(varnm) == str and len(varnm) < 1):
-            return clsnm.varmustnotbeempty(val, "varname");
-        elif (type(varnm) == str): pass;
-        else: raise TypeError("varname must be a string!");
-        if (val == None or len(val) < 1): raise ValueError(varnm + " must not be empty!");
-        else: return True;
-
-    @classmethod
-    def isClass(clsnm, val): return (type(val) == type);
-
-    @classmethod
-    def listMustContainUniqueValuesOnly(clsnm, mlist, varnm="varnm"):
-        if (mycol.isvaremptyornull(varnm)):
-            return clsnm.listMustContainUniqueValuesOnly(mlist, "varnm");
-        if (mycol.isvaremptyornull(mlist) or len(mlist) < 2): return True;
-        myset = set(mlist);
-        mynwlist = list(myset);
-        if (len(mlist) == len(mynwlist)): return True;
-        else: raise ValueError(f"the list {varnm} must contain unique values, but it did not!");
-
     __myclassrefs__ = None;
 
     @classmethod
@@ -60,16 +10,44 @@ class mycol:
     @classmethod
     def setMyClassRefs(cls, val): cls.__myclassrefs__ = val;
 
+    #https://stackoverflow.com/questions/1796180/how-can-i-get-a-list-of-all-classes-within-current-module-in-python
+    #gets and sets the class ref list if fetchnow is True or the current list (above) is empty
+    #if the current list is not empty and fetchnow is False, it returns the current list.
+    #if it gets the new list, then the class refs list is updated.
+    @classmethod
+    def getMyClassRefsMain(cls, ftchnw=False):
+        myvalidator.varmustbeboolean(ftchnw, "ftchnw");
+        mycrefs = cls.getMyClassRefs();
+        if (ftchnw or myvalidator.isvaremptyornull(mycrefs)):
+            print("INSIDE OF MYCOL:");
+            print("list of system modules:");
+            #mymodnm = __name__;
+            mymodnm = "__main__";
+            mymods = sys.modules[mymodnm];
+            print(mymods);
+
+            #mysrclistcrefs = inspect.getmembers(mymods, myvalidator.isClass);
+            #print(mysrclistcrefs);
+            
+            #since the inspect method gives me a list of tuples, I just want the classes, I need to:
+            myfincrefs = [item[1] for item in inspect.getmembers(mymods, myvalidator.isClass)];
+            print(myfincrefs);
+
+            cls.setMyClassRefs(myfincrefs);
+            return myfincrefs;
+        else: return mycrefs;
+
     @classmethod
     def getMyClassRefFromString(cls, nmstr):
         #print(f"nmstr = {nmstr}");
-        mycol.varmustnotbeempty(nmstr, "nmstr");
-        for mycls in cls.getMyClassRefs():
+        myvalidator.varmustnotbeempty(nmstr, "nmstr");
+        for mycls in cls.getMyClassRefsMain():
             #print(f"mycls = {mycls}");
             #print(f"mycls.__name__ = {mycls.__name__}");
             if (mycls.__name__ == nmstr): return mycls;
         raise ValueError(f"NAME {nmstr} NOT FOUND!");
 
+    #NEEDS TO CHANGE 2-18-2025
     def __init__(self, colname, datatype, value, defaultvalue,
                  isprimarykey=False, isnonnull=None, isunique=None,
                  autoincrements=False, isforeignkey=False, foreignClass=None, foreignColName=None,
@@ -100,16 +78,23 @@ class mycol:
         #the foreign key data type on the corresponding table must be the same type as on this col
         #if is foreign key is true, then the foreign class name and col name must also be defined
         #with the class name and the col name we can get the column and check its data type.
+        #
+        #when the foreign key is composite, then the value holds the values for those columns.
+        #I guess in that case the invalid data type array/tuple could be assigned.
+        #
+        #a note about unique constraints: you can create multi-column-unique-constraints at the
+        #table level only, but in that case you do not want the isunique to be true on the
+        #single column if it is not guranteed to be unique
 
         self.setIsNonNull(isnonnull);
         self.setIsUnique(isunique);
         self.setAutoIncrements(autoincrements);
         self.setIsPrimaryKey(isprimarykey);
         self.setForeignClass(foreignClass);
-        self.setForeignColName(foreignColName);
+        self.setForeignColName(foreignColName);#MAY NEED TO CHANGE 2-18-2025
         self.setIsForeignKey(isforeignkey);
         self.setColName(colname);
-        self.setMyClassRefs(None);
+        #self.setMyClassRefs(None);
         
         self._datatype = datatype;
         self._value = value;
@@ -122,7 +107,7 @@ class mycol:
         #the colname must be unique on each table
         #(CANNOT BE ENFORCED HERE, BUT WHEN A NEW OBJECT IS CREATED AND SAVED, ETC)
         #the colname cannot be null or empty
-        mycol.varmustnotbeempty(val, "val");
+        myvalidator.varmustnotbeempty(val, "val");
         self._colname = val;
     
     colname = property(getColName, setColName);
@@ -130,7 +115,7 @@ class mycol:
     def getAutoIncrements(self): return self._autoincrements;
 
     def setAutoIncrements(self, val):
-        mycol.varmustbethetypeonly(val, bool, "val");
+        myvalidator.varmustbethetypeonly(val, bool, "val");
         self._autoincrements = val;
 
     autoincrements = property(getAutoIncrements, setAutoIncrements);
@@ -138,7 +123,7 @@ class mycol:
     def getIsNonNull(self): return self._isnonnull;
 
     def setIsNonNull(self, val):
-        mycol.varmustbethetypeandornull(val, bool, True, "val");
+        myvalidator.varmustbethetypeandornull(val, bool, True, "val");
         self._isnonnull = val;
 
     isnonnull = property(getIsNonNull, setIsNonNull);
@@ -146,7 +131,7 @@ class mycol:
     def getIsUnique(self): return self._isunique;
 
     def setIsUnique(self, val):
-        mycol.varmustbethetypeandornull(val, bool, True, "val");
+        myvalidator.varmustbethetypeandornull(val, bool, True, "val");
         self._isunique = val;
 
     isunique = property(getIsUnique, setIsUnique);
@@ -155,7 +140,7 @@ class mycol:
 
     #if isprimarykey is true, then it must be unique and non-null.
     def setIsPrimaryKey(self, val):
-        mycol.varmustbeboolean(val, "val");
+        myvalidator.varmustbeboolean(val, "val");
         if (val):
             isvalid = False;
             if (self.isnonnull == None):
@@ -181,7 +166,7 @@ class mycol:
     def getForeignClass(self): return self._foreignClass;
 
     def setForeignClass(self, val):
-        #if (val == None or mycol.isClass(val)): pass;
+        #if (val == None or myvalidator.isClass(val)): pass;
         #else: raise ValueError("val must be a class not an object!");
         self._foreignClass = val;
 
@@ -189,6 +174,7 @@ class mycol:
 
     def getForeignColName(self): return self._foreignColName;
 
+    #NOT CORRECT 2-18-2025
     def setForeignColName(self, val):#, fcobj
         #officially this must be one of the columns on the list of the calling class's columns
         #get the foreign class, then get the cols for that foreign class
@@ -203,15 +189,15 @@ class mycol:
         #the column must be the whole primary key for the table OR
         #the unique constraint applied to this column
         #
-        if (mycol.isvaremptyornull(val)):
+        if (myvalidator.isvaremptyornull(val)):
             if (self.foreignClass == None): self._foreignColName = val;
             else: raise ValueError("foreign class must be null because the colname was empty!");
         else:
             #print(f"self.foreignClass = {self.foreignClass}");
             #print(f"fcobj = {fcobj}");
-            #mycol.varmustnotbenull(fcobj, "fcobj");
+            #myvalidator.varmustnotbenull(fcobj, "fcobj");
             #myfccolnames = self.foreignClass.getMyColNames(fcobj);
-            #mycol.varmustnotbeempty(myfccolnames, "myfccolnames");
+            #myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
             #print(f"val = {val}");
             #print(f"myfccolnames = {myfccolnames}");
             #if (val in myfccolnames): self._foreignColName = val;
@@ -224,22 +210,24 @@ class mycol:
     #neither is the foreign col name 
     def getIsForeignKey(self): return self._isforeignkey;
 
+    #may need to change 2-18-2025
     def setIsForeignKey(self, val):
-        mycol.varmustbethetypeonly(val, bool, "val");
+        myvalidator.varmustbethetypeonly(val, bool, "val");
         if (val):
-            if (self.foreignClass == None or mycol.isvaremptyornull(self.foreignColName)):
+            if (self.foreignClass == None or myvalidator.isvaremptyornull(self.foreignColName)):
                 raise ValueError("the foreign key needs a reference class and a column name!");
         else:
             if (self.foreignClass == None): pass;
             else: self.setForeignClass(None);
-            if (mycol.isvaremptyornull(self.foreignColName)): pass;
+            if (myvalidator.isvaremptyornull(self.foreignColName)): pass;
             else: self.setForeignColName(None);
         self._isforeignkey = val;
 
     isforeignkey = property(getIsForeignKey, setIsForeignKey);
 
     #NOT SURE IF THE ENDING CONDITION FOR DETERMINGING IF THE DATA THAT
-    #THE FOREIGN KEY REFERS TO IS UNIQUE OR NOT
+    #THE FOREIGN KEY REFERS TO IS UNIQUE OR NOT IS CORRECT
+    #NOT DONE YET AND IT IS NOT CORRECT!
 
     def foreignKeyInformationMustBeValid(self, fcobj):
         #has is foreign key
@@ -248,7 +236,7 @@ class mycol:
         print(f"self.foreignClass = {self.foreignClass}");
         
         if (self.isforeignkey):
-            if (self.foreignClass == None or mycol.isvaremptyornull(self.foreignColName)):
+            if (self.foreignClass == None or myvalidator.isvaremptyornull(self.foreignColName)):
                 raise ValueError("the foreign key needs a reference class and a column name!");
             else:
                 #now make sure the column name is on the class as one
@@ -257,11 +245,11 @@ class mycol:
                 #then we are sure that the information is valid.
                 print(f"self.foreignClass = {self.foreignClass}");
                 print(f"fcobj = {fcobj}");
-                mycol.varmustnotbenull(fcobj, "fcobj");
+                myvalidator.varmustnotbenull(fcobj, "fcobj");
                 myclsref = mycol.getMyClassRefFromString(self.foreignClass);
                 myfcols = myclsref.getMyCols(fcobj);
                 myfccolnames = myclsref.getMyColNames(fcobj, myfcols);
-                mycol.varmustnotbeempty(myfccolnames, "myfccolnames");
+                myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
                 print(f"self.foreignColName = {self.foreignColName}");
                 print(f"myfccolnames = {myfccolnames}");
                 
@@ -286,11 +274,11 @@ class mycol:
         else:
             if (self.foreignClass == None): pass;
             else: self.setForeignClass(None);
-            if (mycol.isvaremptyornull(self.foreignColName)): pass;
+            if (myvalidator.isvaremptyornull(self.foreignColName)): pass;
             else: self.setForeignColName(None);
         return True;
 
-    #can call in init
+    #can call in init NOT DONE YET...
     def newForeignKey(self, fkycls, fkycolnm):#, fcobj
         #print(f"self = {self}");
         #print(f"fkycls = {fkycls}");
