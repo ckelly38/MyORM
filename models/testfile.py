@@ -3,6 +3,8 @@ from models import mycol;
 from mycol import myvalidator;
 from models import MyTestColsClass;
 from models import MyOtherTestClass;
+from models import MyModelWithCompPrimaryKey;
+from models import MyModelWithCompForeignKey;
 #import sys;
 #import inspect;
 
@@ -48,3 +50,6 @@ print(tstobjb.getTableName());
 #                 isprimarykey=True, isforeignkey=False, isnonnull=True, isunique=True,
 #                 autoincrements=True, foreignClass=None, foreignColName=None, constraints=None);
 #print(mybnewcol);
+
+MyModelWithCompPrimaryKey();
+MyModelWithCompForeignKey();

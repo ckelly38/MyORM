@@ -47,10 +47,9 @@ class mycol:
             if (mycls.__name__ == nmstr): return mycls;
         raise ValueError(f"NAME {nmstr} NOT FOUND!");
 
-    #NEEDS TO CHANGE 2-18-2025
     def __init__(self, colname, datatype, value, defaultvalue,
                  isprimarykey=False, isnonnull=None, isunique=None,
-                 autoincrements=False, isforeignkey=False, foreignClass=None, foreignColName=None,
+                 autoincrements=False, isforeignkey=False, foreignClass=None, foreignColNames=None,
                  constraints=None):
         print("INSIDE OF MY COL CONSTRUCTOR!");
         print(f"colname = {colname}");
@@ -63,7 +62,7 @@ class mycol:
         print(f"autoincrements = {autoincrements}");
         print(f"isforeignkey = {isforeignkey}");
         print(f"foreignClass = {foreignClass}");
-        print(f"foreignColName = {foreignColName}");
+        print(f"foreignColNames = {foreignColNames}");
         print(f"constraints = {constraints}");#like length or value limits
         #CONSTRAINT CHK_Person CHECK(LENGTH(description) >= 10)
         #THEY NEED A NAME IF YOU WANT TO REMOVE THEM LATER ON
@@ -91,15 +90,15 @@ class mycol:
         self.setAutoIncrements(autoincrements);
         self.setIsPrimaryKey(isprimarykey);
         self.setForeignClass(foreignClass);
-        self.setForeignColName(foreignColName);#MAY NEED TO CHANGE 2-18-2025
+        self.setForeignColNames(foreignColNames);
         self.setIsForeignKey(isforeignkey);
         self.setColName(colname);
-        #self.setMyClassRefs(None);
+        self.setMyClassRefs(None);
         
         self._datatype = datatype;
         self._value = value;
         self._defaultvalue = defaultvalue;
-        self._constraints = constraints;
+        self.constraints = constraints;
 
     def getColName(self): return self._colname;
 
@@ -172,10 +171,9 @@ class mycol:
 
     foreignClass = property(getForeignClass, setForeignClass);
 
-    def getForeignColName(self): return self._foreignColName;
+    def getForeignColNames(self): return self._foreignColNames;
 
-    #NOT CORRECT 2-18-2025
-    def setForeignColName(self, val):#, fcobj
+    def setForeignColNames(self, val):#, fcobj
         #officially this must be one of the columns on the list of the calling class's columns
         #get the foreign class, then get the cols for that foreign class
         #
@@ -190,7 +188,7 @@ class mycol:
         #the unique constraint applied to this column
         #
         if (myvalidator.isvaremptyornull(val)):
-            if (self.foreignClass == None): self._foreignColName = val;
+            if (self.foreignClass == None): self._foreignColNames = val;
             else: raise ValueError("foreign class must be null because the colname was empty!");
         else:
             #print(f"self.foreignClass = {self.foreignClass}");
@@ -202,25 +200,25 @@ class mycol:
             #print(f"myfccolnames = {myfccolnames}");
             #if (val in myfccolnames): self._foreignColName = val;
             #else: raise ValueError(f"invalid column name ({val})!");
-            self._foreignColName = val;
+            myvalidator.listMustContainUniqueValuesOnly(val);
+            self._foreignColNames = val;
 
-    foreignColName = property(getForeignColName, setForeignColName);
+    foreignColNames = property(getForeignColNames, setForeignColNames);
 
     #cannot set is foreign key to be true if the foreign class name is not defined and
     #neither is the foreign col name 
     def getIsForeignKey(self): return self._isforeignkey;
 
-    #may need to change 2-18-2025
     def setIsForeignKey(self, val):
         myvalidator.varmustbethetypeonly(val, bool, "val");
         if (val):
-            if (self.foreignClass == None or myvalidator.isvaremptyornull(self.foreignColName)):
+            if (self.foreignClass == None or myvalidator.isvaremptyornull(self.foreignColNames)):
                 raise ValueError("the foreign key needs a reference class and a column name!");
         else:
             if (self.foreignClass == None): pass;
             else: self.setForeignClass(None);
-            if (myvalidator.isvaremptyornull(self.foreignColName)): pass;
-            else: self.setForeignColName(None);
+            if (myvalidator.isvaremptyornull(self.foreignColNames)): pass;
+            else: self.setForeignColNames(None);
         self._isforeignkey = val;
 
     isforeignkey = property(getIsForeignKey, setIsForeignKey);
@@ -230,61 +228,111 @@ class mycol:
     #NOT DONE YET AND IT IS NOT CORRECT!
 
     def foreignKeyInformationMustBeValid(self, fcobj):
+        #this method takes in the calling class's object and the current column object
+        #the goal of this method is to make sure that the foreign key information is valid
+        #it will look at the list of cols given and make sure that they are unique (handled by set)
+        #it will make sure that the referring class is valid
+        #it will make sure that the referring class has those column names on it
+        #it will make sure that the referring class has a valid primary key
+        #it will make sure that the column names on the link from the calling object
+        #are on the referring class and has the unique data enforced.
+        
         #has is foreign key
+        print("BEGIN FOREIGN KEY VALIDATION METHOD NOW:");
         print(f"self.isforeignkey = {self.isforeignkey}");
-        print(f"self.foreignColName = {self.foreignColName}");
+        print(f"self.foreignColNames = {self.foreignColNames}");
         print(f"self.foreignClass = {self.foreignClass}");
         
         if (self.isforeignkey):
-            if (self.foreignClass == None or myvalidator.isvaremptyornull(self.foreignColName)):
+            if (self.foreignClass == None or myvalidator.isvaremptyornull(self.foreignColNames)):
                 raise ValueError("the foreign key needs a reference class and a column name!");
             else:
                 #now make sure the column name is on the class as one
                 #get the column names from the foreign class
                 #once we do that we need to make sure that the column data is unique.
                 #then we are sure that the information is valid.
-                print(f"self.foreignClass = {self.foreignClass}");
+                #self is the column object
+                #fcobj is the calling object that contains that column (so this is the real self).
+                #foreign class is the string name of the foreign class.
+                print("self is the column object.");
+                print("the calling object is fcobj which is the class instance that has the column!");
                 print(f"fcobj = {fcobj}");
+                
                 myvalidator.varmustnotbenull(fcobj, "fcobj");
                 myclsref = mycol.getMyClassRefFromString(self.foreignClass);
-                myfcols = myclsref.getMyCols(fcobj);
-                myfccolnames = myclsref.getMyColNames(fcobj, myfcols);
+                print(f"myclsref = {myclsref}");
+
+                myfcols = myclsref.getMyCols();
+                myfccolnames = myclsref.getMyColNames(myfcols);
                 myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
-                print(f"self.foreignColName = {self.foreignColName}");
-                print(f"myfccolnames = {myfccolnames}");
+                #names referenced by the foreign key
+                print(f"self.foreignColNames = {self.foreignColNames}");
+                print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
                 
-                mycoli = myfccolnames.index(self.foreignColName);
-                print(f"mycoli = {mycoli}");
+                myvalidator.listMustContainUniqueValuesOnly(self.foreignColNames,
+                                                            "self.foreignColNames");
+
+                mycolis = [myfccolnames.index(mclnm) for mclnm in self.foreignColNames];
+                print(f"mycolis = {mycolis}");
 
                 #now get that column object and check to see if the isunique is set to true?
                 #OR is primary key and the only primary key on that table?
-                mc = myfcols[mycoli];
-                print(f"mc = {mc}");
-                print(f"mc.isunique = {mc.isunique}");
+                mcolobjs = [myfcols[mycoli] for mycoli in mycolis];
+                for mc in mcolobjs:
+                    print(f"mc = {mc}");
+                    print(f"mc.isunique = {mc.isunique}");
                 print(f"myfcols = {myfcols}");
 
-                pkycols = myclsref.getMyPrimaryKeyCols(fcobj, myfcols);
+                pkycols = myclsref.getMyPrimaryKeyCols(myfcols);
                 print(f"len(pkycols) = {len(pkycols)}");
 
                 if (len(pkycols) < 1):
                     raise ValueError("each table must have at least one primary key!");
                 else:
-                    if (mc.isunique or (len(pkycols) == 1 and mc.isprimarykey)): pass;
+                    #if there is one column on the foreign key colnames, then if it is unique OR
+                    #is the primary key, then it is valid
+                    #if there is more than one column on the foreign key colnames, then
+                    #-they must either match the primary key colnames OR
+                    #-be inside of a UNIQUE constraint with those exact colnames no more no less.
+                    #otherwise it is invalid.
+                    pkycolnames = myclsref.getMyColNames(pkycols);
+                    print(f"pkycolnames = {pkycolnames}");
+                    print(f"self.foreignColNames = {self.foreignColNames}");
+
+                    myvalidator.listMustContainUniqueValuesOnly(pkycolnames, "pkycolnames");
+                    isvalid = False;
+                    if (len(self.foreignColNames) == 1):
+                        mc = mcolobjs[0];
+                        isvalid = (mc.isunique or (len(pkycols) == 1 and mc.isprimarykey));
+                    else:
+                        #length is more than one
+                        #do they match the primary key column names...?
+                        #is there a unique constraint for those exact column names?
+                        #If yes to one: valid; if no to both, then not valid.
+                        if (myvalidator.areTwoListsTheSame(pkycolnames, self.foreignColNames)):
+                            isvalid = True;
+                        else:
+                            #now get the unique constraints and see if one has those exact columns
+                            #get the colnames from inside of the unique constraint...
+                            #then check to see if they are the same
+                            raise ValueError("NOT DONE YET ENFORCING THE UNIQUE CONDITON HERE...!");
+                    if isvalid: pass;
                     else: raise ValueError("the foreign key column must refer to unique data!");
         else:
             if (self.foreignClass == None): pass;
             else: self.setForeignClass(None);
-            if (myvalidator.isvaremptyornull(self.foreignColName)): pass;
-            else: self.setForeignColName(None);
+            if (myvalidator.isvaremptyornull(self.foreignColNames)): pass;
+            else: self.setForeignColNames(None);
+        print("DONE WITH FOREIGN KEY VALIDATION METHOD NOW!");
         return True;
 
-    #can call in init NOT DONE YET...
+    #can call in init
     def newForeignKey(self, fkycls, fkycolnm):#, fcobj
         #print(f"self = {self}");
         #print(f"fkycls = {fkycls}");
         #print(f"fkycolnm = {fkycolnm}");
         self.setForeignClass(fkycls);
-        self.setForeignColName(fkycolnm);#, fcobj
+        self.setForeignColNames(fkycolnm);#, fcobj
         self.setIsForeignKey(True);
 
     #def __repr__(self):

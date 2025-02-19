@@ -51,3 +51,22 @@ class myvalidator:
         mynwlist = list(myset);
         if (len(mlist) == len(mynwlist)): return True;
         else: raise ValueError(f"the list {varnm} must contain unique values, but it did not!");
+
+    @classmethod
+    def areTwoListsTheSame(clsnm, lista, listb):
+        if (clsnm.isvaremptyornull(lista)): return (clsnm.isvaremptyornull(listb));
+        else:
+            if (clsnm.isvaremptyornull(listb)): return False;
+            else:
+                if (len(lista) == len(listb)):
+                    for n in range(len(lista)):
+                        if (clsnm.isvaremptyornull(lista[n])):
+                            if (clsnm.isvaremptyornull(listb[n])): pass;
+                            else: return False;
+                        else:
+                            if (clsnm.isvaremptyornull(listb[n])): return False;
+                            else:
+                                if (lista[n] == listb[n]): pass;
+                                else: return False;
+                    return True;
+                else: return False;
