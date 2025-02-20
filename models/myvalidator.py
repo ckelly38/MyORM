@@ -70,3 +70,42 @@ class myvalidator:
                                 else: return False;
                     return True;
                 else: return False;
+    
+    @classmethod
+    def stringContainsOnlyAlnumCharsIncludingUnderscores(cls, mstr):
+        if (cls.isvaremptyornull(mstr)): return True;
+        else:
+            cls.varmustbethetypeonly(mstr, str, "mstr");
+            for c in mstr:
+                if (c.isalnum() or c == '_'): pass;
+                else: return False;
+        return True;
+
+    #SQL constraint methods might get removed from the validator class
+    @classmethod
+    def genUniqueConstraint(cls, consnm, colnames):
+        #for multi-columns only
+        #colnames are assumed to be on the table, because if they are not,
+        #then SQL ERROR RESULTS IMMEDIATELY,
+        #but this method may not take into account the correct table class as the caller
+        #so cannot verify
+        if (myvalidator.isvaremptyornull(consnm)):
+            return cls.genUniqueConstraint("unkmulcols" + cls.getTableName(), colnames);
+        else:
+            if (cls.stringContainsOnlyAlnumCharsIncludingUnderscores(consnm)): pass;
+            else: raise ValueError("the constraint name must contain alpha-numeric characters only!");
+        if (myvalidator.isvaremptyornull(colnames) or len(colnames) < 2): return None;
+        else:
+            for mcnm in colnames:
+                if (cls.stringContainsOnlyAlnumCharsIncludingUnderscores(mcnm)): pass;
+                else: raise ValueError("the colname must contain alpha-numeric characters only!");   
+            return "CONSTRAINT " + consnm + " UNIQUE(" + (", ".join(colnames)) + ")";
+
+    @classmethod
+    def genCheckConstraint(cls, consnm, val):
+        if (myvalidator.isvaremptyornull(consnm)):
+            return cls.genUniqueConstraint("chkmulcols" + cls.getTableName(), val);
+        else:
+            if (cls.stringContainsOnlyAlnumCharsIncludingUnderscores(consnm)): pass;
+            else: raise ValueError("the constraint name must contain alpha-numeric characters only!");
+        return "CONSTRAINT " + consnm + " CHECK(" + val + ")";

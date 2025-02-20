@@ -1,6 +1,6 @@
 from mybase import mybase;
 from mybase import mycol;
-#MAY NEED TO CHANGE FOREIGN KEYS 2-18-2025
+from mycol import myvalidator;
 class MyTestColsClass(mybase):
     def __init__(self):
         print("INSIDE OF CONSTRUCTOR ON TEST CLASS A!");
@@ -44,22 +44,19 @@ class MyOtherTestClass(mybase):
     mytablename = "testtable";
 
 class MyModelWithCompPrimaryKey(mybase):
-    #bug in is primary key: the primary key must be unique and non-null
-    #a composite primary key can be null, but not likely.
-    #also need some column for multi-column-constraints...
-    #probably need a way to get all of the constraints for a table too.
-    #need to verify that the colname saved in the col object and the attribute name for it must match
-
+    myuvalpkytst = False;
     mynewcola = mycol(colname="mynewcola", datatype="Integer", value=None,
                     defaultvalue=None, isprimarykey=True, isnonnull=True,
-                    isunique=True, autoincrements=True, constraints=None);
+                    isunique=myuvalpkytst, autoincrements=True, constraints=None);
     mynewcolb = mycol(colname="mynewcolb", datatype="Integer", value=None,
                     defaultvalue=None, isprimarykey=True, isnonnull=True,
-                    isunique=True, autoincrements=True, constraints=None);
+                    isunique=myuvalpkytst, autoincrements=False, constraints=None);
     mynewcolc = mycol(colname="mynewcolc", datatype="Integer", value=None,
                     defaultvalue=None, isprimarykey=False, isnonnull=True,
-                    isunique=False, autoincrements=True, constraints=None);
-    mymulticolargs = None;
+                    isunique=False, autoincrements=False, constraints=None);
+    mymulticolargs = [myvalidator.genUniqueConstraint("mytableuniquecolsconstraint",
+                                                      ["mynewcola", "mynewcolb"])];#, "mynewcolc"
+    tableargs = None;
     mytablename = "comppkeytable";
 
 class MyModelWithCompForeignKey(mybase):
@@ -70,7 +67,7 @@ class MyModelWithCompForeignKey(mybase):
                     defaultvalue=None, isprimarykey=False, isnonnull=True,
                     isunique=True, autoincrements=False,
                     isforeignkey=True, foreignClass="MyModelWithCompPrimaryKey",
-                    foreignColNames=["mynewcola", "mynewcolb", "mynewcolc"],
-                    constraints=None);
+                    foreignColNames=["mynewcola", "mynewcolb"],
+                    constraints=None);#, "mynewcolc"
     mymulticolargs = None;
     mytablename = "compfkeytesttable";

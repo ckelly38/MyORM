@@ -51,5 +51,6 @@ print(tstobjb.getTableName());
 #                 autoincrements=True, foreignClass=None, foreignColName=None, constraints=None);
 #print(mybnewcol);
 
+#print(myvalidator.genUniqueConstraint("constraintname", ["itema", "itemb", "itemc"]));
 MyModelWithCompPrimaryKey();
 MyModelWithCompForeignKey();

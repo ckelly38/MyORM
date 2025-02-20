@@ -10,7 +10,8 @@ class mycol:
     @classmethod
     def setMyClassRefs(cls, val): cls.__myclassrefs__ = val;
 
-    #https://stackoverflow.com/questions/1796180/how-can-i-get-a-list-of-all-classes-within-current-module-in-python
+    #https://stackoverflow.com/questions/1796180/
+    #how-can-i-get-a-list-of-all-classes-within-current-module-in-python
     #gets and sets the class ref list if fetchnow is True or the current list (above) is empty
     #if the current list is not empty and fetchnow is False, it returns the current list.
     #if it gets the new list, then the class refs list is updated.
@@ -139,7 +140,21 @@ class mycol:
 
     #if isprimarykey is true, then it must be unique and non-null.
     def setIsPrimaryKey(self, val):
+        #if the primary key is multi-column, then we need to look for the specific
+        #unique column constraint on our list of constraints
+        #if it is present with the columns listed, then this is valid
+        #if it is not found, then not valid
+        #
+        #isnonnull col constraint is single column only
+        #a composite key is never null.
+        #
+        #however, if the primary key is single column only
+        #then, we can check the isunique value for the column and the isnonnull values
+        #if both are true, then valid; otherwise not valid.
+        
         myvalidator.varmustbeboolean(val, "val");
+        #not null constraint is single-column only
+        #but unique can be one or mulitple-column constraint
         if (val):
             isvalid = False;
             if (self.isnonnull == None):
@@ -154,13 +169,83 @@ class mycol:
                 if (self.isnonnull == None or self.isunique == None):
                     self.setIsNonNull(True);
                     self.setIsUnique(True);
-            else: raise ValueError("for it to be a primary key, it must be non-null and unique!");
+            #else: raise ValueError("for it to be a primary key, it must be non-null and unique!");
         else:
             if (self.isnonnull == None): self.setIsNonNull(False);
             if (self.isunique == None): self.setIsUnique(False);
         self._isprimarykey = val;
 
     isprimarykey = property(getIsPrimaryKey, setIsPrimaryKey);
+
+    def primaryKeyInformationMustBeValid(self, myclsref):
+        #the fcobj is the calling class's object
+        #need to make sure the primary key information is correct.
+        #if the primary key is composite:
+        #composite keys are never null, so we only need to check to see if there is a multi-col
+        #unique constraint with the cols for the primary key
+        #if there is, then valid; otherwise not valid so error
+        #if the primary key is not composite:
+        #make sure that the column is unique and not null
+        pkycols = myclsref.getMyPrimaryKeyCols();
+        myvalidator.varmustnotbeempty(pkycols, "pkycols");
+
+        if (1 < len(pkycols)):
+            #now get the unique constraints and see if one has those exact columns
+            #get the colnames from inside of the unique constraint...
+            #then check to see if they are the same
+            pkycolnames = myclsref.getMyColNames(pkycols);
+            mrefallconstraints = myclsref.getAllTableConstraints();
+            print(f"pkycolnames = {pkycolnames}");
+            print(f"mrefallconstraints = {mrefallconstraints}");
+            
+            isvalid = False;
+            if (myvalidator.isvaremptyornull(mrefallconstraints)): isvalid = False;
+            else:
+                #the only constraints found on the multi-cols are check and unique
+                #get all of the unique constraints, or primary key constraints...
+                #then see which columns are on them...
+                #if any one that has all of the column names on it matches, then valid
+                #if none found, not valid.
+                #the unique constraints are in the format: CONSTRAINT name UNIQUE(cols)
+                #so we can search for UNIQUE() if that is not there, then ?
+                for mcond in mrefallconstraints:
+                    if ("UNIQUE(" in mcond):
+                        mcolstrincond = mcond[mcond.index("UNIQUE(") + 7: mcond.index(")")]; 
+                        print(f"mcolstrincond = {mcolstrincond}");
+                        
+                        tempcolsarr = mcolstrincond.split(", ");
+                        print(f"tempcolsarr = {tempcolsarr}");
+
+                        if (myvalidator.areTwoListsTheSame(tempcolsarr, pkycolnames)):
+                            print("match found so valid!");
+                            isvalid = True;
+                            break;
+            if isvalid: pass;
+            else:
+                raise ValueError("for it to be a primary key, for class(" + myclsref.__name__ +
+                                 ") it must be non-null and unique!");
+        else:
+            if (self.isprimarykey):
+                isvalid = False;
+                if (self.isnonnull == None):
+                    if (self.isunique == None): isvalid = True;
+                    else: isvalid = self.isunique;
+                else:
+                    if (self.isnonnull):
+                        if (self.isunique == None): isvalid = True;
+                        else: isvalid = self.isunique;
+                    else: isvalid = False;
+                if (isvalid):
+                    if (self.isnonnull == None or self.isunique == None):
+                        self.setIsNonNull(True);
+                        self.setIsUnique(True);
+                else:
+                    raise ValueError("for it to be a primary key, for class(" + myclsref.__name__ +
+                                     ") it must be non-null and unique!");
+            else:
+                if (self.isnonnull == None): self.setIsNonNull(False);
+                if (self.isunique == None): self.setIsUnique(False);
+        return True;
 
     def getForeignClass(self): return self._foreignClass;
 
@@ -223,10 +308,7 @@ class mycol:
 
     isforeignkey = property(getIsForeignKey, setIsForeignKey);
 
-    #NOT SURE IF THE ENDING CONDITION FOR DETERMINGING IF THE DATA THAT
-    #THE FOREIGN KEY REFERS TO IS UNIQUE OR NOT IS CORRECT
-    #NOT DONE YET AND IT IS NOT CORRECT!
-
+    
     def foreignKeyInformationMustBeValid(self, fcobj):
         #this method takes in the calling class's object and the current column object
         #the goal of this method is to make sure that the foreign key information is valid
@@ -287,7 +369,8 @@ class mycol:
                 print(f"len(pkycols) = {len(pkycols)}");
 
                 if (len(pkycols) < 1):
-                    raise ValueError("each table must have at least one primary key!");
+                    raise ValueError("each table must have at least one primary key, but the class(" +
+                                     myclsref.__name__ + ") did not!");
                 else:
                     #if there is one column on the foreign key colnames, then if it is unique OR
                     #is the primary key, then it is valid
@@ -315,9 +398,36 @@ class mycol:
                             #now get the unique constraints and see if one has those exact columns
                             #get the colnames from inside of the unique constraint...
                             #then check to see if they are the same
-                            raise ValueError("NOT DONE YET ENFORCING THE UNIQUE CONDITON HERE...!");
+                            mrefallconstraints = myclsref.getAllTableConstraints();
+                            print(f"mrefallconstraints = {mrefallconstraints}");
+
+                            if (myvalidator.isvaremptyornull(mrefallconstraints)): isvalid = False;
+                            else:
+                                #the only constraints found on the multi-cols are check and unique
+                                #get all of the unique constraints, or primary key constraints...
+                                #then see which columns are on them...
+                                #if any one that has all of the column names on it matches, then valid
+                                #if none found, not valid.
+                                #the unique constraints are in the format: CONSTRAINT name UNIQUE(cols)
+                                #so we can search for UNIQUE() if that is not there, then ?
+                                for mcond in mrefallconstraints:
+                                    if ("UNIQUE(" in mcond):
+                                        mcolstrincond = mcond[mcond.index("UNIQUE(") + 7:
+                                                                        mcond.index(")")]; 
+                                        print(f"mcolstrincond = {mcolstrincond}");
+                                        
+                                        tempcolsarr = mcolstrincond.split(", ");
+                                        print(f"tempcolsarr = {tempcolsarr}");
+
+                                        if (myvalidator.areTwoListsTheSame(tempcolsarr,
+                                                                           self.foreignColNames)):
+                                            print("match found so valid!");
+                                            isvalid = True;
+                                            break;
                     if isvalid: pass;
-                    else: raise ValueError("the foreign key column must refer to unique data!");
+                    else:
+                        raise ValueError("the foreign key column on class(" + type(fcobj).__name__ +
+                                         ") must refer to unique data!");
         else:
             if (self.foreignClass == None): pass;
             else: self.setForeignClass(None);
