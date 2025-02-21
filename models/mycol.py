@@ -48,6 +48,13 @@ class mycol:
             if (mycls.__name__ == nmstr): return mycls;
         raise ValueError(f"NAME {nmstr} NOT FOUND!");
 
+    @classmethod
+    def getClassFromTableName(cls, tablename):
+        myvalidator.varmustnotbeempty(tablename, "tablename");
+        for mycls in cls.getMyClassRefsMain(False):
+            if (hasattr(mycls, "getTableName") and (mycls.getTableName() == tablename)): return mycls;
+        raise ValueError("no class has that (" + tablename + ") as the given tablename!");
+
     def __init__(self, colname, datatype, value, defaultvalue,
                  isprimarykey=False, isnonnull=None, isunique=None,
                  autoincrements=False, isforeignkey=False, foreignClass=None, foreignColNames=None,

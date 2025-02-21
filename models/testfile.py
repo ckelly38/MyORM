@@ -51,6 +51,16 @@ print(tstobjb.getTableName());
 #                 autoincrements=True, foreignClass=None, foreignColName=None, constraints=None);
 #print(mybnewcol);
 
-#print(myvalidator.genUniqueConstraint("constraintname", ["itema", "itemb", "itemc"]));
-MyModelWithCompPrimaryKey();
-MyModelWithCompForeignKey();
+tstobjc = MyModelWithCompPrimaryKey();
+tstobjd = MyModelWithCompForeignKey();
+
+print(myvalidator.genUniqueConstraint("constraintname", ["itema", "itemb", "itemc"]));
+print(myvalidator.genSelectAllAndOrCountAllColsOnTable(tstobjb.getTableName(), True));
+print(myvalidator.genSelectSomeColsFromTables(["mynewcol"], [tstobjb.getTableName()],
+                                              ["mynewcol", "myfkeyid"], [tstobjb.getTableName()]));
+print(myvalidator.genSelectSomeColsFromTables(["mynewcol", "mynewcola", "mynewcolb"],
+                                              [tstobjb.getTableName(), tstobjc.getTableName(),
+                                               tstobjc.getTableName()],
+                                              ["mynewcol", "myfkeyid"],
+                                              [tstobjb.getTableName(), tstobjb.getTableName()]));
+

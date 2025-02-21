@@ -57,6 +57,15 @@ class mybase:
         return [mclobj.colname for mclobj in cls.getMyColsFromClassOrParam(mycols)];
 
     @classmethod
+    def areGivenColNamesOnTable(cls, mlist, mycols=None):
+        if (myvalidator.isvaremptyornull(mlist)): return False;
+        fincolnms = cls.getMyColNames(cls.getMyColsFromClassOrParam(mycols));
+        for mitem in mlist:
+            if (mitem in fincolnms): pass;
+            else: return False;
+        return True;
+
+    @classmethod
     def getMyPrimaryKeyCols(cls, mycols=None):
         return [mclobj for mclobj in cls.getMyColsFromClassOrParam(mycols) if mclobj.isprimarykey];
     
