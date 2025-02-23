@@ -54,13 +54,78 @@ print(tstobjb.getTableName());
 tstobjc = MyModelWithCompPrimaryKey();
 tstobjd = MyModelWithCompForeignKey();
 
+print();
+print("SQL GEN TESTS:");
 print(myvalidator.genUniqueConstraint("constraintname", ["itema", "itemb", "itemc"]));
-#print(myvalidator.genSelectAllAndOrCountAllColsOnTable(tstobjb.getTableName(), True));
-#print(myvalidator.genSelectSomeColsFromTables(["mynewcol"], [tstobjb.getTableName()],
-#                                              ["mynewcol", "myfkeyid"], [tstobjb.getTableName()]));
-#print(myvalidator.genSelectSomeColsFromTables(["mynewcol", "mynewcola", "mynewcolb"],
-#                                              [tstobjb.getTableName(), tstobjc.getTableName(),
-#                                               tstobjc.getTableName()],
-#                                              ["mynewcol", "myfkeyid"],
-#                                              [tstobjb.getTableName(), tstobjb.getTableName()]));
+#counts
+print(myvalidator.genCount(["mynewcola", "mynewcolb"], [tstobjc.getTableName()], False, False));
+print(myvalidator.genCount(["mynewcola", "mynewcolb"], [tstobjc.getTableName()], True, False));
+print(myvalidator.genCount(["mynewcola", "mynewcolb"], [tstobjc.getTableName()], False, True));
+print(myvalidator.genCount(["mynewcola", "mynewcolb"], [tstobjc.getTableName()], True, True));
+print(myvalidator.genCountAll(False));
+print(myvalidator.genCountAll(True));
+#selects
+print(myvalidator.genCustomSelect("1", "mytablename", False));
+print(myvalidator.genCustomSelect("1", "mytablename", True));
+#still a select all method
+#useselonly, useseldistinct, usecntdistinct
+print(myvalidator.genSelectAllAndOrCountOnTables(
+    [tstobjb.getTableName(), tstobjc.getTableName(), tstobjd.getTableName()],
+    None, None, True, True, False));
+print(myvalidator.genSelectAllAndOrCountOnTables(
+    [tstobjb.getTableName(), tstobjc.getTableName(), tstobjd.getTableName()],
+    ["mynewcol", "mynewcola", "mynewcolb"],
+    [tstobjb.getTableName(), tstobjc.getTableName(), tstobjc.getTableName()], False, False, True));
+#ERRORS OUT BECAUSE SELECT DISTINCT COUNT(DISTINCT *) FROM wherever IS ILLEGAL.
+#ERRORS OUT BECAUSE SELECT DISTINCT *, COUNT(DISTINCT *) FROM wherever IS ILLEGAL.
+#print(myvalidator.genSelectAllAndCountAllOnTables([tstobjb.getTableName()], True, True));#error
+#print(myvalidator.genCustomSelect("COUNT(DISTINCT *)", tstobjc.getTableName(), True));#error
+#print(myvalidator.genSelectCountOnlyOnTables([tstobjc.getTableName()], None, None, True, True));#error
 
+#useselonly, usecntonly, useseldistinct, usecntdistinct
+print(myvalidator.genSelectSomeAndOrCountOnTables(["mynewcol", "mynewcola", "mynewcolb"],
+                                              [tstobjb.getTableName(), tstobjc.getTableName(),
+                                               tstobjc.getTableName()],
+                                              ["mynewcol", "myfkeyid"],
+                                              [tstobjb.getTableName(), tstobjb.getTableName()],
+                                              False, False, True, True));
+#usedistinct
+print(myvalidator.genSelectSomeOnlyOnTables(["mynewcol", "mynewcola", "mynewcolb"],
+                                            [tstobjb.getTableName(), tstobjc.getTableName(),
+                                             tstobjc.getTableName()], True));
+print(myvalidator.genSelectSomeOnlyOnTables(["mynewcol", "mynewcola", "mynewcolb"],
+                                            [tstobjb.getTableName(), tstobjc.getTableName(),
+                                             tstobjc.getTableName()], False));
+#useseldistinct, usecntdistinct
+print(myvalidator.genSelectCountOnlyOnTables([tstobjb.getTableName(), tstobjc.getTableName(),
+                                              tstobjc.getTableName()], ["mynewcol", "myfkeyid"],
+                                              [tstobjb.getTableName(), tstobjb.getTableName()],
+                                              True, True));
+print(myvalidator.genSQLIn([None, "something", "other"], False));#will include null
+print(myvalidator.genWhere("age > 9"));
+print(myvalidator.genHaving("COUNT(personID) > 9"));
+print(myvalidator.genBetween("vala", "valb"));
+print(myvalidator.genGroupBy("age"));
+print(myvalidator.genLengthCol("mynewcol", tstobjb.getTableName()));
+print(myvalidator.genSQLimit(4, 10));
+print(myvalidator.genSQLimit(4, 0));
+print(myvalidator.genCheckConstraint("checkage", "age > 18"));
+#WHAT I STILL NEED TO DO: 2-23-2025
+#-ORDER BY, CREATE TABLE, INSERT INTO, UPDATE, DELETE, SELECT INTO, INSERT INTO SELECT
+#-LEFT JOIN, RIGHT JOIN, INNER JOIN, FULL JOIN, NATURAL JOIN, UNIONS
+#-OTHER STUFF LIKE: MAX(), MIN(), SUM(), AVG(), CURSTOM PROCEDURES, SWITCH CASES
+#-figure out a way to let the user determine what to name the db
+#-figure out how to integrate mysql/postgressql...
+#-figure out a way to tell the program if using sqllite or sql and
+#--if the commands are different from sql to sqllite how they change in the generator
+#-figure out where to put the sql generator methods
+#-figure out how to enforce the correct data types and the values that can be stored in them
+#-ways to save data, ways to add new data, ways to remove data, ways to update the data,
+#-and ways to remove tables
+#-ways to print out objects via serialization
+#-ways to back up the database
+
+#these two lines will be printed on the same line
+#print("this is part ", end="");
+#print("of the sentence!");
+#other print statements will be on their own lines unless end=""

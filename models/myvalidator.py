@@ -214,7 +214,10 @@ class myvalidator:
         myvalidator.varmustbethetypeonly(wrval, str, "wrval");
         myvalidator.varmustnotbeempty(wtval, "wtval");
         myvalidator.varmustnotbeempty(wrval, "wrval");
-        return "SELECT " ("DISTINCT " if usedistinct else "") + wtval + " FROM " + wrval;
+        if ("COUNT(DISTINCT *)" in wtval):
+            raise ValueError("INVALID SQL QUERY: \"SELECT DISTINCT *, " +
+                                             "COUNT(DISTINCT *)\" IS NOT ALLOWED!");
+        return "SELECT " + ("DISTINCT " if usedistinct else "") + wtval + " FROM " + wrval;
     
     @classmethod
     def genCount(cls, colnames, tablenames, inctnameonone=False, usedistinct=False):
@@ -262,6 +265,13 @@ class myvalidator:
             myvalidator.varmustbeboolean(useselonly, "useselonly");
             myvalidator.varmustbeboolean(useseldistinct, "useseldistinct");
             myvalidator.varmustbeboolean(usecntdistinct, "usecntdistinct");
+            if (useseldistinct == usecntdistinct):
+                if (useselonly): pass;
+                else:
+                    if (useseldistinct):
+                        if (myvalidator.isvaremptyornull(cntcols)):
+                            raise ValueError("INVALID SQL QUERY: \"SELECT DISTINCT *, " +
+                                             "COUNT(DISTINCT *)\" IS NOT ALLOWED!");
             from mybase import mybase;#may need to change or get removed
             myutnames = list(set(mybase.combineTwoLists(seltbles, cnttables)));
             mylenutnms = len(myutnames);
@@ -294,7 +304,14 @@ class myvalidator:
         myvalidator.varmustbeboolean(usecntdistinct, "usecntdistinct");
         if (useselonly == usecntonly):
             if (useselonly): raise ValueError("useselonly and usecntonly both cannot be true!");
-
+        if (useseldistinct == usecntdistinct):
+                if (useselonly): pass;
+                else:
+                    if (useseldistinct):
+                        if (myvalidator.isvaremptyornull(cntcols)):
+                            raise ValueError("INVALID SQL QUERY: \"SELECT DISTINCT *, " +
+                                             "COUNT(DISTINCT *)\" IS NOT ALLOWED!");
+    
         #if use select only: no counts
         #if use count only it will be inside of select statement still.
         #we will still need the seltables, and cntcols and cnttables...
@@ -330,3 +347,26 @@ class myvalidator:
     def genSelectSomeOnlyOnTables(cls, selcols, seltbles, useseldistinct=False):
         return cls.genSelectSomeAndOrCountOnTables(selcols, seltbles,
                                                    None, None, True, False, useseldistinct, False);
+
+    @classmethod
+    def genSQLIn(cls, mvals, incnull=False):
+        myvalidator.varmustbeboolean(incnull, "incnull");
+        for val in mvals:
+            if (val == None): return cls.genSQLIn([oval for oval in mvals if not (oval == None)], True);
+        return ("IN(NULL)" if (myvalidator.isvaremptyornull(mvals)) else "IN(" +
+                ("NULL" + (", " if (0 < len(mvals)) else "")  if incnull else "") +
+                (", ".join(mvals)) + ")");
+    
+    @classmethod
+    def genWhereOrHaving(cls, mval, usewhere):
+        myvalidator.varmustbeboolean(usewhere, "usewhere");
+        myvalidator.varmustbethetypeonly(mval, str, "mval");
+        myvalidator.varmustnotbeempty(mval, mval);
+        #note: WHERE does not allow agragate functions where as HAVING does,
+        #but this is not easily enforced because the mval may have it elsewhere...
+        #so no validation other than type will be preformed and the error will propogate down to the DB.
+        return ("WHERE " if usewhere else "HAVING ") + mval;
+    @classmethod
+    def genWhere(cls, mval): return cls.genWhereOrHaving(mval, True);
+    @classmethod
+    def genHaving(cls, mval): return cls.genWhereOrHaving(mval, False);
