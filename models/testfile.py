@@ -110,14 +110,39 @@ print(myvalidator.genLengthCol("mynewcol", tstobjb.getTableName()));
 print(myvalidator.genSQLimit(4, 10));
 print(myvalidator.genSQLimit(4, 0));
 print(myvalidator.genCheckConstraint("checkage", "age > 18"));
+print(myvalidator.genSQLSwitchCase(["Quantity > 30", "Quantity = 30"],
+                                   ["'The quantity is greater than 30.'", "'The quantity equals 30.'"],
+                                   "'The quantity is less than 30.'", "QuantityText"));
+print(myvalidator.genSQLSwitchCase(["Quantity > 30", "Quantity = 30"],
+                                   ["'The quantity is greater than 30.'", "'The quantity equals 30.'"],
+                                   "'The quantity is less than 30.'", None));
+print(myvalidator.genSQLSwitchCase(["Quantity > 30", "Quantity = 30"],
+                                   ["'The quantity is greater than 30.'", "'The quantity equals 30.'"],
+                                   None, None));
+print(myvalidator.genSortOrderByAscVal(4, False));
+print(myvalidator.genSortOrderByAscVal(4, True));
+print(myvalidator.genOrderBy(["mynewcol", "mynewcola", "mynewcolb"],
+                             [tstobjb.getTableName(), tstobjc.getTableName(), tstobjc.getTableName()],
+                             True, [True, False, False]));
+print(myvalidator.genOrderBy(["mynewcol", "mynewcola", "mynewcolb"],
+                             [tstobjb.getTableName(), tstobjc.getTableName(), tstobjc.getTableName()],
+                             True, [False, False]));
+print(myvalidator.genOrderBy(["mynewcol", "mynewcola", "mynewcolb"],
+                             [tstobjb.getTableName(), tstobjc.getTableName(), tstobjc.getTableName()],
+                             True, None));
+print(myvalidator.genSQLMin("mynewcol", tstobjb.getTableName(), True));
+print(myvalidator.genSQLMax("mynewcola", tstobjc.getTableName(), False));
+
+#each database has its own way to do custom procedures, so this program will not provide a generic way.
+#
 #WHAT I STILL NEED TO DO: 2-23-2025
-#-ORDER BY, CREATE TABLE, INSERT INTO, UPDATE, DELETE, SELECT INTO, INSERT INTO SELECT
+#-OTHER STUFF LIKE: MAX(), MIN(), SUM(), AVG()
+#-CREATE TABLE, INSERT INTO, UPDATE, DELETE, SELECT INTO, INSERT INTO SELECT
 #-LEFT JOIN, RIGHT JOIN, INNER JOIN, FULL JOIN, NATURAL JOIN, UNIONS
-#-OTHER STUFF LIKE: MAX(), MIN(), SUM(), AVG(), CURSTOM PROCEDURES, SWITCH CASES
 #-figure out a way to let the user determine what to name the db
 #-figure out how to integrate mysql/postgressql...
 #-figure out a way to tell the program if using sqllite or sql and
-#--if the commands are different from sql to sqllite how they change in the generator
+#--if the commands are different from sql to sqllite (JOINS ARE) how they change in the generator
 #-figure out where to put the sql generator methods
 #-figure out how to enforce the correct data types and the values that can be stored in them
 #-ways to save data, ways to add new data, ways to remove data, ways to update the data,

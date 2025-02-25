@@ -72,6 +72,17 @@ class myvalidator:
                 else: return False;
     
     @classmethod
+    def areTwoArraysTheSameSize(cls, arra, arrb):
+        if (myvalidator.isvaremptyornull(arra)): return myvalidator.isvaremptyornull(arrb);
+        else: return (False if myvalidator.isvaremptyornull(arrb) else (len(arra) == len(arrb)));
+
+    @classmethod
+    def twoArraysMustBeTheSameSize(cls, arra, arrb, arranm="arranm", arrbnm="arrbnm"):
+        if (myvalidator.areTwoArraysTheSameSize(arra, arrb)): return True;
+        else:
+            raise ValueError("the two arrays " + arranm + " and " + arrbnm + " must be the same size!");
+
+    @classmethod
     def stringContainsOnlyAlnumCharsIncludingUnderscores(cls, mstr):
         if (cls.isvaremptyornull(mstr)): return True;
         else:
@@ -80,6 +91,13 @@ class myvalidator:
                 if (c.isalnum() or c == '_'): pass;
                 else: return False;
         return True;
+
+    @classmethod
+    def stringMustContainOnlyAlnumCharsIncludingUnderscores(cls, mstr, varnm="varnm"):
+        if (myvalidator.isvaremptyornull(varnm)):
+            return cls.stringMustContainOnlyAlnumCharsIncludingUnderscores(mstr, "varnm");
+        if (cls.stringContainsOnlyAlnumCharsIncludingUnderscores(mstr)): return True;
+        else: raise ValueError(varnm + " must contain alpha-numeric characters only!");
 
 
     #pretty much all of these need the table name
@@ -135,14 +153,11 @@ class myvalidator:
         #may need to take the tablename in as a parameter
         if (myvalidator.isvaremptyornull(consnm)):
             return cls.genUniqueConstraint("unkmulcols" + cls.getTableName(), colnames);
-        else:
-            if (cls.stringContainsOnlyAlnumCharsIncludingUnderscores(consnm)): pass;
-            else: raise ValueError("the constraint name must contain alpha-numeric characters only!");
+        else: cls.stringMustContainOnlyAlnumCharsIncludingUnderscores(consnm, "the constraint name");
         if (myvalidator.isvaremptyornull(colnames) or len(colnames) < 2): return None;
         else:
             for mcnm in colnames:
-                if (cls.stringContainsOnlyAlnumCharsIncludingUnderscores(mcnm)): pass;
-                else: raise ValueError("the colname must contain alpha-numeric characters only!");   
+                cls.stringMustContainOnlyAlnumCharsIncludingUnderscores(mcnm, "the colname");   
             return "CONSTRAINT " + consnm + " UNIQUE(" + (", ".join(colnames)) + ")";
 
     @classmethod
@@ -151,9 +166,7 @@ class myvalidator:
         #may need to take the tablename in as a parameter
         if (myvalidator.isvaremptyornull(consnm)):
             return cls.genUniqueConstraint("chkmulcols" + cls.getTableName(), val);
-        else:
-            if (cls.stringContainsOnlyAlnumCharsIncludingUnderscores(consnm)): pass;
-            else: raise ValueError("the constraint name must contain alpha-numeric characters only!");
+        else: cls.stringMustContainOnlyAlnumCharsIncludingUnderscores(consnm, "the constraint name");
         return "CONSTRAINT " + consnm + " CHECK(" + val + ")";
 
     @classmethod
@@ -187,7 +200,72 @@ class myvalidator:
         myvalidator.varmustnotbenull("valb", "valb");
         return f"BETWEEN {vala} AND {valb}";
 
+    @classmethod
+    def genOrderBy(cls, colnames, tablenames, singleinctname, sorder=None):
+        #if sorder.length is less than colnames.length:
+        #then add ASC or nothing at the end...
+        #if sorder.length is greater than colnames.length: error
+        myvalidator.varmustnotbeempty(colnames, "colnames");
+        myvalidator.varmustnotbeempty(tablenames, "tablenames");
+        myvalidator.varmustbeboolean(singleinctname, "singleinctname");
+        if (myvalidator.isvaremptyornull(sorder)):
+            return "ORDER BY " + cls.combineTableNamesWithColNames(colnames, tablenames, singleinctname);
+        else:
+            if (len(colnames) < len(sorder)):
+                raise ValueError("sorder must be at most as long as the number of columns!");
+            if (len(tablenames) == len(colnames)): pass;
+            else:
+                if (len(tablenames) == 1): pass;
+                else:
+                    raise ValueError("there must be the same number of columns as tablenames " +
+                                     "if there is more than one tablename!");
+            from mycol import mycol;#may need to change or get removed
+            mystr = "";
+            for n in range(len(colnames)):
+                colnm = colnames[n];
+                tnm = (tablenames[n] if (1 < len(tablenames)) else tablenames[0]);
+                myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(colnm, "the colname");
+                myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tnm, "the tablename");
+                myclstablenameref = mycol.getClassFromTableName(tnm);
+                myvalidator.varmustnotbenull(myclstablenameref, "myclstablenameref");
+                if (myclstablenameref.areGivenColNamesOnTable([colnm], None)): pass;
+                else: raise ValueError("the colname must be on the table!");
+                
+                #include the table name if not single,
+                #include the table name if single and include is set to true
+                inctnm = ((1 < len(tablenames)) or singleinctname);
+                incval = (n < len(sorder));
+                if (incval): myvalidator.varmustbeboolean(sorder[n], f"sorder[{n}]");
+                mystr += "" + (tnm + "." if inctnm else "") + colnm;
+                mystr += ((" ASC" if sorder[n] else " DESC") if incval else "");
+                if (n + 1 < len(colnames)): mystr += ", ";
+            return "ORDER BY " + mystr;
+    @classmethod
+    def genSortOrderByAscVal(cls, numcols, boolval): return [boolval for n in range(numcols)];
+
+    @classmethod
+    def genSQLMinOrMax(cls, colname, tablename, singleinctname, usemin):
+        myvalidator.varmustbeboolean(usemin, "usemin");
+        myvalidator.varmustbeboolean(singleinctname, "singleinctname");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(colname, "colname");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tablename, "tablename");
+        
+        from mycol import mycol;#may need to change or get removed
+        myclstablenameref = mycol.getClassFromTableName(tablename);
+        myvalidator.varmustnotbenull(myclstablenameref, "myclstablenameref");
+        if (myclstablenameref.areGivenColNamesOnTable([colname], None)): pass;
+        else: raise ValueError("the colname must be on the table!");
+        mystr = "M" + ("IN" if usemin else "AX") + "(" + (tablename + "." if singleinctname else "");
+        mystr += "" + colname + ")";
+        return mystr;
+    @classmethod
+    def genSQLMin(cls, colname, tablename, singleinctname):
+        return cls.genSQLMinOrMax(colname, tablename, singleinctname, True);
+    @classmethod
+    def genSQLMax(cls, colname, tablename, singleinctname):
+        return cls.genSQLMinOrMax(colname, tablename, singleinctname, False);
     
+
     #SELECT whatval/tablenames.colnames/* FROM whereval/tablenames
     #SELECT DISTINCT whatval/table.colnames/* FROM whereval/tablenames
     #
@@ -370,3 +448,34 @@ class myvalidator:
     def genWhere(cls, mval): return cls.genWhereOrHaving(mval, True);
     @classmethod
     def genHaving(cls, mval): return cls.genWhereOrHaving(mval, False);
+
+    #SQL-SWITCH-CASE statement looks like:
+    #CASE
+    #   WHEN condition1 THEN result1
+    #   ...
+    #   ELSE defaultresult
+    #END;
+    #note: NO TABS, and no newline between case and the first when.
+    @classmethod
+    def genSQLSwitchCase(cls, condsarr, resarr, defres=None, csnm=None):
+        myvalidator.twoArraysMustBeTheSameSize(condsarr, resarr, "condsarr", "resarr");
+        addfnwline = False;
+        addtabs = False;
+        mystr = "CASE" + ("\n" if addfnwline else " ");
+        for n in range(len(condsarr)):
+            ccond = condsarr[n];
+            cres = resarr[n];
+            myvalidator.varmustnotbeempty(ccond, "ccond");
+            myvalidator.varmustnotbeempty(cres, "cres");
+            if (addtabs): mystr += "\t";
+            mystr += "WHEN " + ccond + " THEN " + cres  + "\n";
+        if (addtabs): mystr += "\t";
+        mystr += "ELSE " + ("NULL\n" if (myvalidator.isvaremptyornull(defres)) else "" + defres + "\n");
+        mystr += "END" + ("" if (myvalidator.isvaremptyornull(csnm)) else " AS " + csnm) + "\n";
+        return mystr;
+    @classmethod
+    def genSQLSwitchCaseWithName(cls, condsarr, resarr, csnm, defres=None):
+        return cls.genSQLSwitchCase(condsarr, resarr, defres, csnm);
+    @classmethod
+    def genSQLSwitchCaseNoName(cls, condsarr, resarr, defres=None):
+        return cls.genSQLSwitchCase(condsarr, resarr, defres, None);

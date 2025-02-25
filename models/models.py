@@ -44,6 +44,17 @@ class MyOtherTestClass(mybase):
     mytablename = "testtable";
 
 class MyModelWithCompPrimaryKey(mybase):
+    #bug with the current setup and storage requirements adjusted. found on 2-24-2025 10 PM
+    #
+    #some of these col data requirements are constant: like where the foreign keys point to, the
+    #datatype of the value stored in it, is it a primary key, etc.
+    #a default value can be stored in the mycol class, but not the actual value.
+    #but the value of said column must be stored elsewhere because that is object specific.
+    #but some of these change with each object: like the value stored in it.
+    #the ones that change with each object need to be stored in an object and not in the mycol object
+    #either that or the mycol has a list of values for each object that is somehow mapped to the object
+    #which is not easy to do. SQLAlchemy makes this easy for some strange reason probably because it
+    #has all of these "class attributes" run inside of the init().
     myuvalpkytst = False;
     mynewcola = mycol(colname="mynewcola", datatype="Integer", value=None,
                     defaultvalue=None, isprimarykey=True, isnonnull=True,
