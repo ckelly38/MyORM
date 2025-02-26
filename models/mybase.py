@@ -168,21 +168,6 @@ class mybase:
     @classmethod
     def getMultiColumnConstraints(cls):
         return cls.getValueOfVarIfPresentOnTableMain("multi_column_constraints_list");
-    
-    @classmethod
-    def combineTwoLists(cls, lista, listb):
-        if (myvalidator.isvaremptyornull(lista)):
-            return (None if myvalidator.isvaremptyornull(listb) else listb);
-        else:
-            if (myvalidator.isvaremptyornull(listb)): return lista;
-            else:
-                #combine both of the lists...
-                #list of strings and another list of strings
-                #copy one, then copy the other directly
-                mynwlist = [mstr for mstr in lista];
-                for mstr in listb:
-                    mynwlist.append(mstr);
-                return mynwlist;
 
     @classmethod
     def getAllTableConstraints(cls):
@@ -205,7 +190,7 @@ class mybase:
 
         mclconstraints = cls.getMultiColumnConstraints();
         myiclconstraints = cls.getIndividualColumnConstraints();
-        nwlist = cls.combineTwoLists(myiclconstraints, mclconstraints);
+        nwlist = myvalidator.combineTwoLists(myiclconstraints, mclconstraints);
         print(f"cls.__name__ = {cls.__name__}");
         print(f"mclconstraints = {mclconstraints}");
         print(f"myiclconstraints = {myiclconstraints}");

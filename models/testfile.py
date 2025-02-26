@@ -18,7 +18,7 @@ from models import MyModelWithCompForeignKey;
 mycol.getMyClassRefsMain(True);#will force the fetch of the new list if it has changed by now
 
 #print(mynewcol);
-tstobj = MyTestColsClass();
+tstobj = MyTestColsClass();#values of the cols must get past into the constructor...
 print(tstobj.getMyCols());
 print(tstobj.getTableName());
 #print(tstobj.mynewcol.value);#error for the moment on this line not done with type enforcement...
@@ -35,21 +35,36 @@ print(tstobjb.getTableName());
 #if we assign the class string name, we can get the class reference from the globals() list later on.
 
 
+#question on the foreign key col, should the value of the key be assigned and stored in mycol or not?
+#we ideally do not want to store it mycol because it suggests
+#that we should be able to for others but we cannot.
+#we also want to assign all of the other properties in the classes in the base class constructor
+#on self of those class objects (not the references).
+#a foreign key refers to a specific row on the data table,
+#so I think it must be set when the object is initialized.
+#SO ALL VALUES MUST BE SET WHEN THE OBJECT IS INITIALIZED.
+#
+#THEY CAN OF COURSE CHANGE LATER ON (BE UPDATED).
+#
+#SOME CHANGES MAY FORCE A BACKUP OF THE ENTIRE DATABASE,
+#SUBSEQUENT DELETION, SOME RESTORATION, AND THEN ADDITION OF NEW DATA.
+
+
 #we can have more than one database open at the same time
 #but if the base class has a static list of all of them, then
 #some on a different database would share the same names which would be legal as long as
 #the same names are not on the same database
 
-#myonewcol = mycol(colname="myonewcol", datatype="Integer", value=1, defaultvalue=0,
+#myonewcol = mycol(colname="myonewcol", datatype="Integer", defaultvalue=0,
 #                 isprimarykey=True, isforeignkey=False, isnonnull=False, isunique=False,
 #                 autoincrements=True, foreignClass=None, foreignColName=None, constraints=None);
 #errors out
-#print(myonewcol);
+#print(myonewcol);#value=1, 
 
-#mybnewcol = mycol(colname="mybnewcol", datatype="Integer", value=1, defaultvalue=0,
+#mybnewcol = mycol(colname="mybnewcol", datatype="Integer", defaultvalue=0,
 #                 isprimarykey=True, isforeignkey=False, isnonnull=True, isunique=True,
 #                 autoincrements=True, foreignClass=None, foreignColName=None, constraints=None);
-#print(mybnewcol);
+#print(mybnewcol);# value=1, 
 
 tstobjc = MyModelWithCompPrimaryKey();
 tstobjd = MyModelWithCompForeignKey();
@@ -132,11 +147,14 @@ print(myvalidator.genOrderBy(["mynewcol", "mynewcola", "mynewcolb"],
                              True, None));
 print(myvalidator.genSQLMin("mynewcol", tstobjb.getTableName(), True));
 print(myvalidator.genSQLMax("mynewcola", tstobjc.getTableName(), False));
+print(myvalidator.genSQLAvg("price", True));
+print(myvalidator.genSQLAvg("price", False));
+print(myvalidator.genSQLSum("price", True));
+print(myvalidator.genSQLSum("price", False));
 
 #each database has its own way to do custom procedures, so this program will not provide a generic way.
 #
-#WHAT I STILL NEED TO DO: 2-23-2025
-#-OTHER STUFF LIKE: MAX(), MIN(), SUM(), AVG()
+#WHAT I STILL NEED TO DO: 2-25-2025
 #-CREATE TABLE, INSERT INTO, UPDATE, DELETE, SELECT INTO, INSERT INTO SELECT
 #-LEFT JOIN, RIGHT JOIN, INNER JOIN, FULL JOIN, NATURAL JOIN, UNIONS
 #-figure out a way to let the user determine what to name the db

@@ -8,15 +8,15 @@ class MyTestColsClass(mybase):
         #self.mynewcol.newForeignKey(MyOtherTestClass, ["mynewcol"]);#, self
         super().__init__();
 
-    mynewcol = mycol(colname="mynewcol", datatype="Integer", value=None,
+    mynewcol = mycol(colname="mynewcol", datatype="Integer",
                     defaultvalue=None, isprimarykey=True, isnonnull=True,
-                    isunique=True, autoincrements=True, constraints=None);
+                    isunique=True, autoincrements=True, constraints=None);# value=None,
     #from testfile import MyOtherTestClass;
-    myfkeyid = mycol(colname="myfkeyid", datatype="Integer", value=None,
+    myfkeyid = mycol(colname="myfkeyid", datatype="Integer",
                     defaultvalue=None, isprimarykey=False, isnonnull=True,
                     isunique=True, autoincrements=False,
                     isforeignkey=True, foreignClass="MyOtherTestClass", foreignColNames=["mynewcol"],
-                    constraints=None);
+                    constraints=None);# value=None,
     myothervar = 2;
     mymulticolargs = None;
     #__mytablename__ = "testtable";
@@ -30,14 +30,14 @@ class MyOtherTestClass(mybase):
         #self.mynewcol.setMyForeignKeyClassRef(MyTestColsClass);
         super().__init__();
 
-    mynewcol = mycol(colname="mynewcol", datatype="Integer", value=None,
+    mynewcol = mycol(colname="mynewcol", datatype="Integer",
                     defaultvalue=None, isprimarykey=True, isnonnull=True,
-                    isunique=True, autoincrements=True, constraints=None);
-    myfkeyid = mycol(colname="myfkeyid", datatype="Integer", value=None,
+                    isunique=True, autoincrements=True, constraints=None);# value=None,
+    myfkeyid = mycol(colname="myfkeyid", datatype="Integer",
                     defaultvalue=None, isprimarykey=False, isnonnull=True,
                     isunique=True, autoincrements=False,
                     isforeignkey=True, foreignClass="MyTestColsClass", foreignColNames=["mynewcol"],
-                    constraints=None);
+                    constraints=None);# value=None,
     mymulticolargs = None;
     myothervar = 2;
     #__mytablename__ = "testtable";
@@ -56,29 +56,29 @@ class MyModelWithCompPrimaryKey(mybase):
     #which is not easy to do. SQLAlchemy makes this easy for some strange reason probably because it
     #has all of these "class attributes" run inside of the init().
     myuvalpkytst = False;
-    mynewcola = mycol(colname="mynewcola", datatype="Integer", value=None,
+    mynewcola = mycol(colname="mynewcola", datatype="Integer",
                     defaultvalue=None, isprimarykey=True, isnonnull=True,
-                    isunique=myuvalpkytst, autoincrements=True, constraints=None);
-    mynewcolb = mycol(colname="mynewcolb", datatype="Integer", value=None,
+                    isunique=myuvalpkytst, autoincrements=True, constraints=None);#, value=None
+    mynewcolb = mycol(colname="mynewcolb", datatype="Integer",
                     defaultvalue=None, isprimarykey=True, isnonnull=True,
-                    isunique=myuvalpkytst, autoincrements=False, constraints=None);
-    mynewcolc = mycol(colname="mynewcolc", datatype="Integer", value=None,
+                    isunique=myuvalpkytst, autoincrements=False, constraints=None);#value=None,
+    mynewcolc = mycol(colname="mynewcolc", datatype="Integer",
                     defaultvalue=None, isprimarykey=False, isnonnull=True,
-                    isunique=False, autoincrements=False, constraints=None);
+                    isunique=False, autoincrements=False, constraints=None);#value=None,
     mymulticolargs = [myvalidator.genUniqueConstraint("mytableuniquecolsconstraint",
                                                       ["mynewcola", "mynewcolb"])];#, "mynewcolc"
     tableargs = None;
     mytablename = "comppkeytable";
 
 class MyModelWithCompForeignKey(mybase):
-    mynewcol = mycol(colname="mynewcol", datatype="Integer", value=None,
+    mynewcol = mycol(colname="mynewcol", datatype="Integer",
                     defaultvalue=None, isprimarykey=True, isnonnull=True,
-                    isunique=True, autoincrements=True, constraints=None);
-    mycompfkcolval = mycol(colname="mycompfkcolval", datatype="Integer", value=None,
+                    isunique=True, autoincrements=True, constraints=None);#value=None,
+    mycompfkcolval = mycol(colname="mycompfkcolval", datatype="Integer",
                     defaultvalue=None, isprimarykey=False, isnonnull=True,
                     isunique=True, autoincrements=False,
                     isforeignkey=True, foreignClass="MyModelWithCompPrimaryKey",
                     foreignColNames=["mynewcola", "mynewcolb"],
-                    constraints=None);#, "mynewcolc"
+                    constraints=None);#, "mynewcolc"#, value=None,
     mymulticolargs = None;
     mytablename = "compfkeytesttable";

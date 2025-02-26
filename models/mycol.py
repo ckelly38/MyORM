@@ -2,6 +2,8 @@ from myvalidator import myvalidator;
 import sys;
 import inspect;
 class mycol:
+    #everything to init will need to be removed to solve an import problem between
+    #this and the sql generator
     __myclassrefs__ = None;
 
     @classmethod
@@ -55,14 +57,16 @@ class mycol:
             if (hasattr(mycls, "getTableName") and (mycls.getTableName() == tablename)): return mycls;
         raise ValueError("no class has that (" + tablename + ") as the given tablename!");
 
-    def __init__(self, colname, datatype, value, defaultvalue,
+    #value needs to be removed because it cannot be stored in a class attribute for multiple objects
+    #of the parent (containing) class.
+    def __init__(self, colname, datatype, defaultvalue,
                  isprimarykey=False, isnonnull=None, isunique=None,
                  autoincrements=False, isforeignkey=False, foreignClass=None, foreignColNames=None,
-                 constraints=None):
+                 constraints=None):#value, 
         print("INSIDE OF MY COL CONSTRUCTOR!");
         print(f"colname = {colname}");
         print(f"datatype = {datatype}");
-        print(f"value = {value}");
+        #print(f"value = {value}");
         print(f"defaultvalue = {defaultvalue}");
         print(f"isnonnull = {isnonnull}");
         print(f"isunique = {isunique}");
@@ -104,7 +108,7 @@ class mycol:
         self.setMyClassRefs(None);
         
         self._datatype = datatype;
-        self._value = value;
+        #self._value = value;
         self._defaultvalue = defaultvalue;
         self.constraints = constraints;
 

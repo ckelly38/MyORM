@@ -99,6 +99,20 @@ class myvalidator:
         if (cls.stringContainsOnlyAlnumCharsIncludingUnderscores(mstr)): return True;
         else: raise ValueError(varnm + " must contain alpha-numeric characters only!");
 
+    @classmethod
+    def combineTwoLists(cls, lista, listb):
+        if (myvalidator.isvaremptyornull(lista)):
+            return (None if myvalidator.isvaremptyornull(listb) else listb);
+        else:
+            if (myvalidator.isvaremptyornull(listb)): return lista;
+            else:
+                #combine both of the lists...
+                #list of strings and another list of strings
+                #copy one, then copy the other directly
+                mynwlist = [mstr for mstr in lista];
+                for mstr in listb:
+                    mynwlist.append(mstr);
+                return mynwlist;
 
     #pretty much all of these need the table name
     #it is my responsibility as the programmer to make sure that the columns are on the table
@@ -189,8 +203,7 @@ class myvalidator:
 
     @classmethod
     def genGroupBy(cls, val):
-        #GROUP BY(tablenamea.colnamea, tablenameb.colnameb ...);
-        #GROUP BY(COUNT(CustomerID))
+        #GROUP BY(tablenamea.colnamea, tablenameb.colnameb ...);#GROUP BY(COUNT(CustomerID))
         myvalidator.varmustnotbeempty(val, "val");
         return "GROUP BY(" + val + ")";
 
@@ -265,6 +278,20 @@ class myvalidator:
     def genSQLMax(cls, colname, tablename, singleinctname):
         return cls.genSQLMinOrMax(colname, tablename, singleinctname, False);
     
+    @classmethod
+    def genSQLSumOrAvg(cls, val, usedistinct, usesum):
+        myvalidator.varmustbeboolean(usesum, "usesum");
+        myvalidator.varmustbeboolean(usedistinct, "usedistinct");
+        myvalidator.varmustbethetypeonly(val, str, "val");
+        myvalidator.varmustnotbeempty(val, "val");
+        return ("SUM" if usesum else "AVG") + "(" + ("DISTINCT " if usedistinct else "") + val + ")";
+    @classmethod
+    def genSQLSumOrAverage(cls, val, usedistinct, usesum):
+        return cls.genSQLSumOrAvg(val, usedistinct, usesum);
+    @classmethod
+    def genSQLSum(cls, val, usedistinct): return cls.genSQLSumOrAvg(val, usedistinct, True);
+    @classmethod
+    def genSQLAvg(cls, val, usedistinct): return cls.genSQLSumOrAvg(val, usedistinct, False);
 
     #SELECT whatval/tablenames.colnames/* FROM whereval/tablenames
     #SELECT DISTINCT whatval/table.colnames/* FROM whereval/tablenames
@@ -350,8 +377,7 @@ class myvalidator:
                         if (myvalidator.isvaremptyornull(cntcols)):
                             raise ValueError("INVALID SQL QUERY: \"SELECT DISTINCT *, " +
                                              "COUNT(DISTINCT *)\" IS NOT ALLOWED!");
-            from mybase import mybase;#may need to change or get removed
-            myutnames = list(set(mybase.combineTwoLists(seltbles, cnttables)));
+            myutnames = list(set(myvalidator.combineTwoLists(seltbles, cnttables)));
             mylenutnms = len(myutnames);
             inctname = (1 < mylenutnms);
             myvalidator.varmustnotbeempty(myutnames, "myutnames");
@@ -395,8 +421,7 @@ class myvalidator:
         #we will still need the seltables, and cntcols and cnttables...
         #SELECT DISTINCT? tnamea.colnamea, tnameb.colnameb ...,
         #COUNT(DISTINCT? tnamea.colnamea, tnameb.colnameb ...) FROM alluniquetnames
-        from mybase import mybase;#may need to change or get removed
-        myutnames = list(set(mybase.combineTwoLists(seltbles, cnttables)));
+        myutnames = list(set(myvalidator.combineTwoLists(seltbles, cnttables)));
         mylenutnms = len(myutnames);
         inctname = (1 < mylenutnms);
         myvalidator.varmustnotbeempty(myutnames, "myutnames");
