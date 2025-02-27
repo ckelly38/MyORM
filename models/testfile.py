@@ -162,11 +162,27 @@ print(myvalidator.genSQLSum("price", False));
 #-figure out a way to tell the program if using sqllite or sql and
 #--if the commands are different from sql to sqllite (JOINS ARE) how they change in the generator
 #-figure out where to put the sql generator methods
-#-figure out how to enforce the correct data types and the values that can be stored in them
-#-ways to save data, ways to add new data, ways to remove data, ways to update the data,
-#-and ways to remove tables
-#-ways to print out objects via serialization
-#-ways to back up the database
+#-figure out how to enforce the correct data types and the values that can be stored in them (#1)
+#-ways to save data, ways to add new data, ways to remove data, ways to update the data, (#2)
+#-and ways to remove tables (#3)
+#-ways to print out objects via serialization (#4)
+#-ways to back up the database (#5)
+
+#some data types have the same names, but the parameters for max and min sizes depend on the variant.
+#we can use the biggest max and the smallest min for them,
+#but this may allow some invalid values to slip in (without accounting for the variant)
+#the good news is time it right in the validator and we will have easy access to the vairiant type.
+#but this should still be set in some sort of config.
+#no idea how to use something else other than a db saved in sqllite on the computer at the moment.
+#perhaps the CURSOR class documentation or some research will provide some answers on that.
+#
+#we can make sure that the type is on a given list of names for valid types
+#we can make sure that the value initially looks valid independently of the variant
+#then once we take into account the variant, then we can do further validation on the size
+#
+#for example: varchar, varchar(n), varchar(max)
+#varchar is not the same as varchar(max) which is not the same as varchar(n)
+#I guess I could make the varchar default to varchar(max), but again this depends on the variant.
 
 #these two lines will be printed on the same line
 #print("this is part ", end="");
