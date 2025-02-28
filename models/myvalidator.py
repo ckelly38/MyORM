@@ -504,3 +504,120 @@ class myvalidator:
     @classmethod
     def genSQLSwitchCaseNoName(cls, condsarr, resarr, defres=None):
         return cls.genSQLSwitchCase(condsarr, resarr, defres, None);
+
+    #https://www.w3schools.com/sql/sql_datatypes.asp
+    #https://www.w3resource.com/sqlite/sqlite-data-types.php    
+    @classmethod
+    def getValidSQLDataTypes(cls):
+        #if using lite:
+        #INTEGER AND REAL ARE 8 BYTES MAX (1byte=8bits,so 64bits, signed)
+        #return ["NULL", "REAL", "INTEGER", "TEXT", "BLOB"];
+        #if not using lite:
+        #MYSQL:
+        #CHAR size 0 to 255 inclusive default is 1.
+        #VARCHAR size max length 0 to 65535 inclusive default is 1.
+        #BINARY size in bytes default is 1 similar to char (8 I believe, but not stated).
+        #VARBINARY size in bytes default is 1 similar to varchar (8 I believe, but not stated).
+        #TINYBLOB size in bytes max length is 255 bytes (but no size parameter given).
+        #TINYTEXT max length in characters is 255 characters (but no size parameter given).
+        #TEXT size in bytes max length is 65,535 bytes.
+        #BLOB (Binary Large OBjects) size in bytes max length is 65,535 bytes.
+        #MEDIUMTEXT max length in characters is 16,777,215 characters.
+        #MEDIUMBLOB for (Binary Large OBjects) size in bytes max length is 16,777,215 bytes.
+        #LONGTEXT max length in characters is 4,294,967,295 characters.
+        #LONGBLOB for (Binary Large OBjects) size in bytes max length is 4,294,967,295 bytes.
+        #ENUM(values...) you can have 65,535 values and they map to an integer index,
+        # you can either use that or the given values in the ENUM.
+        # If a value not on the list is entered then a blank value will be inserted.
+        #SET(values...) you can have 0 up to 64 values.
+        #
+        #ALL NUMERIC DATA TYPES BELOW FOR MYSQL HAVE THE OPTIONS: UNSIGNED OR ZEROFILL
+        #UNSIGNED MEANS ZERO OR POSITIVE ONLY AND ACTS AS AN OFFSET. ZEROFILL IS SIMILAR.
+        #
+        #BIT(size) size can be from 1 to 64 inclusive. 64 bit processor.
+        #TINYINT(size) signed is from -127 to 128 inclusive unsigned 0 to 255 inclusive.
+        # size maximum display width which is 255 for unsigned range.
+        #BOOL, BOOLEAN zero is false, everything else is true.
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #return ["CHAR(size)", "VARCHAR(size)", "BINARY(size)", "VARBINARY(size)", "TINYBLOB",
+        # "TINYTEXT", "TEXT(size)", "BLOB(size)", "MEDIUMTEXT", "MEDIUMBLOB", "LONGTEXT", "LONGBLOB",
+        # "ENUM(values...)", "SET(values...)", "BIT(size)", "TINYINT(size)", "BOOL", "BOOLEAN", "?", "?", "?", "?",
+        # "?", "?", "?", "?", "?", "?", "?"];
+        #?:
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #return ["?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
+        # "?", "?", "?", "?", "?"];
+        #?:
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #return ["?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
+        # "?", "?", "?", "?", "?"];
+        #?:
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #return ["?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
+        # "?", "?", "?", "?", "?"];
+        pass;
