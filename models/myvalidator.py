@@ -506,7 +506,10 @@ class myvalidator:
         return cls.genSQLSwitchCase(condsarr, resarr, defres, None);
 
     #https://www.w3schools.com/sql/sql_datatypes.asp
-    #https://www.w3resource.com/sqlite/sqlite-data-types.php    
+    #https://www.w3resource.com/sqlite/sqlite-data-types.php
+    #https://blog.devart.com/
+    #https://www.geeksforgeeks.org/sql-tutorial/?ref=shm
+    #https://www.tutorialspoint.com/mysql/
     @classmethod
     def getValidSQLDataTypes(cls):
         #if using lite:
@@ -514,14 +517,14 @@ class myvalidator:
         #return ["NULL", "REAL", "INTEGER", "TEXT", "BLOB"];
         #if not using lite:
         #MYSQL:
-        #CHAR size 0 to 255 inclusive default is 1.
-        #VARCHAR size max length 0 to 65535 inclusive default is 1.
-        #BINARY size in bytes default is 1 similar to char (8 I believe, but not stated).
-        #VARBINARY size in bytes default is 1 similar to varchar (8 I believe, but not stated).
+        #CHAR(size) size 0 to 255 inclusive default is 1.
+        #VARCHAR(size) size max length 0 to 65535 inclusive default is 1.
+        #BINARY(size) size in bytes default is 1 similar to char (8 I believe, but not stated).
+        #VARBINARY(size) size in bytes default is 1 similar to varchar (8 I believe, but not stated).
         #TINYBLOB size in bytes max length is 255 bytes (but no size parameter given).
         #TINYTEXT max length in characters is 255 characters (but no size parameter given).
-        #TEXT size in bytes max length is 65,535 bytes.
-        #BLOB (Binary Large OBjects) size in bytes max length is 65,535 bytes.
+        #TEXT(size) size in bytes max length is 65,535 bytes.
+        #BLOB(size) (Binary Large OBjects) size in bytes max length is 65,535 bytes.
         #MEDIUMTEXT max length in characters is 16,777,215 characters.
         #MEDIUMBLOB for (Binary Large OBjects) size in bytes max length is 16,777,215 bytes.
         #LONGTEXT max length in characters is 4,294,967,295 characters.
@@ -533,17 +536,36 @@ class myvalidator:
         #
         #ALL NUMERIC DATA TYPES BELOW FOR MYSQL HAVE THE OPTIONS: UNSIGNED OR ZEROFILL
         #UNSIGNED MEANS ZERO OR POSITIVE ONLY AND ACTS AS AN OFFSET. ZEROFILL IS SIMILAR.
+        #note: the size parameter has sort of been depricated (so add an option to not have it)
+        #absolute size max is 255 though. Minimum is 1. This refers to how many digits to display,
+        #but does not really have any affect.
+        #note: ZEROFILL suppose you have an INT(3) and you insert 1 into it: the value is 001
+        #that is the only time the size parameter will be taken into account and used.
+        #note: due to size being deprecated ZEROFILL has also been sort of deprecated.
+        #note: if you want something to be UNSIGNED you need to include UNSIGNED else it will be signed.
+        #note: unsigned FLOAT will be depricated due to data storage requirements and
+        #it being an integer.
+        #note: FLOAT(size, d) is deprecated due to size being deprecated.
         #
         #BIT(size) size can be from 1 to 64 inclusive. 64 bit processor.
         #TINYINT(size) signed is from -127 to 128 inclusive unsigned 0 to 255 inclusive.
-        # size maximum display width which is 255 for unsigned range.
+        # size maximum display width for the maximum number which is 255 (so max size is 3).
         #BOOL, BOOLEAN zero is false, everything else is true.
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
+        #SMALLINT(size) signed is from -32767 to 32768 inclusive; unsigned is from 0 to 65535
+        # size maximum display width which is 5 digits for 65535.
+        #MEDIUMINT(size) signed is from -8388608 to 8388607 unsigned is from 0 to 16777215.
+        #INTEGER(size), INT(size) signed is from -2147483648 to 2147483647
+        # unsigned is from 0 to 4294967295.
+        #BIGINT(size) signed is from -9223372036854775808 to 9223372036854775807
+        # unsigned is from 0 to 18446744073709551615. (2^64-1 is absolute max of course).
+        #
+        #FLOAT(size, d) deprecated size is the number of digits,
+        # d is the number of digits after the decmial point.
+        #
+        #FLOAT(p) where p is the precision in bits if p is 0 to 24 FLOAT else 25 to 53 DOUBLE.
+        #DOUBLE(size, d) ?
+        #DOUBLE PRECISION(size, d) ?
+        #DECIMAL(size, d), DEC(size, d) ?
         #?
         #?
         #?
@@ -552,8 +574,9 @@ class myvalidator:
         #?
         #return ["CHAR(size)", "VARCHAR(size)", "BINARY(size)", "VARBINARY(size)", "TINYBLOB",
         # "TINYTEXT", "TEXT(size)", "BLOB(size)", "MEDIUMTEXT", "MEDIUMBLOB", "LONGTEXT", "LONGBLOB",
-        # "ENUM(values...)", "SET(values...)", "BIT(size)", "TINYINT(size)", "BOOL", "BOOLEAN", "?", "?", "?", "?",
-        # "?", "?", "?", "?", "?", "?", "?"];
+        # "ENUM(values...)", "SET(values...)", "BIT(size)", "TINYINT(size)", "BOOL", "BOOLEAN",
+        # "SMALLINT(size)", "MEDIUMINT(size)", "INTEGER(size)", "INT(size)", "BIGINT(size)",
+        # "FLOAT(size, d)", "FLOAT(p)", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?"];
         #?:
         #?
         #?
