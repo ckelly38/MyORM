@@ -510,6 +510,8 @@ class myvalidator:
     #https://blog.devart.com/
     #https://www.geeksforgeeks.org/sql-tutorial/?ref=shm
     #https://www.tutorialspoint.com/mysql/
+    #https://dev.mysql.com/doc/refman/8.4/en/fractional-seconds.html#:
+    #~:text=MySQL%20has%20fractional%20seconds%20support,is%20the%20fractional%20seconds%20precision.
     @classmethod
     def getValidSQLDataTypes(cls):
         #if using lite:
@@ -517,6 +519,7 @@ class myvalidator:
         #return ["NULL", "REAL", "INTEGER", "TEXT", "BLOB"];
         #if not using lite:
         #MYSQL:
+        #
         #CHAR(size) size 0 to 255 inclusive default is 1.
         #VARCHAR(size) size max length 0 to 65535 inclusive default is 1.
         #BINARY(size) size in bytes default is 1 similar to char (8 I believe, but not stated).
@@ -559,25 +562,85 @@ class myvalidator:
         #BIGINT(size) signed is from -9223372036854775808 to 9223372036854775807
         # unsigned is from 0 to 18446744073709551615. (2^64-1 is absolute max of course).
         #
-        #FLOAT(size, d) deprecated size is the number of digits,
-        # d is the number of digits after the decmial point.
+        #IT IS ALSO STRONGLY SUGGESTED TO USE BELOW WITHOUT PARAMETERS.
+        #
+        #FLOAT(size, d), DOUBLE(size, d), DOUBLE PRECISION(size, d) are deprecated where
+        # size is the number of digits, d is the number of digits after the decmial point.
         #
         #FLOAT(p) where p is the precision in bits if p is 0 to 24 FLOAT else 25 to 53 DOUBLE.
-        #DOUBLE(size, d) ?
-        #DOUBLE PRECISION(size, d) ?
-        #DECIMAL(size, d), DEC(size, d) ?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
+        #DOUBLE(size, d), DOUBLE PRECISION(size, d) is deprecated where size is the
+        # total number of digits, d is the number of digits after the decmial point, same as a float.
+        #DECIMAL(size, d), DEC(size, d) size is the total number of digits,
+        # d is the number of digits after the decmial point, same as a float.
+        #
+        #DATE format YYYY-MM-DD starting from 1000-01-01 to 9999-12-31.
+        #DATETIME(fsp) format YYYY-MM-DD hh:mm:ss same date starting from 00:00:00 to 23:59:59.
+        #if you want the current date and time add DEFAULT and ON UPDATE. the fsp max is 6 and default
+        #if omitted it is 0. This means you can have 6 decimal places.
+        #TIMESTAMP(fsp) same format as above UTC time seconds since 1970-01-01 00:00:00.0.
+        #Starting from 1970-01-01 00:00:01 to 2038-01-09 03:14:07. You can have the current time with
+        #DEFAULT CURRENT_TIMESTAMP and ON UPDATE CURRENT_TIMESTAMP.
+        #TIME(fsp) format hh:mm:ss starting from -838:59:59 to 838:59:59. no idea why on that range.
+        #YEAR starting from 1901 to 2155 and 0000. 2 digit years are not supported in version 8.0.
+        #
         #return ["CHAR(size)", "VARCHAR(size)", "BINARY(size)", "VARBINARY(size)", "TINYBLOB",
         # "TINYTEXT", "TEXT(size)", "BLOB(size)", "MEDIUMTEXT", "MEDIUMBLOB", "LONGTEXT", "LONGBLOB",
         # "ENUM(values...)", "SET(values...)", "BIT(size)", "TINYINT(size)", "BOOL", "BOOLEAN",
         # "SMALLINT(size)", "MEDIUMINT(size)", "INTEGER(size)", "INT(size)", "BIGINT(size)",
-        # "FLOAT(size, d)", "FLOAT(p)", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?"];
-        #?:
+        # "FLOAT(size, d)", "FLOAT(p)", "DOUBLE(size, d)", "DOUBLE PRECISION(size, d)",
+        # "DECIMAL(size, d)", "DEC(size, d)", "FLOAT", "DOUBLE PRECISION", "DOUBLE", "DATE",
+        # "DATETIME(fsp)", "TIMESTAMP(fsp)", "TIME(fsp)", "YEAR", "DATETIME", "TIMESTAMP", "TIME"];
+        #
+        #SQL SERVER:
+        #
+        #CHAR(n) fixed length non-unicode characters each takes up 1 byte n is from 1 to 8000 inclusive.
+        #VARCHAR(n) variable length non-unicode characters same as char(n) otherwise.
+        #VARCHAR(max) variable length non-unicode characters up to 2 GB of space.
+        #NCHAR(n) fixed length unicode characters each takes up 2 bytes n is from 1 to 4000 inclusive.
+        #NVARCHAR(n) variable length unicode characters same as char(n) otherwise.
+        #NVARCHAR(max) variable length unicode characters up to 2 GB of space.
+        #BINARY(n) fixed length binary characters each takes up 1 byte n is from 1 to 8000 inclusive.
+        #VARBINARY(n) variable length binary same as binary(n) otherwise.
+        #VARBINARY(max) variable length binary up to 2 GB of space.
+        #
+        #BIT integer than can be 0, 1, or NULL.
+        #TINYINT allows integers from 0 to 255 inclusive.
+        #SMALLINT allows integers between -32768 and 32767 inclusive.
+        #INT allows integers between -2147483648 and 2147483647 inclusive.
+        #BIGINT allows integers between -9223372036854775808 and 9223372036854775807 inclusive.
+        #?
+        #?
+        #SMALLMONEY allows integers between -214748.3648 to 214748.3647 inclusive.
+        #MONEY allows integers between -922337203685477.5808 and 922337203685477.5807 inclusive.
+        #?
+        #?
+        #
+        #NOT SURE ON THE FORMATS FOR THE DATES... AND THE TIMES....
+        #
+        #DATETIME ????format???? from 1-1-1753 to 12-31-9999 (MM-DD-YYYY) with an accuracy of 3.33 miliseconds.
+        #DATETIME2 ????format???? from 1-1-0001 to 12-31-9999 (MM-DD-YYYY) with an accuracy of 100 nanoseconds.
+        #SMALLDATETIME ????format???? from 1-1-1900 to 6-06-2079 (MM-DD-YYYY) with an accuracy of 1 minute.
+        #DATE ????format???? from 1-1-0001 to 12-31-9999 (MM-DD-YYYY).
+        #TIME ????format???? store a time only  with an accuracy of 100 nanoseconds.
+        #DATETIMEOFFSET ????format???? the same as DATETIME2 with a timezone offset.
+        #?
+        #
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #?
+        #
+        #return ["CHAR(n)", "VARCHAR(n)", "VARCHAR(max)", "NCHAR(n)", "NVARCHAR(n)", "NVARCHAR(max)",
+        # "BINARY(n)", "VARBINARY(n)", "VARBINARY(max)", "BIT", "TINYINT", "SMALLINT", "INT", "BIGINT",
+        # "?", "?", "SMALLMONEY", "MONEY", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?"];
+        #
+        #MS ACCESS:
         #?
         #?
         #?
@@ -597,30 +660,10 @@ class myvalidator:
         #?
         #?
         #?
+        #
         #return ["?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
         # "?", "?", "?", "?", "?"];
-        #?:
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #return ["?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        # "?", "?", "?", "?", "?"];
+        #
         #?:
         #?
         #?
