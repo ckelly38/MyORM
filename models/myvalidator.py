@@ -512,6 +512,14 @@ class myvalidator:
     #https://www.tutorialspoint.com/mysql/
     #https://dev.mysql.com/doc/refman/8.4/en/fractional-seconds.html#:
     #~:text=MySQL%20has%20fractional%20seconds%20support,is%20the%20fractional%20seconds%20precision.
+    #https://www.dbvis.com/thetable/the-ultimate-guide-to-the-sql-server-date-format/
+    #https://www.sqlshack.com/different-sql-timestamp-functions-in-sql-server/
+    #https://www.mssqltips.com/sqlservertip/6575/sql-server-data-types/
+    #https://count.co/sql-resources/sql-server/data-types
+    #https://support.microsoft.com/en-us/office/
+    #data-types-for-access-desktop-databases-df2b83ba-cef6-436d-b679-3418f622e482
+    #https://support.microsoft.com/en-us/office/
+    #introduction-to-data-types-and-field-properties-30ad644f-946c-442e-8bd2-be067361987c
     @classmethod
     def getValidSQLDataTypes(cls):
         #if using lite:
@@ -608,44 +616,57 @@ class myvalidator:
         #SMALLINT allows integers between -32768 and 32767 inclusive.
         #INT allows integers between -2147483648 and 2147483647 inclusive.
         #BIGINT allows integers between -9223372036854775808 and 9223372036854775807 inclusive.
-        #?
-        #?
+        #DECIMAL(p, s) p is the total number of digits like size,
+        # and s is the number of digits after the decimal point.
+        #p must be from 1 to 38 inclusive. s default is 0, p default is 18.
+        #for fixed precision and scale numbers.
+        #range is -10^38, 10^38-1: -100,000,000,000,000,000,000,000,000,000,000,000,000
+        #                            99,999,999,999,999,999,999,999,999,999,999,999,999
+        #                              ^           ^           ^           ^
+        #NUMERIC(p, s) is the same as DECIMAL(p, s).
         #SMALLMONEY allows integers between -214748.3648 to 214748.3647 inclusive.
         #MONEY allows integers between -922337203685477.5808 and 922337203685477.5807 inclusive.
-        #?
-        #?
+        #FLOAT(p) p max value is 53 and min is 1 if p is less than 25: 4 bytes (7 digits),
+        # else 25 to 53 inclusive 8 bytes (15 digits) in size.
+        #range is from -1.79*10^308 to 1.79*10^308 for 15 digits (after decimal point).
+        #REAL range -3.40*10^38 to 3.40*10^38 4 bytes.
         #
-        #NOT SURE ON THE FORMATS FOR THE DATES... AND THE TIMES....
+        #note: the nanoseconds are optional but there if the format can store it.
+        #King Henry Died Mother Didn't Care Much
+        #Kilo Hecto Deca Mother. Deci Centi Mili ???
         #
-        #DATETIME ????format???? from 1-1-1753 to 12-31-9999 (MM-DD-YYYY) with an accuracy of 3.33 miliseconds.
-        #DATETIME2 ????format???? from 1-1-0001 to 12-31-9999 (MM-DD-YYYY) with an accuracy of 100 nanoseconds.
-        #SMALLDATETIME ????format???? from 1-1-1900 to 6-06-2079 (MM-DD-YYYY) with an accuracy of 1 minute.
-        #DATE ????format???? from 1-1-0001 to 12-31-9999 (MM-DD-YYYY).
-        #TIME ????format???? store a time only  with an accuracy of 100 nanoseconds.
-        #DATETIMEOFFSET ????format???? the same as DATETIME2 with a timezone offset.
-        #?
+        #DATETIME YYYY-MM-DD HH:MM:SS[.NNN] from 1753-01-01 to 9999-12-31
+        # with an accuracy of 3.33 miliseconds.
+        #DATETIME2 YYYY-MM-DD HH:MM:SS[.NNNNNNN] from 0001-01-01 to 9999-12-31
+        # with an accuracy of 100 nanoseconds.
+        #SMALLDATETIME YYYY-MM-DD HH:MM:SS from 1900-01-01 to 2079-06-06 with an accuracy of 1 minute.
+        #DATE YYYY-MM-DD 0001-01-01 to 9999-12-31.
+        #TIME HH:MM:SS[.NNNNNNN] store a time only with an accuracy of 100 nanoseconds.
+        #DATETIMEOFFSET YYYY-MM-DD HH:MM:SS[.NNNNNNN] [+|-] HH:MM (in UTC)
+        # the same as DATETIME2 with a timezone offset.
+        #TIMESTAMP stores a unique integer that gets updated everytime a row gets created or modified.
+        #A timestamp is based on an internal clock. Each table may have only one timestamp variable.
         #
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
+        #SQL_VARIANT stores up to 8,000 bytes of data of varying type,
+        # except text and ntext and timestamp.
+        #UNIQUEIDENTIFIER a globally unique identifier number or string of characters (GUID).
+        #XML stores XML formatted data up to 2 GB.
+        #CURSOR stores a cursor reference used for database opperations.
+        #TABLE stores a result-set for later processing.
         #
         #return ["CHAR(n)", "VARCHAR(n)", "VARCHAR(max)", "NCHAR(n)", "NVARCHAR(n)", "NVARCHAR(max)",
         # "BINARY(n)", "VARBINARY(n)", "VARBINARY(max)", "BIT", "TINYINT", "SMALLINT", "INT", "BIGINT",
-        # "?", "?", "SMALLMONEY", "MONEY", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?"];
+        # "DECIMAL(p, s)", "NUMERIC(p, s)", "SMALLMONEY", "MONEY", "FLOAT(p)", "REAL", "DATETIME",
+        # "DATETIME2", "SMALLDATETIME", "DATE", "TIME", "DATETIMEOFFSET", "TIMESTAMP", "SQL_VARIANT",
+        # "UNIQUEIDENTIFIER", "XML", "CURSOR", "TABLE"];
         #
         #MS ACCESS:
-        #?
-        #?
-        #?
-        #?
-        #?
+        #
+        #SHORT TEXT, TEXT up to 255 (inclusive) characters.
+        #LONG TEXT, MEMO up to 65536 (inclusive) characters is searchable, but not sortable. 
+        #BYTE integers from 0 to 255 inclusive.
+        #INTEGER whole numbers from -32768 to 32767 inclusive.
+        #LONG integers from -2147483648 to 2147483647 inclusive.
         #?
         #?
         #?
@@ -661,10 +682,10 @@ class myvalidator:
         #?
         #?
         #
-        #return ["?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        # "?", "?", "?", "?", "?"];
+        #return ["SHORT TEXT", "TEXT", "LONG TEXT", "MEMO", "INTEGER", "LONG", "?", "?", "?",
+        # "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?"];
         #
-        #?:
+        #extra included as a space holder for other variants, but there are many variants:
         #?
         #?
         #?
