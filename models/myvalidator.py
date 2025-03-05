@@ -40,6 +40,12 @@ class myvalidator:
         else: return True;
 
     @classmethod
+    def varmustbeanumber(cls, val, varnm="varnm"):
+        if (myvalidator.isvaremptyornull(varnm)): return cls.varmustbeanumber(val, "varnm");
+        if (type(val) == int or type(val) == float): return True;
+        else: raise ValueError("" + varnm + " must be a number, but it was not!");
+
+    @classmethod
     def isClass(clsnm, val): return (type(val) == type);
 
     @classmethod
@@ -83,6 +89,21 @@ class myvalidator:
             raise ValueError("the two arrays " + arranm + " and " + arrbnm + " must be the same size!");
 
     @classmethod
+    def combineTwoLists(cls, lista, listb):
+        if (myvalidator.isvaremptyornull(lista)):
+            return (None if myvalidator.isvaremptyornull(listb) else listb);
+        else:
+            if (myvalidator.isvaremptyornull(listb)): return lista;
+            else:
+                #combine both of the lists...
+                #list of strings and another list of strings
+                #copy one, then copy the other directly
+                mynwlist = [mstr for mstr in lista];
+                for mstr in listb:
+                    mynwlist.append(mstr);
+                return mynwlist;
+
+    @classmethod
     def stringContainsOnlyAlnumCharsIncludingUnderscores(cls, mstr):
         if (cls.isvaremptyornull(mstr)): return True;
         else:
@@ -100,19 +121,98 @@ class myvalidator:
         else: raise ValueError(varnm + " must contain alpha-numeric characters only!");
 
     @classmethod
-    def combineTwoLists(cls, lista, listb):
-        if (myvalidator.isvaremptyornull(lista)):
-            return (None if myvalidator.isvaremptyornull(listb) else listb);
+    def stringHasAtMaxOrAtMinNumChars(cls, mstr, mxormnlen, usemax):
+        myvalidator.varmustbeboolean(usemax, "usemax");
+        myvalidator.varmustbethetypeonly(mxormnlen, int, "mxormnlen");
+        if (mxormnlen < 0): raise ValueError("mxormnlen must be at least zero, but it was not!");
+        if (usemax):
+            if (myvalidator.isvaremptyornull(mstr)): pass;
+            else: return (not((mxormnlen < 1) or (mxormnlen < len(mstr))));
         else:
-            if (myvalidator.isvaremptyornull(listb)): return lista;
+            if (0 < mxormnlen):
+                return (not(myvalidator.isvaremptyornull(mstr) or (len(mstr) < mxormnlen)));
+        return True;
+    @classmethod
+    def stringHasAtMostNumChars(cls, mstr, mxormnlen):
+        return cls.stringHasAtMaxOrAtMinNumChars(mstr, mxormnlen, True);
+    @classmethod
+    def stringHasAtMaxNumChars(cls, mstr, mxormnlen):
+        return cls.stringHasAtMaxOrAtMinNumChars(mstr, mxormnlen, True);
+    @classmethod
+    def stringHasAtMinNumChars(cls, mstr, mxormnlen):
+        return cls.stringHasAtMaxOrAtMinNumChars(mstr, mxormnlen, False);
+
+    @classmethod
+    def stringMustHaveAtMaxOrAtMinNumChars(cls, mstr, mxormnlen, usemax, varnm="varnm"):
+        myvalidator.varmustbeboolean(usemax, "usemax");
+        myvalidator.varmustbethetypeonly(mxormnlen, int, "mxormnlen");
+        if (mxormnlen < 0): raise ValueError("mxormnlen must be at least zero, but it was not!");
+        if (myvalidator.isvaremptyornull(varnm)):
+            return cls.stringMustHaveAtMaxOrAtMinNumChars(mstr, mxormnlen, usemax, "varnm");
+        if (usemax):
+            if (myvalidator.isvaremptyornull(mstr)): pass;
             else:
-                #combine both of the lists...
-                #list of strings and another list of strings
-                #copy one, then copy the other directly
-                mynwlist = [mstr for mstr in lista];
-                for mstr in listb:
-                    mynwlist.append(mstr);
-                return mynwlist;
+                if (mxormnlen < 1):
+                    raise ValueError("the string " + varnm +
+                        " must be empty null or undefined, but it was not!");
+                else:
+                    if (mxormnlen < len(mstr)):
+                        raise ValueError("the string " + varnm + " must have at most " +
+                            str(mxormnlen) + " characters on it, but it had more!");
+        else:
+            if (0 < mxormnlen):
+                if (myvalidator.isvaremptyornull(mstr)):
+                    raise ValueError("the string " + varnm + " must have at minimum " + str(mxormnlen) +
+                        " characters on it, but it was empty or null!");
+                else:
+                    if (len(mstr) < mxormnlen):
+                        raise ValueError("the string " + varnm + " must have at minimum " +
+                            str(mxormnlen) + " characters on it, but it had less than that!");
+        return True;
+    @classmethod
+    def stringMustHaveAtMostNumChars(cls, mstr, mxormnlen, varnm="varnm"):
+        return cls.stringMustHaveAtMaxOrAtMinNumChars(mstr, mxormnlen, True, varnm);
+    @classmethod
+    def stringMustHaveAtMaxNumChars(cls, mstr, mxormnlen, varnm="varnm"):
+        return cls.stringMustHaveAtMaxOrAtMinNumChars(mstr, mxormnlen, True, varnm);
+    @classmethod
+    def stringMustHaveAtMinNumChars(cls, mstr, mxormnlen, varnm="varnm"):
+        return cls.stringMustHaveAtMaxOrAtMinNumChars(mstr, mxormnlen, False, varnm);
+
+    @classmethod
+    def isValueInRange(cls, val, minval, maxval, hasmin, hasmax):
+        myvalidator.varmustbeboolean(hasmin, "hasmin");
+        myvalidator.varmustbeboolean(hasmax, "hasmax");
+        myvalidator.varmustbeanumber(val, "val");
+        myvalidator.varmustbeanumber(minval, "minval");
+        myvalidator.varmustbeanumber(maxval, "maxval");
+        return (not((hasmin and (val < minval)) or (hasmax and (maxval < val))));
+    @classmethod
+    def isValueInRangeWithMaxAndMin(cls, val, minval, maxval):
+        return cls.isValueInRange(val, minval, maxval, True, True);
+    @classmethod
+    def isValueMoreThanOrAtTheMinOnly(cls, val, minval):
+        return cls.isValueInRange(val, minval, 0, True, False);
+    @classmethod
+    def isValueLessThanOrAtTheMaxOnly(cls, val, maxval):
+        return cls.isValueInRange(val, 0, maxval, False, True);
+
+    @classmethod
+    def valueMustBeInRange(cls, val, minval, maxval, hasmin, hasmax, varnm="varnm"):
+        if (myvalidator.isvaremptyornull(varnm)):
+            return cls.valueMustBeInRange(val, minval, maxval, hasmin, hasmax, "varnm");
+        if (myvalidator.isValueInRange(val, minval, maxval, hasmin, hasmax)): return True;
+        else:
+            if (hasmin or hasmax): pass;
+            else:
+                raise ValueError("either hasmin or hasmax or both must be true, but neither were " +
+                                 "and isValueInRange returned false!");
+            mystr = " must be";
+            if (hasmin): mystr += " at least " + str(minval);
+            if (hasmin and hasmax): mystr += " and";
+            if (hasmax): mystr += " at most " + str(maxval);
+            raise ValueError("" + varnm + mystr + " but it was not!");
+
 
     #pretty much all of these need the table name
     #it is my responsibility as the programmer to make sure that the columns are on the table
@@ -505,6 +605,7 @@ class myvalidator:
     def genSQLSwitchCaseNoName(cls, condsarr, resarr, defres=None):
         return cls.genSQLSwitchCase(condsarr, resarr, defres, None);
 
+
     #https://www.w3schools.com/sql/sql_datatypes.asp
     #https://www.w3resource.com/sqlite/sqlite-data-types.php
     #https://blog.devart.com/
@@ -520,191 +621,225 @@ class myvalidator:
     #data-types-for-access-desktop-databases-df2b83ba-cef6-436d-b679-3418f622e482
     #https://support.microsoft.com/en-us/office/
     #introduction-to-data-types-and-field-properties-30ad644f-946c-442e-8bd2-be067361987c
+    #https://www.linkedin.com/pulse/part-8-overview-sqlite-data-types-integer-text-blob-etc-julles/
+    #
+    #if using lite:
+    #INTEGER AND REAL ARE 8 BYTES MAX (1byte=8bits,so 64bits, signed)
+    #integer signed range: -9223372036854775808 to 9223372036854775807
+    #integer unsigned range: 0 to 18446744073709551615 (2^64-1 absolute max of course).
+    #real signed range: -3.402*10^38 to 3.402*10^38
+    #TEXT max length: 2^31-1 bytes max
+    #BLOB max size in bytes: 2^31-1 bytes max
+    #return ["NULL", "REAL", "INTEGER", "TEXT", "BLOB"];
+    #if not using lite:
+    #MYSQL:
+    #
+    #CHAR(size) size 0 to 255 inclusive default is 1.
+    #VARCHAR(size) size max length 0 to 65535 inclusive default is 1.
+    #BINARY(size) size in bytes default is 1 similar to char (8 I believe, but not stated).
+    #VARBINARY(size) size in bytes default is 1 similar to varchar (8 I believe, but not stated).
+    #TINYBLOB size in bytes max length is 255 bytes (but no size parameter given).
+    #TINYTEXT max length in characters is 255 characters (but no size parameter given).
+    #TEXT(size) size in bytes max length is 65,535 bytes.
+    #BLOB(size) (Binary Large OBjects) size in bytes max length is 65,535 bytes.
+    #MEDIUMTEXT max length in characters is 16,777,215 characters.
+    #MEDIUMBLOB for (Binary Large OBjects) size in bytes max length is 16,777,215 bytes.
+    #LONGTEXT max length in characters is 4,294,967,295 characters.
+    #LONGBLOB for (Binary Large OBjects) size in bytes max length is 4,294,967,295 bytes.
+    #ENUM(values) you can have 65,535 values and they map to an integer index,
+    # you can either use that or the given values in the ENUM.
+    # If a value not on the list is entered then a blank value will be inserted.
+    #SET(values) you can have 0 up to 64 values.
+    #
+    #ALL NUMERIC DATA TYPES BELOW FOR MYSQL HAVE THE OPTIONS: UNSIGNED OR ZEROFILL
+    #UNSIGNED MEANS ZERO OR POSITIVE ONLY AND ACTS AS AN OFFSET. ZEROFILL IS SIMILAR.
+    #note: the size parameter has sort of been depricated (so add an option to not have it)
+    #absolute size max is 255 though. Minimum is 1. This refers to how many digits to display,
+    #but does not really have any affect.
+    #note: ZEROFILL suppose you have an INT(3) and you insert 1 into it: the value is 001
+    #that is the only time the size parameter will be taken into account and used.
+    #note: due to size being deprecated ZEROFILL has also been sort of deprecated.
+    #note: if you want something to be UNSIGNED you need to include UNSIGNED else it will be signed.
+    #note: unsigned FLOAT will be depricated due to data storage requirements and
+    #it being an integer.
+    #note: FLOAT(size, d) is deprecated due to size being deprecated.
+    #
+    #BIT(size) size can be from 1 to 64 inclusive. 64 bit processor.
+    #TINYINT(size) signed is from -127 to 128 inclusive unsigned 0 to 255 inclusive.
+    # size maximum display width for the maximum number which is 255 (so max size is 3).
+    #BOOL, BOOLEAN zero is false, everything else is true.
+    #SMALLINT(size) signed is from -32767 to 32768 inclusive; unsigned is from 0 to 65535
+    # size maximum display width which is 5 digits for 65535.
+    #MEDIUMINT(size) signed is from -8388608 to 8388607 unsigned is from 0 to 16777215.
+    #INTEGER(size), INT(size) signed is from -2147483648 to 2147483647
+    # unsigned is from 0 to 4294967295.
+    #BIGINT(size) signed is from -9223372036854775808 to 9223372036854775807
+    # unsigned is from 0 to 18446744073709551615. (2^64-1 is absolute max of course).
+    #
+    #IT IS ALSO STRONGLY SUGGESTED TO USE BELOW WITHOUT PARAMETERS.
+    #
+    #FLOAT(size, d), DOUBLE(size, d), DOUBLE PRECISION(size, d) are deprecated where
+    # size is the number of digits, d is the number of digits after the decmial point.
+    #
+    #FLOAT(p) where p is the precision in bits if p is 0 to 24 FLOAT else 25 to 53 DOUBLE.
+    #DOUBLE(size, d), DOUBLE PRECISION(size, d) is deprecated where size is the
+    # total number of digits, d is the number of digits after the decmial point, same as a float.
+    #DECIMAL(size, d), DEC(size, d) size is the total number of digits,
+    # d is the number of digits after the decmial point, same as a float.
+    #
+    #DATE format YYYY-MM-DD starting from 1000-01-01 to 9999-12-31.
+    #DATETIME(fsp) format YYYY-MM-DD hh:mm:ss same date starting from 00:00:00 to 23:59:59.
+    #if you want the current date and time add DEFAULT and ON UPDATE. the fsp max is 6 and default
+    #if omitted it is 0. This means you can have 6 decimal places.
+    #TIMESTAMP(fsp) same format as above UTC time seconds since 1970-01-01 00:00:00.0.
+    #Starting from 1970-01-01 00:00:01 to 2038-01-09 03:14:07. You can have the current time with
+    #DEFAULT CURRENT_TIMESTAMP and ON UPDATE CURRENT_TIMESTAMP.
+    #TIME(fsp) format hh:mm:ss starting from -838:59:59 to 838:59:59. no idea why on that range.
+    #YEAR starting from 1901 to 2155 and 0000. 2 digit years are not supported in version 8.0.
+    #
+    #return ["CHAR(size)", "VARCHAR(size)", "BINARY(size)", "VARBINARY(size)", "TINYBLOB",
+    # "TINYTEXT", "TEXT(size)", "BLOB(size)", "MEDIUMTEXT", "MEDIUMBLOB", "LONGTEXT", "LONGBLOB",
+    # "ENUM(values...)", "SET(values...)", "BIT(size)", "TINYINT(size)", "BOOL", "BOOLEAN",
+    # "SMALLINT(size)", "MEDIUMINT(size)", "INTEGER(size)", "INT(size)", "BIGINT(size)",
+    # "FLOAT(size, d)", "FLOAT(p)", "DOUBLE(size, d)", "DOUBLE PRECISION(size, d)",
+    # "DECIMAL(size, d)", "DEC(size, d)", "FLOAT", "DOUBLE PRECISION", "DOUBLE", "DATE",
+    # "DATETIME(fsp)", "TIMESTAMP(fsp)", "TIME(fsp)", "YEAR", "DATETIME", "TIMESTAMP", "TIME"];
+    #
+    #SQL SERVER:
+    #
+    #CHAR(n) fixed length non-unicode characters each takes up 1 byte n is from 1 to 8000 inclusive.
+    #VARCHAR(n) variable length non-unicode characters same as char(n) otherwise.
+    #VARCHAR(max) variable length non-unicode characters up to 2 GB of space.
+    #NCHAR(n) fixed length unicode characters each takes up 2 bytes n is from 1 to 4000 inclusive.
+    #NVARCHAR(n) variable length unicode characters same as char(n) otherwise.
+    #NVARCHAR(max) variable length unicode characters up to 2 GB of space.
+    #BINARY(n) fixed length binary characters each takes up 1 byte n is from 1 to 8000 inclusive.
+    #VARBINARY(n) variable length binary same as binary(n) otherwise.
+    #VARBINARY(max) variable length binary up to 2 GB of space.
+    #
+    #BIT integer than can be 0, 1, or NULL.
+    #TINYINT allows integers from 0 to 255 inclusive.
+    #SMALLINT allows integers between -32768 and 32767 inclusive.
+    #INT allows integers between -2147483648 and 2147483647 inclusive.
+    #BIGINT allows integers between -9223372036854775808 and 9223372036854775807 inclusive.
+    #DECIMAL(p, s) p is the total number of digits like size,
+    # and s is the number of digits after the decimal point.
+    #p must be from 1 to 38 inclusive. s default is 0, p default is 18.
+    #for fixed precision and scale numbers.
+    #
+    #note: 2^64-1 =                                      18,446,744,073,709,551,615
+    #note: python can store 10^38. pow(10, 38) - 1 is how I got it or 10**38 - 1 will also work.
+    #
+    #range is -10^38, 10^38-1: -100,000,000,000,000,000,000,000,000,000,000,000,000
+    #                            99,999,999,999,999,999,999,999,999,999,999,999,999
+    #                              ^           ^           ^           ^
+    #NUMERIC(p, s) is the same as DECIMAL(p, s).
+    #SMALLMONEY allows integers between -214748.3648 to 214748.3647 inclusive.
+    #MONEY allows integers between -922337203685477.5808 and 922337203685477.5807 inclusive.
+    #FLOAT(p) p max value is 53 and min is 1 if p is less than 25: 4 bytes (7 digits),
+    # else 25 to 53 inclusive 8 bytes (15 digits) in size.
+    #range is from -1.79*10^308 to 1.79*10^308 for 15 digits (after decimal point).
+    #REAL range -3.40*10^38 to 3.40*10^38 4 bytes.
+    #
+    #note: the nanoseconds are optional but there if the format can store it.
+    #King Henry Died Mother Didn't Care Much
+    #Kilo Hecto Deca Mother. Deci Centi Mili ???
+    #
+    #DATETIME YYYY-MM-DD HH:MM:SS[.NNN] from 1753-01-01 to 9999-12-31
+    # with an accuracy of 3.33 miliseconds.
+    #DATETIME2 YYYY-MM-DD HH:MM:SS[.NNNNNNN] from 0001-01-01 to 9999-12-31
+    # with an accuracy of 100 nanoseconds.
+    #SMALLDATETIME YYYY-MM-DD HH:MM:SS from 1900-01-01 to 2079-06-06 with an accuracy of 1 minute.
+    #DATE YYYY-MM-DD 0001-01-01 to 9999-12-31.
+    #TIME HH:MM:SS[.NNNNNNN] store a time only with an accuracy of 100 nanoseconds.
+    #DATETIMEOFFSET YYYY-MM-DD HH:MM:SS[.NNNNNNN] [+|-] HH:MM (in UTC)
+    # the same as DATETIME2 with a timezone offset.
+    #TIMESTAMP stores a unique integer that gets updated everytime a row gets created or modified.
+    #A timestamp is based on an internal clock. Each table may have only one timestamp variable.
+    #
+    #SQL_VARIANT stores up to 8,000 bytes of data of varying type,
+    # except text and ntext and timestamp.
+    #UNIQUEIDENTIFIER a globally unique identifier number or string of characters (GUID).
+    #XML stores XML formatted data up to 2 GB.
+    #CURSOR stores a cursor reference used for database opperations.
+    #TABLE stores a result-set for later processing.
+    #
+    #return ["CHAR(n)", "VARCHAR(n)", "VARCHAR(max)", "NCHAR(n)", "NVARCHAR(n)", "NVARCHAR(max)",
+    # "BINARY(n)", "VARBINARY(n)", "VARBINARY(max)", "BIT", "TINYINT", "SMALLINT", "INT", "BIGINT",
+    # "DECIMAL(p, s)", "NUMERIC(p, s)", "SMALLMONEY", "MONEY", "FLOAT(p)", "REAL", "DATETIME",
+    # "DATETIME2", "SMALLDATETIME", "DATE", "TIME", "DATETIMEOFFSET", "TIMESTAMP", "SQL_VARIANT",
+    # "UNIQUEIDENTIFIER", "XML", "CURSOR", "TABLE"];
+    #
+    #MS ACCESS:
+    #(the docs detailing this are so hard to read, I will ignore all of this and
+    #not do data validation on this unless I can get real specifics.)
+    #
+    #SHORT TEXT, TEXT up to 255 (inclusive) characters.
+    #LONG TEXT, MEMO up to 65536 (inclusive) characters is searchable, but not sortable. 
+    #BYTE integers from 0 to 255 inclusive.
+    #INTEGER whole numbers from -32768 to 32767 inclusive.
+    #LONG integers from -2147483648 to 2147483647 inclusive.
+    #NUMBER ?
+    #LARGE NUMBER ?
+    #DATE/TIME for years 100 to 9999 ?
+    #DATE/TIME EXTENDED for years 1 to 9999 ?
+    #CURRENCY for money values ?
+    #AUTONUMBER unique id number that auto increments. ?
+    #YES/NO contain only one of two values ?
+    #OLE OBJECT objects such as word docs. ?
+    #RICH TEXT text that can be formatted using color and font controls ?
+    #HYPERLINK text used as a hyperlink ?
+    #ATTACHMENT attached documents and files to the database ?
+    #CALCULATED, CALCULATED FIELD results of a calculation and must refer to other columns
+    # on the same table. ?
+    #LOOKUP WIZARD, LOOKUP list of values from the query as SHORTTEXT or NUMBERs. ?
+    #?
+    #?
+    #
+    #return ["SHORT TEXT", "TEXT", "LONG TEXT", "MEMO", "INTEGER", "LONG", "?", "?", "?",
+    # "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?"];
+    #
+    #extra included as a space holder for other variants, but there are many variants:
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #?
+    #return ["?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
+    # "?", "?", "?", "?", "?"];
     @classmethod
-    def getValidSQLDataTypes(cls):
-        #if using lite:
-        #INTEGER AND REAL ARE 8 BYTES MAX (1byte=8bits,so 64bits, signed)
-        #return ["NULL", "REAL", "INTEGER", "TEXT", "BLOB"];
-        #if not using lite:
-        #MYSQL:
-        #
-        #CHAR(size) size 0 to 255 inclusive default is 1.
-        #VARCHAR(size) size max length 0 to 65535 inclusive default is 1.
-        #BINARY(size) size in bytes default is 1 similar to char (8 I believe, but not stated).
-        #VARBINARY(size) size in bytes default is 1 similar to varchar (8 I believe, but not stated).
-        #TINYBLOB size in bytes max length is 255 bytes (but no size parameter given).
-        #TINYTEXT max length in characters is 255 characters (but no size parameter given).
-        #TEXT(size) size in bytes max length is 65,535 bytes.
-        #BLOB(size) (Binary Large OBjects) size in bytes max length is 65,535 bytes.
-        #MEDIUMTEXT max length in characters is 16,777,215 characters.
-        #MEDIUMBLOB for (Binary Large OBjects) size in bytes max length is 16,777,215 bytes.
-        #LONGTEXT max length in characters is 4,294,967,295 characters.
-        #LONGBLOB for (Binary Large OBjects) size in bytes max length is 4,294,967,295 bytes.
-        #ENUM(values...) you can have 65,535 values and they map to an integer index,
-        # you can either use that or the given values in the ENUM.
-        # If a value not on the list is entered then a blank value will be inserted.
-        #SET(values...) you can have 0 up to 64 values.
-        #
-        #ALL NUMERIC DATA TYPES BELOW FOR MYSQL HAVE THE OPTIONS: UNSIGNED OR ZEROFILL
-        #UNSIGNED MEANS ZERO OR POSITIVE ONLY AND ACTS AS AN OFFSET. ZEROFILL IS SIMILAR.
-        #note: the size parameter has sort of been depricated (so add an option to not have it)
-        #absolute size max is 255 though. Minimum is 1. This refers to how many digits to display,
-        #but does not really have any affect.
-        #note: ZEROFILL suppose you have an INT(3) and you insert 1 into it: the value is 001
-        #that is the only time the size parameter will be taken into account and used.
-        #note: due to size being deprecated ZEROFILL has also been sort of deprecated.
-        #note: if you want something to be UNSIGNED you need to include UNSIGNED else it will be signed.
-        #note: unsigned FLOAT will be depricated due to data storage requirements and
-        #it being an integer.
-        #note: FLOAT(size, d) is deprecated due to size being deprecated.
-        #
-        #BIT(size) size can be from 1 to 64 inclusive. 64 bit processor.
-        #TINYINT(size) signed is from -127 to 128 inclusive unsigned 0 to 255 inclusive.
-        # size maximum display width for the maximum number which is 255 (so max size is 3).
-        #BOOL, BOOLEAN zero is false, everything else is true.
-        #SMALLINT(size) signed is from -32767 to 32768 inclusive; unsigned is from 0 to 65535
-        # size maximum display width which is 5 digits for 65535.
-        #MEDIUMINT(size) signed is from -8388608 to 8388607 unsigned is from 0 to 16777215.
-        #INTEGER(size), INT(size) signed is from -2147483648 to 2147483647
-        # unsigned is from 0 to 4294967295.
-        #BIGINT(size) signed is from -9223372036854775808 to 9223372036854775807
-        # unsigned is from 0 to 18446744073709551615. (2^64-1 is absolute max of course).
-        #
-        #IT IS ALSO STRONGLY SUGGESTED TO USE BELOW WITHOUT PARAMETERS.
-        #
-        #FLOAT(size, d), DOUBLE(size, d), DOUBLE PRECISION(size, d) are deprecated where
-        # size is the number of digits, d is the number of digits after the decmial point.
-        #
-        #FLOAT(p) where p is the precision in bits if p is 0 to 24 FLOAT else 25 to 53 DOUBLE.
-        #DOUBLE(size, d), DOUBLE PRECISION(size, d) is deprecated where size is the
-        # total number of digits, d is the number of digits after the decmial point, same as a float.
-        #DECIMAL(size, d), DEC(size, d) size is the total number of digits,
-        # d is the number of digits after the decmial point, same as a float.
-        #
-        #DATE format YYYY-MM-DD starting from 1000-01-01 to 9999-12-31.
-        #DATETIME(fsp) format YYYY-MM-DD hh:mm:ss same date starting from 00:00:00 to 23:59:59.
-        #if you want the current date and time add DEFAULT and ON UPDATE. the fsp max is 6 and default
-        #if omitted it is 0. This means you can have 6 decimal places.
-        #TIMESTAMP(fsp) same format as above UTC time seconds since 1970-01-01 00:00:00.0.
-        #Starting from 1970-01-01 00:00:01 to 2038-01-09 03:14:07. You can have the current time with
-        #DEFAULT CURRENT_TIMESTAMP and ON UPDATE CURRENT_TIMESTAMP.
-        #TIME(fsp) format hh:mm:ss starting from -838:59:59 to 838:59:59. no idea why on that range.
-        #YEAR starting from 1901 to 2155 and 0000. 2 digit years are not supported in version 8.0.
-        #
-        #return ["CHAR(size)", "VARCHAR(size)", "BINARY(size)", "VARBINARY(size)", "TINYBLOB",
-        # "TINYTEXT", "TEXT(size)", "BLOB(size)", "MEDIUMTEXT", "MEDIUMBLOB", "LONGTEXT", "LONGBLOB",
-        # "ENUM(values...)", "SET(values...)", "BIT(size)", "TINYINT(size)", "BOOL", "BOOLEAN",
-        # "SMALLINT(size)", "MEDIUMINT(size)", "INTEGER(size)", "INT(size)", "BIGINT(size)",
-        # "FLOAT(size, d)", "FLOAT(p)", "DOUBLE(size, d)", "DOUBLE PRECISION(size, d)",
-        # "DECIMAL(size, d)", "DEC(size, d)", "FLOAT", "DOUBLE PRECISION", "DOUBLE", "DATE",
-        # "DATETIME(fsp)", "TIMESTAMP(fsp)", "TIME(fsp)", "YEAR", "DATETIME", "TIMESTAMP", "TIME"];
-        #
-        #SQL SERVER:
-        #
-        #CHAR(n) fixed length non-unicode characters each takes up 1 byte n is from 1 to 8000 inclusive.
-        #VARCHAR(n) variable length non-unicode characters same as char(n) otherwise.
-        #VARCHAR(max) variable length non-unicode characters up to 2 GB of space.
-        #NCHAR(n) fixed length unicode characters each takes up 2 bytes n is from 1 to 4000 inclusive.
-        #NVARCHAR(n) variable length unicode characters same as char(n) otherwise.
-        #NVARCHAR(max) variable length unicode characters up to 2 GB of space.
-        #BINARY(n) fixed length binary characters each takes up 1 byte n is from 1 to 8000 inclusive.
-        #VARBINARY(n) variable length binary same as binary(n) otherwise.
-        #VARBINARY(max) variable length binary up to 2 GB of space.
-        #
-        #BIT integer than can be 0, 1, or NULL.
-        #TINYINT allows integers from 0 to 255 inclusive.
-        #SMALLINT allows integers between -32768 and 32767 inclusive.
-        #INT allows integers between -2147483648 and 2147483647 inclusive.
-        #BIGINT allows integers between -9223372036854775808 and 9223372036854775807 inclusive.
-        #DECIMAL(p, s) p is the total number of digits like size,
-        # and s is the number of digits after the decimal point.
-        #p must be from 1 to 38 inclusive. s default is 0, p default is 18.
-        #for fixed precision and scale numbers.
-        #range is -10^38, 10^38-1: -100,000,000,000,000,000,000,000,000,000,000,000,000
-        #                            99,999,999,999,999,999,999,999,999,999,999,999,999
-        #                              ^           ^           ^           ^
-        #NUMERIC(p, s) is the same as DECIMAL(p, s).
-        #SMALLMONEY allows integers between -214748.3648 to 214748.3647 inclusive.
-        #MONEY allows integers between -922337203685477.5808 and 922337203685477.5807 inclusive.
-        #FLOAT(p) p max value is 53 and min is 1 if p is less than 25: 4 bytes (7 digits),
-        # else 25 to 53 inclusive 8 bytes (15 digits) in size.
-        #range is from -1.79*10^308 to 1.79*10^308 for 15 digits (after decimal point).
-        #REAL range -3.40*10^38 to 3.40*10^38 4 bytes.
-        #
-        #note: the nanoseconds are optional but there if the format can store it.
-        #King Henry Died Mother Didn't Care Much
-        #Kilo Hecto Deca Mother. Deci Centi Mili ???
-        #
-        #DATETIME YYYY-MM-DD HH:MM:SS[.NNN] from 1753-01-01 to 9999-12-31
-        # with an accuracy of 3.33 miliseconds.
-        #DATETIME2 YYYY-MM-DD HH:MM:SS[.NNNNNNN] from 0001-01-01 to 9999-12-31
-        # with an accuracy of 100 nanoseconds.
-        #SMALLDATETIME YYYY-MM-DD HH:MM:SS from 1900-01-01 to 2079-06-06 with an accuracy of 1 minute.
-        #DATE YYYY-MM-DD 0001-01-01 to 9999-12-31.
-        #TIME HH:MM:SS[.NNNNNNN] store a time only with an accuracy of 100 nanoseconds.
-        #DATETIMEOFFSET YYYY-MM-DD HH:MM:SS[.NNNNNNN] [+|-] HH:MM (in UTC)
-        # the same as DATETIME2 with a timezone offset.
-        #TIMESTAMP stores a unique integer that gets updated everytime a row gets created or modified.
-        #A timestamp is based on an internal clock. Each table may have only one timestamp variable.
-        #
-        #SQL_VARIANT stores up to 8,000 bytes of data of varying type,
-        # except text and ntext and timestamp.
-        #UNIQUEIDENTIFIER a globally unique identifier number or string of characters (GUID).
-        #XML stores XML formatted data up to 2 GB.
-        #CURSOR stores a cursor reference used for database opperations.
-        #TABLE stores a result-set for later processing.
-        #
-        #return ["CHAR(n)", "VARCHAR(n)", "VARCHAR(max)", "NCHAR(n)", "NVARCHAR(n)", "NVARCHAR(max)",
-        # "BINARY(n)", "VARBINARY(n)", "VARBINARY(max)", "BIT", "TINYINT", "SMALLINT", "INT", "BIGINT",
-        # "DECIMAL(p, s)", "NUMERIC(p, s)", "SMALLMONEY", "MONEY", "FLOAT(p)", "REAL", "DATETIME",
-        # "DATETIME2", "SMALLDATETIME", "DATE", "TIME", "DATETIMEOFFSET", "TIMESTAMP", "SQL_VARIANT",
-        # "UNIQUEIDENTIFIER", "XML", "CURSOR", "TABLE"];
-        #
-        #MS ACCESS:
-        #
-        #SHORT TEXT, TEXT up to 255 (inclusive) characters.
-        #LONG TEXT, MEMO up to 65536 (inclusive) characters is searchable, but not sortable. 
-        #BYTE integers from 0 to 255 inclusive.
-        #INTEGER whole numbers from -32768 to 32767 inclusive.
-        #LONG integers from -2147483648 to 2147483647 inclusive.
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #
-        #return ["SHORT TEXT", "TEXT", "LONG TEXT", "MEMO", "INTEGER", "LONG", "?", "?", "?",
-        # "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?"];
-        #
-        #extra included as a space holder for other variants, but there are many variants:
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #?
-        #return ["?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
-        # "?", "?", "?", "?", "?"];
-        pass;
+    def getValidSQLDataTypes(cls, varstr):
+        #need some way to get the variant...
+        #if the variant is something that is not recognized, this will return null or empty.
+        #but will treat the data types and values as if they are all valid when they may not be...
+        if (varstr == "LITE"): return ["NULL", "REAL", "INTEGER", "TEXT", "BLOB"];
+        elif (varstr == "MYSQL"):
+            return ["CHAR(size)", "VARCHAR(size)", "BINARY(size)", "VARBINARY(size)", "TINYBLOB",
+                    "TINYTEXT", "TEXT(size)", "BLOB(size)", "MEDIUMTEXT", "MEDIUMBLOB", "LONGTEXT",
+                    "LONGBLOB", "ENUM(values)", "SET(values)", "BIT(size)", "TINYINT(size)",
+                    "BOOL", "BOOLEAN", "SMALLINT(size)", "MEDIUMINT(size)",
+                    "INTEGER(size)", "INT(size)", "BIGINT(size)", "FLOAT(size, d)", "FLOAT(p)",
+                    "DOUBLE(size, d)", "DOUBLE PRECISION(size, d)", "DECIMAL(size, d)", "DEC(size, d)",
+                    "FLOAT", "DOUBLE PRECISION", "DOUBLE", "DATE", "DATETIME(fsp)", "TIMESTAMP(fsp)",
+                    "TIME(fsp)", "YEAR", "DATETIME", "TIMESTAMP", "TIME"];
+        elif (varstr == "SQLSERVER"):
+            return ["CHAR(n)", "VARCHAR(n)", "VARCHAR(max)", "NCHAR(n)", "NVARCHAR(n)", "NVARCHAR(max)",
+                    "BINARY(n)", "VARBINARY(n)", "VARBINARY(max)", "BIT", "TINYINT", "SMALLINT", "INT",
+                    "BIGINT", "DECIMAL(p, s)", "NUMERIC(p, s)", "SMALLMONEY", "MONEY", "FLOAT(p)",
+                    "REAL", "DATETIME", "DATETIME2", "SMALLDATETIME", "DATE", "TIME", "DATETIMEOFFSET",
+                    "TIMESTAMP", "SQL_VARIANT", "UNIQUEIDENTIFIER", "XML", "CURSOR", "TABLE"];
+        else: return [];

@@ -70,6 +70,21 @@ tstobjc = MyModelWithCompPrimaryKey();
 tstobjd = MyModelWithCompForeignKey();
 
 print();
+print(myvalidator.stringHasAtMaxNumChars("mystr", 0));#false
+print(myvalidator.stringHasAtMinNumChars("mystr", 6));#false
+print(myvalidator.stringHasAtMaxNumChars("mystr", 5));#true
+print(myvalidator.stringHasAtMinNumChars("mystr", 2));#true
+#print(myvalidator.stringMustHaveAtMaxNumChars("mystr", 0, "varnm"));#error
+print(myvalidator.stringMustHaveAtMaxNumChars("mystr", 5, "varnm"));
+#print(myvalidator.stringMustHaveAtMinNumChars("mystr", 6, "varnm"));#error
+print(myvalidator.stringMustHaveAtMinNumChars("mystr", 2, "varnm"));
+print("is value in range tests:");
+print(myvalidator.isValueInRangeWithMaxAndMin(0, 1, 5));#false
+print(myvalidator.isValueInRangeWithMaxAndMin(1, 1, 5));#true
+print(myvalidator.isValueInRangeWithMaxAndMin(5, 1, 5));#true
+print(myvalidator.isValueInRangeWithMaxAndMin(-5, 1, 5));#false
+print(myvalidator.isValueInRangeWithMaxAndMin(2.5, 1, 5));#true
+print();
 print("SQL GEN TESTS:");
 print(myvalidator.genUniqueConstraint("constraintname", ["itema", "itemb", "itemc"]));
 #counts
