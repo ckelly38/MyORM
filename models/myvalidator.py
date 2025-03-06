@@ -843,3 +843,208 @@ class myvalidator:
                     "REAL", "DATETIME", "DATETIME2", "SMALLDATETIME", "DATE", "TIME", "DATETIMEOFFSET",
                     "TIMESTAMP", "SQL_VARIANT", "UNIQUEIDENTIFIER", "XML", "CURSOR", "TABLE"];
         else: return [];
+
+    #BELOW METHODS ARE NOT DONE YET 3-6-2025 1:41 AM MST
+
+    #p, s -> ?;
+    #what if no range can be specified, but we have a name
+    #add default values for the parameter (if they have one)
+    #what if they do not have any default values?
+    #I guess we need a parameter that says if they have a default value or not.
+    #paramobj: paramname
+    #canspecifyrange: val
+    #maxval: max
+    #minval: min    
+    @classmethod
+    def genRangeDataDict(cls, name, canspecifyrange, minval, maxval):
+        myvalidator.varmustbeboolean(canspecifyrange, "canspecifyrange");
+        myvalidator.varmustbeanumber(minval, "minval");
+        myvalidator.varmustbeanumber(maxval, "maxval");
+        myvalidator.varmustnotbeempty(name, "name");
+        if (name.isalpha()): pass;
+        else: raise ValueError("the paramname must be alphabetic, but it was not!");
+        return {"paramname": name, "canspecifyrange": canspecifyrange, "min": minval, "max": maxval};
+
+    #if type can be signed or unsigned
+    #if type is some kind of value
+    #the base type name
+    #the parameter names if required
+    #ranges on parameters if parameters are given or if range can be specified
+    #can range on values be specified
+    #range on the values if can be specified (just a max and a min)
+    @classmethod
+    def genTypeInfoDict(cls, name, isval, canbesignedornot, pnmsranges, valsranges):
+        myvalidator.varmustbeboolean(isval, "isval");
+        myvalidator.varmustbeboolean(canbesignedornot, "canbesignedornot");
+        myvalidator.varmustnotbeempty(name, "name");
+        if (name.isalpha()): pass;
+        else: raise ValueError("the typename must be alphabetic, but it was not!");
+        return {"name": name, "isvalue": isval, "canbesignedornot": canbesignedornot,
+                "paramnameswithranges": pnmsranges, "valuesranges": valsranges};
+    @classmethod
+    def genValueTypeInfoDict(cls, name): return cls.genTypeInfoDict(name, True, False, [], []);
+    @classmethod
+    def genNonValueTypeInfoDict(cls, name, canbesignedornot, pnmsranges, valsranges):
+        return cls.genTypeInfoDict(name, False, canbesignedornot, pnmsranges, valsranges);
+    @classmethod
+    def genNonNumNonValTypeInfoDict(cls, name, pnmsranges, valsranges):
+        return cls.genNonValueTypeInfoDict(cls, name, False, pnmsranges, valsranges);
+    @classmethod
+    def genNonNumNonValNoParamsTypeInfoDict(cls, name, valsranges):
+        return cls.genNonValueTypeInfoDict(cls, name, False, [], valsranges);
+
+    #note: range or values is used as the default range name
+    #note: length is used for the length allowed for either the values or of the values
+    #note: for number types like integer:
+    #signed or unsigned are names of the ranges indicating that the issigned parameter determines
+    #which range is actually used, but not actually affecting this here.
+    #note: for number types like real which is only signed we use the default instead
+    @classmethod
+    def getSQLDataTypesInfo(cls, varstr):
+        #if type can be signed or unsigned
+        #if type is some kind of value
+        #the parameter names if required
+        #ranges on parameters if parameters are given or if range can be specified
+        #the base type name
+        #can range on values be specified
+        #range on the values if can be specified
+        if (varstr == "LITE"):
+            ltrlmag = 3.402*(10**38);#plus or mins this for real
+            ltintmag = 9223372036854775808;#plus or minus this for int max - 1 from this
+            mxbts = (2**31) - 1;#max TEXT length and BLOB size in bytes 
+            return [ myvalidator.genValueTypeInfoDict("NULL"),
+                    myvalidator.genNonValueTypeInfoDict("REAL", True, [], [
+                        myvalidator.genRangeDataDict("range", True, -1*ltrlmag, ltrlmag)]),
+                    myvalidator.genNonValueTypeInfoDict("INTEGER", True, [], [
+                        myvalidator.genRangeDataDict("signed", True, -1*ltintmag, ltintmag - 1),
+                        myvalidator.genRangeDataDict("unsigned", True, 0, 18446744073709551615)]),
+                    myvalidator.genNonNumNonValTypeInfoDict("TEXT", [], [
+                        myvalidator.genRangeDataDict("length", True, 0, mxbts)]),
+                    myvalidator.genNonNumNonValTypeInfoDict("BLOB", [], [
+                        myvalidator.genRangeDataDict("length", True, 0, mxbts)])];
+            #return ["NULL", "REAL", "INTEGER", "TEXT", "BLOB"];
+        elif (varstr == "MYSQL"):
+            return ["CHAR(size)", "VARCHAR(size)", "BINARY(size)", "VARBINARY(size)", "TINYBLOB",
+                    "TINYTEXT", "TEXT(size)", "BLOB(size)", "MEDIUMTEXT", "MEDIUMBLOB", "LONGTEXT",
+                    "LONGBLOB", "ENUM(values)", "SET(values)", "BIT(size)", "TINYINT(size)",
+                    "BOOL", "BOOLEAN", "SMALLINT(size)", "MEDIUMINT(size)",
+                    "INTEGER(size)", "INT(size)", "BIGINT(size)", "FLOAT(size, d)", "FLOAT(p)",
+                    "DOUBLE(size, d)", "DOUBLE PRECISION(size, d)", "DECIMAL(size, d)", "DEC(size, d)",
+                    "FLOAT", "DOUBLE PRECISION", "DOUBLE", "DATE", "DATETIME(fsp)", "TIMESTAMP(fsp)",
+                    "TIME(fsp)", "YEAR", "DATETIME", "TIMESTAMP", "TIME"];
+
+            #return ["CHAR(size)", "VARCHAR(size)", "BINARY(size)", "VARBINARY(size)", "TINYBLOB",
+            #        "TINYTEXT", "TEXT(size)", "BLOB(size)", "MEDIUMTEXT", "MEDIUMBLOB", "LONGTEXT",
+            #        "LONGBLOB", "ENUM(values)", "SET(values)", "BIT(size)", "TINYINT(size)",
+            #        "BOOL", "BOOLEAN", "SMALLINT(size)", "MEDIUMINT(size)",
+            #        "INTEGER(size)", "INT(size)", "BIGINT(size)", "FLOAT(size, d)", "FLOAT(p)",
+            #        "DOUBLE(size, d)", "DOUBLE PRECISION(size, d)", "DECIMAL(size, d)", "DEC(size, d)",
+            #        "FLOAT", "DOUBLE PRECISION", "DOUBLE", "DATE", "DATETIME(fsp)", "TIMESTAMP(fsp)",
+            #        "TIME(fsp)", "YEAR", "DATETIME", "TIMESTAMP", "TIME"];
+        elif (varstr == "SQLSERVER"):
+            return ["CHAR(n)", "VARCHAR(n)", "VARCHAR(max)", "NCHAR(n)", "NVARCHAR(n)", "NVARCHAR(max)",
+                    "BINARY(n)", "VARBINARY(n)", "VARBINARY(max)", "BIT", "TINYINT", "SMALLINT", "INT",
+                    "BIGINT", "DECIMAL(p, s)", "NUMERIC(p, s)", "SMALLMONEY", "MONEY", "FLOAT(p)",
+                    "REAL", "DATETIME", "DATETIME2", "SMALLDATETIME", "DATE", "TIME", "DATETIMEOFFSET",
+                    "TIMESTAMP", "SQL_VARIANT", "UNIQUEIDENTIFIER", "XML", "CURSOR", "TABLE"];
+
+            #return ["CHAR(n)", "VARCHAR(n)", "VARCHAR(max)", "NCHAR(n)", "NVARCHAR(n)", "NVARCHAR(max)",
+            #        "BINARY(n)", "VARBINARY(n)", "VARBINARY(max)", "BIT", "TINYINT", "SMALLINT", "INT",
+            #        "BIGINT", "DECIMAL(p, s)", "NUMERIC(p, s)", "SMALLMONEY", "MONEY", "FLOAT(p)",
+            #        "REAL", "DATETIME", "DATETIME2", "SMALLDATETIME", "DATE", "TIME", "DATETIMEOFFSET",
+            #        "TIMESTAMP", "SQL_VARIANT", "UNIQUEIDENTIFIER", "XML", "CURSOR", "TABLE"];
+        else: return [];
+
+    @classmethod
+    def isValidDataType(cls, val, varstr):
+        #get data types for the specific variant
+        #if the list is empty or null, then assumed valid
+        #if on the list, valid
+        #if not on the list and list is not empty, then not valid.
+        print(f"val = {val}");
+        print(f"varstr = {varstr}");
+
+        mvtpslist = myvalidator.getValidSQLDataTypes(varstr);
+        if (myvalidator.isvaremptyornull(mvtpslist)): return True;
+        else:
+            valnmhasps = ("(" in val and ")" in val);
+            valnmhascma = ("," in val);
+            print(f"valnmhasps = {valnmhasps}");
+            print(f"valnmhascma = {valnmhascma}");
+            
+            valfpi = (val.index("(") if valnmhasps else -1);
+            if (valnmhasps):
+                valfinpi = val.rindex(")");
+                if (valnmhascma):
+                    valbgcmai = val.index(",");
+                    valfincmai = val.rindex(",");
+                    print(f"valfpi = {valfpi}");
+                    print(f"valbgcmai = {valbgcmai}");
+                    print(f"valfincmai = {valfincmai}");
+                    print(f"valfinpi = {valfinpi}");
+
+                    if (valfpi < valbgcmai and valbgcmai < valfinpi and
+                        valfpi < valfincmai and valfincmai < valfinpi):
+                            pass;
+                    else:
+                        #raise ValueError("the comma in the name must be inside of a set of " +
+                        #                 "parenthesis in order for the name " + val +
+                        #                 " to be valid, but it did not have parenthesis!");
+                        return False;
+            else:
+                if (valnmhascma):
+                    #raise ValueError("the comma in the name must be inside of a set of " +
+                    #                 "parenthesis in order for the name " + val +
+                    #                 " to be valid, but it did not have parenthesis!");
+                    return False;
+
+            valbgnm = (val[0:valfpi] if valnmhasps else "" + val);
+            print(f"valbgnm = {valbgnm}");
+
+            for mtp in mvtpslist:
+                nmhasps = ("(" in mtp and ")" in mtp);
+                print(f"mtp = {mtp}");
+                print(f"nmhasps = {nmhasps}");
+
+                if (valnmhasps == nmhasps):
+                    #likely a match; otherwise definitely not a match
+                    if (nmhasps):
+                        #go to first (
+                        #this is the iniitial type name
+                        #go to last )
+                        #everything in between are values parameters or max
+                        #if everything in between is max only
+                        #ie only (max) is in there and after that is end of the string immediately
+                        #then it is a perfect match...
+                        bgpindx = mtp.index("(");
+                        print(f"bgpindx = {bgpindx}");
+
+                        bgnm = mtp[0:bgpindx];
+                        print(f"bgnm = {bgnm}");
+
+                        if (valbgnm == bgnm):
+                            #it can be a perfect match and not be valid
+                            #the only perfect matchs accepted are if no parenthesis,
+                            #or with tpnm(max) only
+                            if (val == mtp):
+                                print("found our perfect match!");
+                                print("only perfect matchs in the form tpnm(max) are allowed with " +
+                                      "parentheis, perfect matchs that only have alphabetic " +
+                                      "characters A-Z and a-z only are allowed!");
+                                return (valbgnm + "(max)" == val) and (bgnm + "(max)" == mtp);
+                            else:
+                                #need to know if unsigned...
+                                #need to get the ranges for those types on those numbers...
+                                #need to verify the ranges on the numbers for those data types...
+                                raise ValueError("NOT DONE YET 3-5-2025 10 PM MST...");
+                    else:
+                        #comma in name, but no parenthesis has already been handled.
+                        #name must be alphabetic only for a perfect match without parenthesis
+                        #to be valid.
+                        if (val == mtp):
+                            print("found our perfect match!");
+                            print("only perfect matchs in the form tpnm(max) are allowed with " +
+                                    "parentheis, perfect matchs that only have alphabetic " +
+                                    "characters A-Z and a-z only are allowed!");
+                            return (val.isalpha());
+            return False;

@@ -60,7 +60,7 @@ class mycol:
     #value needs to be removed because it cannot be stored in a class attribute for multiple objects
     #of the parent (containing) class.
     def __init__(self, colname, datatype, defaultvalue,
-                 isprimarykey=False, isnonnull=None, isunique=None,
+                 isprimarykey=False, isnonnull=None, isunique=None, issigned=None,
                  autoincrements=False, isforeignkey=False, foreignClass=None, foreignColNames=None,
                  constraints=None):#value, 
         print("INSIDE OF MY COL CONSTRUCTOR!");
@@ -70,6 +70,9 @@ class mycol:
         print(f"defaultvalue = {defaultvalue}");
         print(f"isnonnull = {isnonnull}");
         print(f"isunique = {isunique}");
+        print(f"issigned = {issigned}");
+        #datatype if number of some kind will be signed by default
+        #datatype if not number of some kind will not be signed by default
         print(f"isprimarykey = {isprimarykey}");
         print(f"autoincrements = {autoincrements}");
         print(f"isforeignkey = {isforeignkey}");
@@ -111,6 +114,19 @@ class mycol:
         #self._value = value;
         self._defaultvalue = defaultvalue;
         self.constraints = constraints;
+
+    def getDataType(self): return self._datatype;
+
+    #def setDataType(self, val):
+        #get data types for the specific variant
+        #if the list is empty or null, then assumed valid
+        #if on the list, valid
+        #if not on the list and list is not empty, then not valid.
+    #    mvtpslist = myvalidator.getValidSQLDataTypes(varstr);
+    #    if (myvalidator.isvaremptyornull(mvtpslist)): self._datatype = val;
+    #    else:
+    #
+    #    pass;
 
     def getColName(self): return self._colname;
 

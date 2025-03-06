@@ -85,6 +85,12 @@ print(myvalidator.isValueInRangeWithMaxAndMin(5, 1, 5));#true
 print(myvalidator.isValueInRangeWithMaxAndMin(-5, 1, 5));#false
 print(myvalidator.isValueInRangeWithMaxAndMin(2.5, 1, 5));#true
 print();
+print(myvalidator.isValidDataType("OTHER, VARCHAR(max)", "SQLSERVER"));#false
+print(myvalidator.isValidDataType("VARCHAR(max), OTHER", "SQLSERVER"));#false
+print(myvalidator.isValidDataType("NUMERIC(p, s)", "SQLSERVER"));#false
+print(myvalidator.isValidDataType("VARCHAR(max)", "SQLSERVER"));#true
+raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+print();
 print("SQL GEN TESTS:");
 print(myvalidator.genUniqueConstraint("constraintname", ["itema", "itemb", "itemc"]));
 #counts
