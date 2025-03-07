@@ -658,17 +658,17 @@ class myvalidator:
     #but does not really have any affect.
     #note: ZEROFILL suppose you have an INT(3) and you insert 1 into it: the value is 001
     #that is the only time the size parameter will be taken into account and used.
-    #note: due to size being deprecated ZEROFILL has also been sort of deprecated.
+    #note: due to size being depricated ZEROFILL has also been sort of depricated.
     #note: if you want something to be UNSIGNED you need to include UNSIGNED else it will be signed.
     #note: unsigned FLOAT will be depricated due to data storage requirements and
     #it being an integer.
-    #note: FLOAT(size, d) is deprecated due to size being deprecated.
+    #note: FLOAT(size, d) is depricated due to size being depricated.
     #
     #BIT(size) size can be from 1 to 64 inclusive. 64 bit processor.
     #TINYINT(size) signed is from -127 to 128 inclusive unsigned 0 to 255 inclusive.
     # size maximum display width for the maximum number which is 255 (so max size is 3).
     #BOOL, BOOLEAN zero is false, everything else is true.
-    #SMALLINT(size) signed is from -32767 to 32768 inclusive; unsigned is from 0 to 65535
+    #SMALLINT(size) signed is from -32768 to 32767 inclusive; unsigned is from 0 to 65535
     # size maximum display width which is 5 digits for 65535.
     #MEDIUMINT(size) signed is from -8388608 to 8388607 unsigned is from 0 to 16777215.
     #INTEGER(size), INT(size) signed is from -2147483648 to 2147483647
@@ -678,11 +678,11 @@ class myvalidator:
     #
     #IT IS ALSO STRONGLY SUGGESTED TO USE BELOW WITHOUT PARAMETERS.
     #
-    #FLOAT(size, d), DOUBLE(size, d), DOUBLE PRECISION(size, d) are deprecated where
+    #FLOAT(size, d), DOUBLE(size, d), DOUBLE PRECISION(size, d) are depricated where
     # size is the number of digits, d is the number of digits after the decmial point.
     #
     #FLOAT(p) where p is the precision in bits if p is 0 to 24 FLOAT else 25 to 53 DOUBLE.
-    #DOUBLE(size, d), DOUBLE PRECISION(size, d) is deprecated where size is the
+    #DOUBLE(size, d), DOUBLE PRECISION(size, d) is depricated where size is the
     # total number of digits, d is the number of digits after the decmial point, same as a float.
     #DECIMAL(size, d), DEC(size, d) size is the total number of digits,
     # d is the number of digits after the decmial point, same as a float.
@@ -854,16 +854,29 @@ class myvalidator:
     #paramobj: paramname
     #canspecifyrange: val
     #maxval: max
-    #minval: min    
+    #minval: min
+    #note: default value may or may not be in the specified range because it might be an exception
+    #often the default value is in the range, but not always the case.
     @classmethod
-    def genRangeDataDict(cls, name, canspecifyrange, minval, maxval):
+    def genRangeDataDict(cls, name, canspecifyrange, hasadefault, minval, maxval, mdefval):
+        myvalidator.varmustbeboolean(hasadefault, "hasadefault");
         myvalidator.varmustbeboolean(canspecifyrange, "canspecifyrange");
-        myvalidator.varmustbeanumber(minval, "minval");
-        myvalidator.varmustbeanumber(maxval, "maxval");
+        #myvalidator.varmustbeanumber(minval, "minval");#can be a number or a string
+        #myvalidator.varmustbeanumber(maxval, "maxval");#can be a number or a string
         myvalidator.varmustnotbeempty(name, "name");
         if (name.isalpha()): pass;
         else: raise ValueError("the paramname must be alphabetic, but it was not!");
-        return {"paramname": name, "canspecifyrange": canspecifyrange, "min": minval, "max": maxval};
+        return {"paramname": name, "canspecifyrange": canspecifyrange, "hasadefault": hasadefault,
+                "min": minval, "max": maxval, "defaultval": mdefval};
+    @classmethod
+    def genRangeDataDictNoRange(cls, name, hasadefault, mdefval):
+        return cls.genRangeDataDict(name, False, hasadefault, None, None, mdefval);
+    @classmethod
+    def genRangeDataDictNoRangeNoDefault(cls, name):
+        return cls.genRangeDataDictNoRange(name, False, None);
+    @classmethod
+    def genRangeDataDictNoDefault(cls, name, canspecifyrange, minval, maxval):
+        return cls.genRangeDataDict(name, canspecifyrange, False, minval, maxval, None);
 
     #if type can be signed or unsigned
     #if type is some kind of value
@@ -873,25 +886,27 @@ class myvalidator:
     #can range on values be specified
     #range on the values if can be specified (just a max and a min)
     @classmethod
-    def genTypeInfoDict(cls, name, isval, canbesignedornot, pnmsranges, valsranges):
+    def genTypeInfoDict(cls, names, isval, canbesignedornot, pnmsranges, valsranges):
         myvalidator.varmustbeboolean(isval, "isval");
         myvalidator.varmustbeboolean(canbesignedornot, "canbesignedornot");
-        myvalidator.varmustnotbeempty(name, "name");
-        if (name.isalpha()): pass;
-        else: raise ValueError("the typename must be alphabetic, but it was not!");
-        return {"name": name, "isvalue": isval, "canbesignedornot": canbesignedornot,
+        myvalidator.varmustnotbeempty(names, "names");
+        for nm in names:
+            myvalidator.varmustnotbeempty(nm, "nm");
+            if (nm.isalpha()): pass;
+            else: raise ValueError("the typename must be alphabetic, but it was not!");
+        return {"names": names, "isvalue": isval, "canbesignedornot": canbesignedornot,
                 "paramnameswithranges": pnmsranges, "valuesranges": valsranges};
     @classmethod
-    def genValueTypeInfoDict(cls, name): return cls.genTypeInfoDict(name, True, False, [], []);
+    def genValueTypeInfoDict(cls, names): return cls.genTypeInfoDict(names, True, False, [], []);
     @classmethod
-    def genNonValueTypeInfoDict(cls, name, canbesignedornot, pnmsranges, valsranges):
-        return cls.genTypeInfoDict(name, False, canbesignedornot, pnmsranges, valsranges);
+    def genNonValueTypeInfoDict(cls, names, canbesignedornot, pnmsranges, valsranges):
+        return cls.genTypeInfoDict(names, False, canbesignedornot, pnmsranges, valsranges);
     @classmethod
-    def genNonNumNonValTypeInfoDict(cls, name, pnmsranges, valsranges):
-        return cls.genNonValueTypeInfoDict(cls, name, False, pnmsranges, valsranges);
+    def genNonNumNonValTypeInfoDict(cls, names, pnmsranges, valsranges):
+        return cls.genNonValueTypeInfoDict(names, False, pnmsranges, valsranges);
     @classmethod
-    def genNonNumNonValNoParamsTypeInfoDict(cls, name, valsranges):
-        return cls.genNonValueTypeInfoDict(cls, name, False, [], valsranges);
+    def genNonNumNonValNoParamsTypeInfoDict(cls, names, valsranges):
+        return cls.genNonValueTypeInfoDict(names, False, [], valsranges);
 
     #note: range or values is used as the default range name
     #note: length is used for the length allowed for either the values or of the values
@@ -908,30 +923,150 @@ class myvalidator:
         #the base type name
         #can range on values be specified
         #range on the values if can be specified
+        ltintmag = 9223372036854775808;#plus or minus this for int max - 1 from this
+        ltintmxmag = 18446744073709551615;
         if (varstr == "LITE"):
             ltrlmag = 3.402*(10**38);#plus or mins this for real
-            ltintmag = 9223372036854775808;#plus or minus this for int max - 1 from this
             mxbts = (2**31) - 1;#max TEXT length and BLOB size in bytes 
-            return [ myvalidator.genValueTypeInfoDict("NULL"),
+            return [ myvalidator.genValueTypeInfoDict(["NULL"]),
                     myvalidator.genNonValueTypeInfoDict("REAL", True, [], [
-                        myvalidator.genRangeDataDict("range", True, -1*ltrlmag, ltrlmag)]),
-                    myvalidator.genNonValueTypeInfoDict("INTEGER", True, [], [
-                        myvalidator.genRangeDataDict("signed", True, -1*ltintmag, ltintmag - 1),
-                        myvalidator.genRangeDataDict("unsigned", True, 0, 18446744073709551615)]),
-                    myvalidator.genNonNumNonValTypeInfoDict("TEXT", [], [
-                        myvalidator.genRangeDataDict("length", True, 0, mxbts)]),
-                    myvalidator.genNonNumNonValTypeInfoDict("BLOB", [], [
-                        myvalidator.genRangeDataDict("length", True, 0, mxbts)])];
+                        myvalidator.genRangeDataDict("range", True, True, -1 * ltrlmag, ltrlmag, 0)]),
+                    
+                    myvalidator.genNonValueTypeInfoDict(["INTEGER"], True, [], [
+                        myvalidator.genRangeDataDict("signed", True, True,
+                                                     -1 * ltintmag, ltintmag - 1, 0),
+                        myvalidator.genRangeDataDict("unsigned", True, True, 0, ltintmxmag, 0)]),
+                    
+                    myvalidator.genNonNumNonValTypeInfoDict(["TEXT"], [], [
+                        myvalidator.genRangeDataDict("length", True, True, 0, mxbts, "NULL")]),
+                    myvalidator.genNonNumNonValTypeInfoDict(["BLOB"], [], [
+                        myvalidator.genRangeDataDict("length", True, True, 0, mxbts, "NULL")])];
             #return ["NULL", "REAL", "INTEGER", "TEXT", "BLOB"];
         elif (varstr == "MYSQL"):
-            return ["CHAR(size)", "VARCHAR(size)", "BINARY(size)", "VARBINARY(size)", "TINYBLOB",
-                    "TINYTEXT", "TEXT(size)", "BLOB(size)", "MEDIUMTEXT", "MEDIUMBLOB", "LONGTEXT",
-                    "LONGBLOB", "ENUM(values)", "SET(values)", "BIT(size)", "TINYINT(size)",
-                    "BOOL", "BOOLEAN", "SMALLINT(size)", "MEDIUMINT(size)",
-                    "INTEGER(size)", "INT(size)", "BIGINT(size)", "FLOAT(size, d)", "FLOAT(p)",
-                    "DOUBLE(size, d)", "DOUBLE PRECISION(size, d)", "DECIMAL(size, d)", "DEC(size, d)",
-                    "FLOAT", "DOUBLE PRECISION", "DOUBLE", "DATE", "DATETIME(fsp)", "TIMESTAMP(fsp)",
-                    "TIME(fsp)", "YEAR", "DATETIME", "TIMESTAMP", "TIME"];
+            #ENUM(values) you can have 65,535 values and they map to an integer index,
+            # you can either use that or the given values in the ENUM.
+            # If a value not on the list is entered then a blank value will be inserted.
+            #SET(values) you can have 0 up to 64 values.
+            #
+            #FLOAT(p) where p is the precision in bits if p is 0 to 24 FLOAT else 25 to 53 DOUBLE.
+            #DOUBLE(size, d), DOUBLE PRECISION(size, d) is depricated where size is the
+            # total number of digits, d is the number of digits after the decmial point, same as a float.
+            #DECIMAL(size, d), DEC(size, d) size is the total number of digits,
+            # d is the number of digits after the decmial point, same as a float.
+            #
+            return [ myvalidator.genNonValueTypeInfoDict(["CHAR"], False, [
+                myvalidator.genRangeDataDict("size", True, True, 0, 255, 1)],
+                [myvalidator.genRangeDataDictNoRange("range", True, "NULL")]),
+                
+                myvalidator.genNonValueTypeInfoDict(["VARCHAR"], False, [
+                myvalidator.genRangeDataDict("size", True, True, 0, 65535, 1)],
+                [myvalidator.genRangeDataDictNoRange("range", True, "NULL")]),
+                
+                myvalidator.genNonValueTypeInfoDict(["BINARY"], False, [
+                myvalidator.genRangeDataDict("size", True, True, 0, 255, 1)],
+                [myvalidator.genRangeDataDictNoRange("range", True, "NULL")]),
+                
+                myvalidator.genNonValueTypeInfoDict(["VARBINARY"], False, [
+                myvalidator.genRangeDataDict("size", True, True, 0, 65535, 1)],
+                [myvalidator.genRangeDataDictNoRange("range", True, "NULL")]),
+                
+                myvalidator.genNonValueTypeInfoDict(["TINYBLOB"], False, [], [
+                myvalidator.genRangeDataDict("length", True, False, 0, 255, None),
+                myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
+
+                myvalidator.genNonValueTypeInfoDict(["TINYTEXT"], False, [], [
+                myvalidator.genRangeDataDict("length", True, False, 0, 255, None),
+                myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
+
+                myvalidator.genNonValueTypeInfoDict(["BLOB"], False, [
+                    myvalidator.genRangeDataDictNoDefault("size", True, 0, 65535)], [
+                myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
+
+                myvalidator.genNonValueTypeInfoDict(["TEXT"], False, [
+                    myvalidator.genRangeDataDictNoDefault("size", True, 0, 65535)], [
+                myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
+
+                myvalidator.genNonValueTypeInfoDict(["MEDIUMBLOB"], False, [], [
+                myvalidator.genRangeDataDict("length", True, False, 0, 16777215, None),
+                myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
+
+                myvalidator.genNonValueTypeInfoDict(["MEDIUMTEXT"], False, [], [
+                myvalidator.genRangeDataDict("length", True, False, 0, 16777215, None),
+                myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
+
+                myvalidator.genNonValueTypeInfoDict(["LONGBLOB"], False, [], [
+                myvalidator.genRangeDataDict("length", True, False, 0, 4294967295, None),
+                myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
+
+                myvalidator.genNonValueTypeInfoDict(["LONGTEXT"], False, [], [
+                myvalidator.genRangeDataDict("length", True, False, 0, 4294967295, None),
+                myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
+
+                #?
+                #?
+                "ENUM(values)", "SET(values)",
+                
+                myvalidator.genNonValueTypeInfoDict(["BIT"], False, [
+                    myvalidator.genRangeDataDictNoDefault("size", True, 1, 64)], [
+                myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
+
+                myvalidator.genNonValueTypeInfoDict(["BOOL", "BOOLEAN"], False, [], [
+                    myvalidator.genRangeDataDict("values", True, True, 0, 1, 0)]),
+                
+                myvalidator.genNonValueTypeInfoDict(["TINYINT"], True, [
+                    myvalidator.genRangeDataDict("size", True, True, 0, 3, 3)], [
+                myvalidator.genRangeDataDict("signed", True, True, -127, 128, 0),
+                myvalidator.genRangeDataDict("unsigned", True, True, 0, 255, 0)]),
+
+                myvalidator.genNonValueTypeInfoDict(["SMALLINT"], True, [
+                    myvalidator.genRangeDataDict("size", True, True, 0, 5, 5)], [
+                myvalidator.genRangeDataDict("signed", True, True, -32768, 32767, 0),
+                myvalidator.genRangeDataDict("unsigned", True, True, 0, 65535, 0)]),
+
+                myvalidator.genNonValueTypeInfoDict(["MEDIUMINT"], True, [
+                    myvalidator.genRangeDataDict("size", True, True, 0, 8, 8)], [
+                myvalidator.genRangeDataDict("signed", True, True, -8388608, 8388607, 0),
+                myvalidator.genRangeDataDict("unsigned", True, True, 0, 16777215, 0)]),
+
+                myvalidator.genNonValueTypeInfoDict(["INT", "INTEGER"], True, [
+                    myvalidator.genRangeDataDict("size", True, True, 0, 10, 10)], [
+                myvalidator.genRangeDataDict("signed", True, True, -2147483648, 2147483647, 0),
+                myvalidator.genRangeDataDict("unsigned", True, True, 0, 4294967295, 0)]),
+
+                myvalidator.genNonValueTypeInfoDict(["BIGINT"], True, [
+                    myvalidator.genRangeDataDict("size", True, True, 0, 20, 20)], [
+                myvalidator.genRangeDataDict("signed", True, True, -1 * ltintmag, ltintmag - 1, 0),
+                myvalidator.genRangeDataDict("unsigned", True, True, 0, ltintmxmag, 0)]),
+
+                "FLOAT(size, d)", "FLOAT(p)",
+                    
+                    "DOUBLE(size, d)", "DOUBLE PRECISION(size, d)",#these are the same
+                    
+                    "DECIMAL(size, d)", "DEC(size, d)",#these are the same
+                    
+                    "FLOAT", "DOUBLE PRECISION", "DOUBLE",#already above so may not need here
+
+                myvalidator.genNonValueTypeInfoDict(["DATE"], False, [], [
+                myvalidator.genRangeDataDict("values", True, True, "1000-01-01", "9999-12-31",
+                                             "NULL")]),
+
+                myvalidator.genNonValueTypeInfoDict(["DATETIME"], False, [], [
+                myvalidator.genRangeDataDict("fsp", True, True, 0, 6, 0),
+                myvalidator.genRangeDataDict("values", True, True, "1000-01-01 00:00:00.000000",
+                                             "9999-12-31 23:59:59.999999", "NULL")]),
+                
+                myvalidator.genNonValueTypeInfoDict(["TIMESTAMP"], False, [], [
+                myvalidator.genRangeDataDict("fsp", True, True, 0, 6, 0),
+                myvalidator.genRangeDataDict("values", True, True, "1970-01-01 00:00:01.000000",
+                                             "2038-01-09 03:14:07.999999", "NULL")]),
+
+                myvalidator.genNonValueTypeInfoDict(["TIME"], False, [], [
+                myvalidator.genRangeDataDict("fsp", True, True, 0, 6, 0),
+                myvalidator.genRangeDataDict("values", True, True, "-838:59:59.000000",
+                                             "838:59:59.999999", "NULL")]),
+                
+                myvalidator.genNonValueTypeInfoDict(["YEAR"], False, [], [
+                myvalidator.genRangeDataDict("values", True, True, 1901, 2155, 0)])];
 
             #return ["CHAR(size)", "VARCHAR(size)", "BINARY(size)", "VARBINARY(size)", "TINYBLOB",
             #        "TINYTEXT", "TEXT(size)", "BLOB(size)", "MEDIUMTEXT", "MEDIUMBLOB", "LONGTEXT",
@@ -954,6 +1089,12 @@ class myvalidator:
             #        "REAL", "DATETIME", "DATETIME2", "SMALLDATETIME", "DATE", "TIME", "DATETIMEOFFSET",
             #        "TIMESTAMP", "SQL_VARIANT", "UNIQUEIDENTIFIER", "XML", "CURSOR", "TABLE"];
         else: return [];
+
+    @classmethod
+    def printSQLDataTypesInfoObj(cls, mlistobjs):
+        if (myvalidator.isvaremptyornull(mlistobjs)): print("list is empty or null!");
+        else:
+            for mobj in mlistobjs: print(f"{mobj}\n");
 
     @classmethod
     def isValidDataType(cls, val, varstr):
@@ -1031,7 +1172,7 @@ class myvalidator:
                                 print("only perfect matchs in the form tpnm(max) are allowed with " +
                                       "parentheis, perfect matchs that only have alphabetic " +
                                       "characters A-Z and a-z only are allowed!");
-                                return (valbgnm + "(max)" == val) and (bgnm + "(max)" == mtp);
+                                return ((valbgnm + "(max)" == val) and (bgnm + "(max)" == mtp));
                             else:
                                 #need to know if unsigned...
                                 #need to get the ranges for those types on those numbers...
@@ -1046,5 +1187,5 @@ class myvalidator:
                             print("only perfect matchs in the form tpnm(max) are allowed with " +
                                     "parentheis, perfect matchs that only have alphabetic " +
                                     "characters A-Z and a-z only are allowed!");
-                            return (val.isalpha());
+                            return val.isalpha();
             return False;

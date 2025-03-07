@@ -85,10 +85,21 @@ print(myvalidator.isValueInRangeWithMaxAndMin(5, 1, 5));#true
 print(myvalidator.isValueInRangeWithMaxAndMin(-5, 1, 5));#false
 print(myvalidator.isValueInRangeWithMaxAndMin(2.5, 1, 5));#true
 print();
+print("lite = ", end="");
+myvalidator.printSQLDataTypesInfoObj(myvalidator.getSQLDataTypesInfo('LITE'));
+print();
+print("mysql = ", end="");
+myvalidator.printSQLDataTypesInfoObj(myvalidator.getSQLDataTypesInfo('MYSQL'));
+print();
+print("sqlserver = ", end="");
+myvalidator.printSQLDataTypesInfoObj(myvalidator.getSQLDataTypesInfo('SQLSERVER'));
+print();
 print(myvalidator.isValidDataType("OTHER, VARCHAR(max)", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("VARCHAR(max), OTHER", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("NUMERIC(p, s)", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("VARCHAR(max)", "SQLSERVER"));#true
+#need more tests for the isValidDataType method: one with valid numbers for the params, one without
+#one with an invalid number of params too
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 print();
 print("SQL GEN TESTS:");
