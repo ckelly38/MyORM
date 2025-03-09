@@ -86,18 +86,26 @@ print(myvalidator.isValueInRangeWithMaxAndMin(-5, 1, 5));#false
 print(myvalidator.isValueInRangeWithMaxAndMin(2.5, 1, 5));#true
 print();
 print("lite = ", end="");
-myvalidator.printSQLDataTypesInfoObj(myvalidator.getSQLDataTypesInfo('LITE'));
+liteinfoobjlist = myvalidator.getSQLDataTypesInfo('LITE');
+myvalidator.printSQLDataTypesInfoObj(liteinfoobjlist);
 print();
 print("mysql = ", end="");
-myvalidator.printSQLDataTypesInfoObj(myvalidator.getSQLDataTypesInfo('MYSQL'));
+mysqlinfoobjlist = myvalidator.getSQLDataTypesInfo('MYSQL');
+myvalidator.printSQLDataTypesInfoObj(mysqlinfoobjlist);
 print();
 print("sqlserver = ", end="");
-myvalidator.printSQLDataTypesInfoObj(myvalidator.getSQLDataTypesInfo('SQLSERVER'));
+sqlsrvrinfoobjlist = myvalidator.getSQLDataTypesInfo('SQLSERVER');
+myvalidator.printSQLDataTypesInfoObj(sqlsrvrinfoobjlist);#not done yet no valid data
+print();
+print(myvalidator.getValidSQLDataTypesFromInfoList(liteinfoobjlist));
+print(myvalidator.getValidSQLDataTypesFromInfoList(mysqlinfoobjlist));
+print(myvalidator.getValidSQLDataTypesFromInfoList(sqlsrvrinfoobjlist));#crashes
 print();
 print(myvalidator.isValidDataType("OTHER, VARCHAR(max)", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("VARCHAR(max), OTHER", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("NUMERIC(p, s)", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("VARCHAR(max)", "SQLSERVER"));#true
+#crashes due to order otherwise would pass
 #need more tests for the isValidDataType method: one with valid numbers for the params, one without
 #one with an invalid number of params too
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
