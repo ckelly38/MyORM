@@ -70,20 +70,25 @@ tstobjc = MyModelWithCompPrimaryKey();
 tstobjd = MyModelWithCompForeignKey();
 
 print();
-print(myvalidator.stringHasAtMaxNumChars("mystr", 0));#false
-print(myvalidator.stringHasAtMinNumChars("mystr", 6));#false
-print(myvalidator.stringHasAtMaxNumChars("mystr", 5));#true
-print(myvalidator.stringHasAtMinNumChars("mystr", 2));#true
+print("mystr has at max 0 characters: " + str(myvalidator.stringHasAtMaxNumChars("mystr", 0)));#false
+print("mystr has at min 6 characters: " + str(myvalidator.stringHasAtMinNumChars("mystr", 6)));#false
+print("mystr has at max 5 characters: " + str(myvalidator.stringHasAtMaxNumChars("mystr", 5)));#true
+print("mystr has at min 2 characters: " + str(myvalidator.stringHasAtMinNumChars("mystr", 2)));#true
 #print(myvalidator.stringMustHaveAtMaxNumChars("mystr", 0, "varnm"));#error
 print(myvalidator.stringMustHaveAtMaxNumChars("mystr", 5, "varnm"));
 #print(myvalidator.stringMustHaveAtMinNumChars("mystr", 6, "varnm"));#error
 print(myvalidator.stringMustHaveAtMinNumChars("mystr", 2, "varnm"));
 print("is value in range tests:");
-print(myvalidator.isValueInRangeWithMaxAndMin(0, 1, 5));#false
-print(myvalidator.isValueInRangeWithMaxAndMin(1, 1, 5));#true
-print(myvalidator.isValueInRangeWithMaxAndMin(5, 1, 5));#true
-print(myvalidator.isValueInRangeWithMaxAndMin(-5, 1, 5));#false
-print(myvalidator.isValueInRangeWithMaxAndMin(2.5, 1, 5));#true
+print("value 0, min 1, max 5 is value in range: " +
+      str(myvalidator.isValueInRangeWithMaxAndMin(0, 1, 5)));#false
+print("value 1, min 1, max 5 is value in range: " +
+      str(myvalidator.isValueInRangeWithMaxAndMin(1, 1, 5)));#true
+print("value 5, min 1, max 5 is value in range: " +
+      str(myvalidator.isValueInRangeWithMaxAndMin(5, 1, 5)));#true
+print("value -5, min 1, max 5 is value in range: " +
+      str(myvalidator.isValueInRangeWithMaxAndMin(-5, 1, 5)));#false
+print("value 2.5, min 1, max 5 is value in range: " +
+      str(myvalidator.isValueInRangeWithMaxAndMin(2.5, 1, 5)));#true
 print();
 print("lite = ", end="");
 liteinfoobjlist = myvalidator.getSQLDataTypesInfo('LITE');
@@ -95,15 +100,23 @@ myvalidator.printSQLDataTypesInfoObj(mysqlinfoobjlist);
 print();
 print("sqlserver = ", end="");
 sqlsrvrinfoobjlist = myvalidator.getSQLDataTypesInfo('SQLSERVER');
-myvalidator.printSQLDataTypesInfoObj(sqlsrvrinfoobjlist);#not done yet no valid data
+myvalidator.printSQLDataTypesInfoObj(sqlsrvrinfoobjlist);
 print();
 print(myvalidator.getValidSQLDataTypesFromInfoList(liteinfoobjlist));
 print(myvalidator.getValidSQLDataTypesFromInfoList(mysqlinfoobjlist));
-print(myvalidator.getValidSQLDataTypesFromInfoList(sqlsrvrinfoobjlist));#crashes
+print(myvalidator.getValidSQLDataTypesFromInfoList(sqlsrvrinfoobjlist));
 print();
 print(myvalidator.isValidDataType("OTHER, VARCHAR(max)", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("VARCHAR(max), OTHER", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("NUMERIC(p, s)", "SQLSERVER"));#false
+#quote did not actually get escaped
+#print(myvalidator.getLevelsForValStr("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\'s poses)sive', 'something else, other', 'last')"));
+print(myvalidator.getLevelsForValStr("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')"));
+print(myvalidator.getParmsFromValType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')"));
+#print(myvalidator.isValidDataType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last'", "MYSQL"));#false
+#print(myvalidator.isValidDataType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')", "MYSQL"));#true
+#print(myvalidator.isValidDataType("NUMERIC(39, 1)", "SQLSERVER"));#false#38 or less for both
+#print(myvalidator.isValidDataType("NUMERIC(1, 39)", "SQLSERVER"));#false#38 or less for both
 print(myvalidator.isValidDataType("VARCHAR(max)", "SQLSERVER"));#true
 #crashes due to order otherwise would pass
 #need more tests for the isValidDataType method: one with valid numbers for the params, one without

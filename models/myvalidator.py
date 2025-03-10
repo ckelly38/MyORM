@@ -902,8 +902,9 @@ class myvalidator:
             else:
                 isvalid = True;
                 if ("(max)" in nm):
-                    nmpa = nm[0:nm.index("(max)")];
-                    nmpb = nm[nm.index("(max)") + 5];
+                    mxi = nm.index("(max)");
+                    nmpa = nm[0:mxi];
+                    nmpb = (nm[mxi + 5:] if (mxi + 5 < len(nm)) else "");
                     isvalid = (len(nmpb) < 1);
                 else: nmpa = "" + nm;
 
@@ -1111,40 +1112,45 @@ class myvalidator:
             #        "FLOAT", "DOUBLE PRECISION", "DOUBLE", "DATE", "DATETIME(fsp)", "TIMESTAMP(fsp)",
             #        "TIME(fsp)", "YEAR", "DATETIME", "TIMESTAMP", "TIME"];
         elif (varstr == "SQLSERVER"):
-            #CHAR(n) fixed length non-unicode characters each takes up 1 byte n is from 1 to 8000 inclusive.
-            #VARCHAR(n) variable length non-unicode characters same as char(n) otherwise.
-            #VARCHAR(max) variable length non-unicode characters up to 2 GB of space.
-            #NCHAR(n) fixed length unicode characters each takes up 2 bytes n is from 1 to 4000 inclusive.
-            #NVARCHAR(n) variable length unicode characters same as char(n) otherwise.
-            #NVARCHAR(max) variable length unicode characters up to 2 GB of space.
-            #BINARY(n) fixed length binary characters each takes up 1 byte n is from 1 to 8000 inclusive.
-            #VARBINARY(n) variable length binary same as binary(n) otherwise.
-            #VARBINARY(max) variable length binary up to 2 GB of space.
-            #
             mnypw = 10**(-4);
             fltmxmag = 1.79*(10**308);
             decmxmg = 10**38;
             mxblobsz = 2000000000;
-            return ["CHAR(n)", "VARCHAR(n)", "VARCHAR(max)", "NCHAR(n)", "NVARCHAR(n)", "NVARCHAR(max)",
-                    "BINARY(n)", "VARBINARY(n)", "VARBINARY(max)",
+            return [ myvalidator.genNonValueTypeInfoDict(["CHAR"], False, [
+                        myvalidator.genRangeDataDict("n", True, True, 1, 8000, 0)], [
+                        myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
                     
-                    #?
+                    myvalidator.genNonValueTypeInfoDict(["VARCHAR"], False, [
+                        myvalidator.genRangeDataDict("n", True, True, 1, 8000, 0)], [
+                        myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
-                    #?
+                    myvalidator.genNonValueTypeInfoDict(["VARCHAR(max)"], False, [], [
+                        myvalidator.genRangeDataDict("size", True, True, 1, mxblobsz, 0),
+                        myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
-                    #?
+                    myvalidator.genNonValueTypeInfoDict(["NCHAR"], False, [
+                        myvalidator.genRangeDataDict("n", True, True, 1, 4000, 0)], [
+                        myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
-                    #?
+                    myvalidator.genNonValueTypeInfoDict(["NVARCHAR"], False, [
+                        myvalidator.genRangeDataDict("n", True, True, 1, 4000, 0)], [
+                        myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
-                    #?
+                    myvalidator.genNonValueTypeInfoDict(["NVARCHAR(max)"], False, [], [
+                        myvalidator.genRangeDataDict("size", True, True, 1, mxblobsz, 0),
+                        myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
-                    #?
+                    myvalidator.genNonValueTypeInfoDict(["BINARY"], False, [
+                        myvalidator.genRangeDataDict("n", True, True, 1, 8000, 0)], [
+                        myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
-                    #?
+                    myvalidator.genNonValueTypeInfoDict(["VARBINARY"], False, [
+                        myvalidator.genRangeDataDict("n", True, True, 1, 8000, 0)], [
+                        myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
-                    #?
-
-                    #?
+                    myvalidator.genNonValueTypeInfoDict(["VARBINARY(max)"], False, [], [
+                        myvalidator.genRangeDataDict("size", True, True, 1, mxblobsz, 0),
+                        myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
                     myvalidator.genNonValueTypeInfoDict(["BIT"], False, [], [
                         myvalidator.genRangeDataDict("values", True, True, 0, 1, "NULL")]),
@@ -1260,6 +1266,178 @@ class myvalidator:
                     for mobj in mlist for nm in mobj["names"]];
 
     @classmethod
+    def getDataTypesObbsWithNameFromList(cls, mlist, tpnm):
+        if (mlist == None): return None;
+        else: return [mobj for mobj in mlist for nm in mobj["names"] if (nm == tpnm)];
+
+    @classmethod
+    def myjoin(cls, sepstr, mlist):
+        if (myvalidator.isvaremptyornull(sepstr)):
+            mystr = "";
+            for val in mlist:
+                mystr += str(val);
+            return mystr;
+        else: return sepstr.join(mlist);
+
+    @classmethod
+    def getLevelsForValStr(cls, val):
+        if (myvalidator.isvaremptyornull(val)):
+            return {"finlvs": [], "origlvs": [], "val": val, "errmsg": ""};
+        #params are everything after the first ( and the last )
+        #everything else is ignored.
+        #if value is not valid, then return empty or null
+        #params can be inside ' or ", but ignore it if it is escaped
+        #commas inside ' or " can be ignored, but others outside of that cannot be ignored.
+        #stuff inside this will not go any lower than 3 I think
+        #levels will switch to 2 inside of the parenthesis levels 1 outside of them
+        #if levels are not valid, val is not valid
+        #
+        #"ENUM('something, other', 'some ofht', 'this, some, other, else', 'else',
+        # 0123456789012345678901234567890123456789012345678901234567890123456789012 indexs part 1
+        # 0         1         2         3         4         5         6         7
+        # 1111123333333333333333222233333333322223333333333333333333333322223333222 levels part 1
+        #
+        #  'mychar\'s poses)sive', 'something else, other', 'last')"
+        # 345678901234567890123456789012345678901234567890123456789 indexs part 2
+        #        8         9         0         1         2
+        #                            1
+        # 233333333333333333333322223333333333333333333332222333321 levels part 2
+        #note: the newline is not in the test example. This was just because it would not fit.
+        #
+        clvlnum = 1;
+        fpfnd = False;
+        lvls = [-1 for n in range(len(val))];#init level algorithm
+        inclvaset = False;
+        fqti = -1;
+        fndqt = False;
+        isopqt = True;
+        for n in range(len(val)):
+            mc = val[n];
+            if (mc == '('):
+                if (fpfnd): pass;
+                else:
+                    fpfnd = True;
+                    inclvaset = True;
+            elif (mc == ')'):
+                #decrement the level before this, but there are exceptions
+                #because this is not a strict leveling algorithm
+                #parenthesis only have an effect if on level 1 to level 2 or level 2 to level 1 only
+                if (clvlnum == 1 or clvlnum == 2): clvlnum -= 1;
+            elif (mc == "'" or mc == '"'):
+                #found a quote here.
+                #print(f"found a quote at n = {n}!");
+                #print(f"fndqt = {fndqt}");
+                #print("need to tell if we can use this because if it got escaped, then cannot!");
+                #print(val[n - 1]);
+                if (fndqt):
+                    if (0 < n and (val[n - 1] == "\\" or val[n - 1] == '\\')): pass;
+                    else:
+                        if (mc == val[fqti]):
+                            #this quote is the same as our first quote therefore use it
+                            #print(f"fndqt at n = {n}!");
+                            #print(f"prev isopqt = {isopqt}");
+                            if (isopqt): clvlnum -= 1;
+                            else: inclvaset = True;
+                            isopqt = not(isopqt);
+                else:
+                    if (0 < n and (val[n - 1] == "\\" or val[n - 1] == '\\')): pass;
+                    else:
+                        fndqt = True;
+                        isopqt = True;
+                        fqti = n;
+                        inclvaset = True;
+            lvls[n] = clvlnum;
+            if (inclvaset):
+                clvlnum += 1;
+                inclvaset = False;
+        #print(f" val = {val}");
+        #print(f'lvls = {myvalidator.myjoin("", lvls)}');
+
+        errmsg = "";
+        if (len(val) == len(lvls)):
+            if (lvls[len(lvls) - 1] == 1): pass;
+            else:
+                errmsg = "invalid last level!";
+                #print(errmsg);
+                return {"finlvs": [], "origlvs": lvls, "val": val, "errmsg": errmsg};
+        else:
+            errmsg = "invalid number of levels found!";
+            #print(errmsg);
+            return {"finlvs": [], "origlvs": lvls, "val": val, "errmsg": errmsg};
+
+        plv = 1;
+        for lv in lvls:
+            if (lv < 1 or len(val) < lv):
+                errmsg = "invalid level found!";
+                #print(errmsg);
+                return {"finlvs": [], "origlvs": lvls, "val": val, "errmsg": errmsg};
+            else:
+                if (lv == plv or lv == plv + 1 or lv + 1 == plv): pass;
+                else:
+                    errmsg = "level diff was not valid!";
+                    #print(errmsg);
+                    return {"finlvs": [], "origlvs": lvls, "val": val, "errmsg": errmsg};
+            plv = lv;
+        return {"finlvs": lvls, "origlvs": lvls, "val": val, "errmsg": errmsg};
+
+    @classmethod
+    def getParmsFromValType(cls, val):
+        #params are everything after the first ( and the last )
+        #everything else is ignored.
+        #if value is not valid, then return empty or null
+        #params can be inside ' or ", but ignore it if it is escaped
+        #commas inside ' or " can be ignored, but others outside of that cannot be ignored.
+        lvsobj = cls.getLevelsForValStr(val);
+        if (len(lvsobj["errmsg"]) < 1):
+            #get all of the comma space indexes on level 2 only.
+            #these will be the values... stored pretty much exactly as they are.
+            #after the first ( index and before the last )
+            cmaisonlvtwo = [n for n in range(len(lvsobj["finlvs"]))
+                            if (val[n] == "," and lvsobj["finlvs"][n] == 2)];
+            print(f"cmaisonlvtwo = {cmaisonlvtwo}");
+            
+            #the delimeter is , space so the items in the list are all values
+            #we might be able to split the string at these indexes only
+            #but we need to know where the bounds are that we want
+            #given that the algorithmn is special, we can figure out based on where the levels change
+            #where is the first change from 1 to 2 and the last change from 2 to 1?
+            fpi = -1;
+            fndit = False;
+            for n in range(len(val)):
+                if ((lvsobj["finlvs"][n] == 2) and ((0 < n) and (lvsobj["finlvs"][n - 1] == 1))):
+                    fpi = n;
+                    fndit = True;
+                    break;
+            print(f"fpi = {fpi}");
+            print(f"fndit = {fndit}");
+            
+            if (fndit):
+                if (0 < fpi and fpi < len(val)): pass;
+                else: raise ValueError("fpi is invalid!");
+            else: raise ValueError("we must have found the interchange!");
+
+            lpi = -1;
+            fndit = False;
+            for n in range(len(val) - 1, 0, -1):
+                if ((lvsobj["finlvs"][n] == 1) and (0 < n) and (lvsobj["finlvs"][n - 1] == 2)):
+                    lpi = n;
+                    fndit = True;
+                    break;
+            print(f"lpi = {lpi}");
+            print(f"fndit = {fndit}");
+
+            if (fndit):
+                if (0 < lpi and lpi < len(val) and fpi < lpi): pass;
+                else: raise ValueError("lpi is invalid!");
+            else: raise ValueError("we must have found the interchange!");
+            psstronly = val[fpi: lpi];
+            print(f"psstronly = {psstronly}");
+
+            #all we have to do is split the string properly now and then return
+            raise ValueError("NOT DONE YET 3-9-2025 10:19 PM MST!");
+        else: return [];
+
+    @classmethod
     def isValidDataType(cls, val, varstr):
         #get data types for the specific variant
         #if the list is empty or null, then assumed valid
@@ -1268,7 +1446,8 @@ class myvalidator:
         print(f"val = {val}");
         print(f"varstr = {varstr}");
 
-        mvtpslist = myvalidator.getValidSQLDataTypes(varstr);
+        datatypesinfolist = myvalidator.getSQLDataTypesInfo(varstr);
+        mvtpslist = myvalidator.getValidSQLDataTypesFromInfoList(datatypesinfolist);
         if (myvalidator.isvaremptyornull(mvtpslist)): return True;
         else:
             valnmhasps = ("(" in val and ")" in val);
@@ -1340,6 +1519,34 @@ class myvalidator:
                                 #need to know if unsigned...
                                 #need to get the ranges for those types on those numbers...
                                 #need to verify the ranges on the numbers for those data types...
+                                #verify that the number of parameters given match
+                                #if can have none, then the defaults are used.
+                                #if some are given where none is accepted, error.
+                                #
+                                #get the parameters provided from the value then
+                                #
+                                #what we want is a specific range object for the variant
+                                #with the type names
+                                #for each object on this list:
+                                #-check and see if the number of parameters match
+                                #--if using max num params = 0
+                                #-if no match on parameters, error out
+                                #-if there is a match, check the range
+                                #-if the range matches or is valid, this is probably it. say valid.
+                                #-if the range does not match, move on there might be another.
+                                
+                                mynm = ("" + val if ("(max)" in val) else bgnm);
+                                #numpsonval = (0 if ("(max)" in val) else ?);
+                                tpobjslist = cls.getDataTypesObbsWithNameFromList(datatypesinfolist,
+                                                                                  mynm);
+                                print(f"mynm = {mynm}");
+                                print(f"tpobjslist = {tpobjslist}");
+                                psonval = cls.getParmsFromValType(val);
+                                print(f"psonval = {psonval}");
+                                #for tpobj in tpobjslist:
+                                #    if (len(tpobj["paramnameswithranges"]) == numpsonval):
+                                #        if ()
+                                #        ?;
                                 raise ValueError("NOT DONE YET 3-5-2025 10 PM MST...");
                     else:
                         #comma in name, but no parenthesis has already been handled.
