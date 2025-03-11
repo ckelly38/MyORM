@@ -213,6 +213,75 @@ class myvalidator:
             if (hasmax): mystr += " at most " + str(maxval);
             raise ValueError("" + varnm + mystr + " but it was not!");
 
+    @classmethod
+    def myjoin(cls, sepstr, mlist):
+        if (myvalidator.isvaremptyornull(sepstr)):
+            mystr = "";
+            for val in mlist:
+                mystr += str(val);
+            return mystr;
+        else: return sepstr.join(mlist);
+
+    @classmethod
+    def mysplit(cls, mystr, delimis, delimlens, offset=0):
+        myvalidator.varmustbeanumber(offset, "offset");
+        if (mystr == None): return None;
+        myvalidator.varmustbethetypeonly(mystr, str, "mystr");
+        if ((len(mystr) < 2) or myvalidator.isvaremptyornull(delimis)): return [mystr];
+        isonedelimlen = False;
+        if (myvalidator.areTwoArraysTheSameSize(delimis, delimlens)):
+            for n in range(len(delimis)):
+                myvalidator.varmustbeanumber(delimis[n], "delimis[" + str(n) + "]");
+                myvalidator.varmustbeanumber(delimlens[n], "delimlens[" + str(n) + "]");
+        else:
+            isonedelimlen = (len(delimlens) == 1);
+            if (isonedelimlen and 0 < len(delimis)):
+                myvalidator.varmustbeanumber(delimlens[0], "delimlen");
+                for n in range(len(delimis)):
+                    myvalidator.varmustbeanumber(delimis[n], "delimis[" + str(n) + "]");
+            else:
+                raise ValueError("delimis len(" + str(len(delimis)) +") and delimilens len(" +
+                                 str(len(delimlens)) +
+                                 ") must both be the same size, but they were not!");
+        #the resultant array must have num delimis + 1 so if 2 indexes 3 parts
+        #the last part is allowed to be empty
+        #the resultant string rejoined should have at most the same number of characters in mystr
+        myresarr = None;
+        prevdelimi = 0;
+        prevdelimlen = 0;
+        for n in range(len(delimis)):
+            cdelimi = delimis[n] + offset;
+            cdelimlen = (delimlens[0] if isonedelimlen else delimlens[n]);
+            #print(f"cdelimi = {cdelimi}");
+            #print(f"cdelimlen = {cdelimlen}");
+            #print(f"prevdelimi = {prevdelimi}");
+            #print(f"prevdelimlen = {prevdelimlen}");
+            
+            myvalidator.valueMustBeInRange(cdelimi, 0, len(mystr), True, True, "cdelimi");
+            if (n == 0): myresarr = [mystr[0: cdelimi]];
+            else: myresarr.append(mystr[prevdelimi + prevdelimlen: cdelimi]);
+            if (n + 1 == len(delimis)): myresarr.append(mystr[cdelimi + cdelimlen:]);
+            prevdelimlen = cdelimlen;
+            prevdelimi = cdelimi;
+        #print(f"myresarr = {myresarr}");
+
+        if (len(myresarr) == len(delimis) + 1): pass;
+        else: raise ValueError("generated split array did not have the correct number of strings!");
+        resstr = myvalidator.myjoin("", myresarr);
+        #print(f"resstr = {resstr}");
+
+        myvalidator.stringMustHaveAtMostNumChars(resstr, len(mystr), "resstr");
+        return myresarr;
+    @classmethod
+    def mysplitWithLen(cls, mystr, delimis, delimlen, offset=0):
+        myvalidator.varmustbeanumber(delimlen, "delimlen");
+        return cls.mysplit(mystr, delimis, [delimlen], offset);
+    @classmethod
+    def mysplitWithDelimeter(cls, mystr, delimstr, offset=0):
+        if (delimstr == None): return cls.mysplitWithDelimeter(mystr, "", offset);
+        else: myvalidator.varmustbethetypeonly(delimstr, str, "delimstr");
+        delimis = [i for i in range(len(mystr)) if mystr.startswith(delimstr, i)];
+        return cls.mysplitWithLen(mystr, delimis, len(delimstr), offset);
 
     #pretty much all of these need the table name
     #it is my responsibility as the programmer to make sure that the columns are on the table
@@ -321,8 +390,9 @@ class myvalidator:
         myvalidator.varmustnotbeempty(colnames, "colnames");
         myvalidator.varmustnotbeempty(tablenames, "tablenames");
         myvalidator.varmustbeboolean(singleinctname, "singleinctname");
+        basestr = "ORDER BY ";
         if (myvalidator.isvaremptyornull(sorder)):
-            return "ORDER BY " + cls.combineTableNamesWithColNames(colnames, tablenames, singleinctname);
+            return basestr + cls.combineTableNamesWithColNames(colnames, tablenames, singleinctname);
         else:
             if (len(colnames) < len(sorder)):
                 raise ValueError("sorder must be at most as long as the number of columns!");
@@ -352,7 +422,7 @@ class myvalidator:
                 mystr += "" + (tnm + "." if inctnm else "") + colnm;
                 mystr += ((" ASC" if sorder[n] else " DESC") if incval else "");
                 if (n + 1 < len(colnames)): mystr += ", ";
-            return "ORDER BY " + mystr;
+            return basestr + mystr;
     @classmethod
     def genSortOrderByAscVal(cls, numcols, boolval): return [boolval for n in range(numcols)];
 
@@ -1052,7 +1122,7 @@ class myvalidator:
                 myvalidator.genNonValueTypeInfoDict(["SMALLINT"], True, [
                     myvalidator.genRangeDataDict("size", True, True, 0, 5, 5)], [
                 myvalidator.genRangeDataDict("signed", True, True,
-                                             -1 * smlintmagmx, smlintmagmx - 1, 0),
+                                             -smlintmagmx, smlintmagmx - 1, 0),
                 myvalidator.genRangeDataDict("unsigned", True, True, 0, smlintmx, 0)]),
 
                 myvalidator.genNonValueTypeInfoDict(["MEDIUMINT"], True, [
@@ -1063,23 +1133,23 @@ class myvalidator:
                 myvalidator.genNonValueTypeInfoDict(["INT", "INTEGER"], True, [
                     myvalidator.genRangeDataDict("size", True, True, 0, 10, 10)], [
                 myvalidator.genRangeDataDict("signed", True, True,
-                                             -1 * nrmlintmagmx, nrmlintmagmx - 1, 0),
+                                             -nrmlintmagmx, nrmlintmagmx - 1, 0),
                 myvalidator.genRangeDataDict("unsigned", True, True, 0, 4294967295, 0)]),
 
                 myvalidator.genNonValueTypeInfoDict(["BIGINT"], True, [
                     myvalidator.genRangeDataDict("size", True, True, 0, 20, 20)], [
-                myvalidator.genRangeDataDict("signed", True, True, -1 * ltintmag, ltintmag - 1, 0),
+                myvalidator.genRangeDataDict("signed", True, True, -ltintmag, ltintmag - 1, 0),
                 myvalidator.genRangeDataDict("unsigned", True, True, 0, ltintmxmag, 0)]),
 
                 myvalidator.genNonValueTypeInfoDict(["FLOAT"], True, [
                     myvalidator.genRangeDataDict("p", True, True, 0, 53, 53)], [
-                myvalidator.genRangeDataDict("values", True, True, -1 * decmxmg, decmxmg, 0)]),
+                myvalidator.genRangeDataDict("values", True, True, -decmxmg, decmxmg, 0)]),
 
                 myvalidator.genNonValueTypeInfoDict(["DECIMAL", "DEC", "FLOAT", "DOUBLE",
                                                      "DOUBLE PRECISION"], True, [
                     myvalidator.genRangeDataDict("size", True, True, 0, 65, 10),
                     myvalidator.genRangeDataDict("d", True, True, 0, 30, 0)], [
-                myvalidator.genRangeDataDict("values", True, True, -1 * decmxmg, decmxmg, 0)]),
+                myvalidator.genRangeDataDict("values", True, True, -decmxmg, decmxmg, 0)]),
                     
                 myvalidator.genNonValueTypeInfoDict(["DATE"], False, [], [
                 myvalidator.genRangeDataDict("values", True, True, "1000-01-01", "9999-12-31",
@@ -1160,35 +1230,35 @@ class myvalidator:
 
                     myvalidator.genNonValueTypeInfoDict(["SMALLINT"], True, [], [
                     myvalidator.genRangeDataDict("values", True, True,
-                                                 -1 * smlintmagmx, smlintmagmx - 1, 0)]),
+                                                 -smlintmagmx, smlintmagmx - 1, 0)]),
 
                     myvalidator.genNonValueTypeInfoDict(["INT", "INTEGER"], True, [], [
                     myvalidator.genRangeDataDict("values", True, True,
-                                             -1 * nrmlintmagmx, nrmlintmagmx - 1, 0)]),
+                                             -nrmlintmagmx, nrmlintmagmx - 1, 0)]),
 
                     myvalidator.genNonValueTypeInfoDict(["BIGINT"], True, [], [
                     myvalidator.genRangeDataDict("values", True, True,
-                                                 -1 * ltintmag, ltintmag - 1, 0)]),
+                                                 -ltintmag, ltintmag - 1, 0)]),
 
                     myvalidator.genNonValueTypeInfoDict(["DECIMAL", "NUMERIC"], True, [
                         myvalidator.genRangeDataDict("p", True, True, 0, 38, 18),
                         myvalidator.genRangeDataDict("s", True, True, 0, 38, 0)], [
-                    myvalidator.genRangeDataDict("values", True, True, -1 * decmxmg, decmxmg - 1, 0)]),
+                    myvalidator.genRangeDataDict("values", True, True, -decmxmg, decmxmg - 1, 0)]),
                     
                     myvalidator.genNonValueTypeInfoDict(["SMALLMONEY"], True, [], [
                     myvalidator.genRangeDataDict("values", True, True,
-                                             (-1 * nrmlintmagmx)*mnypw, (nrmlintmagmx - 1)*mnypw, 0)]),
+                                             (-nrmlintmagmx)*mnypw, (nrmlintmagmx - 1)*mnypw, 0)]),
 
                     myvalidator.genNonValueTypeInfoDict(["MONEY"], True, [], [
                     myvalidator.genRangeDataDict("values", True, True,
-                                                 (-1 * ltintmag)*mnypw, (ltintmag - 1)*mnypw, 0)]),
+                                                 (-ltintmag)*mnypw, (ltintmag - 1)*mnypw, 0)]),
 
                     myvalidator.genNonValueTypeInfoDict(["FLOAT"], True, [
                         myvalidator.genRangeDataDict("p", True, True, 0, 53, 53)], [
-                    myvalidator.genRangeDataDict("values", True, True, -1 * fltmxmag, fltmxmag, 0)]),
+                    myvalidator.genRangeDataDict("values", True, True, -fltmxmag, fltmxmag, 0)]),
                     
                     myvalidator.genNonValueTypeInfoDict(["REAL"], True, [], [
-                        myvalidator.genRangeDataDict("values", True, True, -1 * ltrlmag, ltrlmag, 0)]),
+                        myvalidator.genRangeDataDict("values", True, True, -ltrlmag, ltrlmag, 0)]),
 
                     myvalidator.genNonValueTypeInfoDict(["DATETIME"], False, [], [
                     myvalidator.genRangeDataDict("values", True, True, "1753-01-01 00:00:00.000",
@@ -1235,11 +1305,12 @@ class myvalidator:
                     myvalidator.genNonValueTypeInfoDict(["TABLE"], False, [], [
                         myvalidator.genRangeDataDictNoRange("values", True, "NULL")])];
 
-            #return ["CHAR(n)", "VARCHAR(n)", "VARCHAR(max)", "NCHAR(n)", "NVARCHAR(n)", "NVARCHAR(max)",
-            #        "BINARY(n)", "VARBINARY(n)", "VARBINARY(max)", "BIT", "TINYINT", "SMALLINT", "INT",
-            #        "BIGINT", "DECIMAL(p, s)", "NUMERIC(p, s)", "SMALLMONEY", "MONEY", "FLOAT(p)",
-            #        "REAL", "DATETIME", "DATETIME2", "SMALLDATETIME", "DATE", "TIME", "DATETIMEOFFSET",
-            #        "TIMESTAMP", "SQL_VARIANT", "UNIQUEIDENTIFIER", "XML", "CURSOR", "TABLE"];
+            #return ["CHAR(n)", "VARCHAR(n)", "VARCHAR(max)", "NCHAR(n)", "NVARCHAR(n)",
+            #        "NVARCHAR(max)", "BINARY(n)", "VARBINARY(n)", "VARBINARY(max)", "BIT", "TINYINT",
+            #        "SMALLINT", "INT", "BIGINT", "DECIMAL(p, s)", "NUMERIC(p, s)", "SMALLMONEY",
+            #        "MONEY", "FLOAT(p)", "REAL", "DATETIME", "DATETIME2", "SMALLDATETIME", "DATE",
+            #        "TIME", "DATETIMEOFFSET", "TIMESTAMP", "SQL_VARIANT", "UNIQUEIDENTIFIER", "XML",
+            #        "CURSOR", "TABLE"];
         else: return [];
 
     @classmethod
@@ -1269,15 +1340,6 @@ class myvalidator:
     def getDataTypesObbsWithNameFromList(cls, mlist, tpnm):
         if (mlist == None): return None;
         else: return [mobj for mobj in mlist for nm in mobj["names"] if (nm == tpnm)];
-
-    @classmethod
-    def myjoin(cls, sepstr, mlist):
-        if (myvalidator.isvaremptyornull(sepstr)):
-            mystr = "";
-            for val in mlist:
-                mystr += str(val);
-            return mystr;
-        else: return sepstr.join(mlist);
 
     @classmethod
     def getLevelsForValStr(cls, val):
@@ -1394,7 +1456,7 @@ class myvalidator:
             #after the first ( index and before the last )
             cmaisonlvtwo = [n for n in range(len(lvsobj["finlvs"]))
                             if (val[n] == "," and lvsobj["finlvs"][n] == 2)];
-            print(f"cmaisonlvtwo = {cmaisonlvtwo}");
+            #print(f"cmaisonlvtwo = {cmaisonlvtwo}");
             
             #the delimeter is , space so the items in the list are all values
             #we might be able to split the string at these indexes only
@@ -1408,8 +1470,8 @@ class myvalidator:
                     fpi = n;
                     fndit = True;
                     break;
-            print(f"fpi = {fpi}");
-            print(f"fndit = {fndit}");
+            #print(f"fpi = {fpi}");
+            #print(f"fndit = {fndit}");
             
             if (fndit):
                 if (0 < fpi and fpi < len(val)): pass;
@@ -1423,18 +1485,23 @@ class myvalidator:
                     lpi = n;
                     fndit = True;
                     break;
-            print(f"lpi = {lpi}");
-            print(f"fndit = {fndit}");
+            #print(f"lpi = {lpi}");
+            #print(f"fndit = {fndit}");
 
             if (fndit):
                 if (0 < lpi and lpi < len(val) and fpi < lpi): pass;
                 else: raise ValueError("lpi is invalid!");
             else: raise ValueError("we must have found the interchange!");
             psstronly = val[fpi: lpi];
-            print(f"psstronly = {psstronly}");
+            #print(f"psstronly = {psstronly}");
 
             #all we have to do is split the string properly now and then return
-            raise ValueError("NOT DONE YET 3-9-2025 10:19 PM MST!");
+            strssplit = myvalidator.mysplitWithLen(psstronly, cmaisonlvtwo, 2, -fpi);
+            #print(f"strssplit = {strssplit}");
+
+            #what about the empty strings that split will occassionally leave us with?
+            #the empty strings that split will leave us with should be removed.
+            return [mstr for mstr in strssplit if (0 < len(mstr))];
         else: return [];
 
     @classmethod
@@ -1443,8 +1510,8 @@ class myvalidator:
         #if the list is empty or null, then assumed valid
         #if on the list, valid
         #if not on the list and list is not empty, then not valid.
-        print(f"val = {val}");
-        print(f"varstr = {varstr}");
+        #print(f"val = {val}");
+        #print(f"varstr = {varstr}");
 
         datatypesinfolist = myvalidator.getSQLDataTypesInfo(varstr);
         mvtpslist = myvalidator.getValidSQLDataTypesFromInfoList(datatypesinfolist);
@@ -1452,8 +1519,8 @@ class myvalidator:
         else:
             valnmhasps = ("(" in val and ")" in val);
             valnmhascma = ("," in val);
-            print(f"valnmhasps = {valnmhasps}");
-            print(f"valnmhascma = {valnmhascma}");
+            #print(f"valnmhasps = {valnmhasps}");
+            #print(f"valnmhascma = {valnmhascma}");
             
             valfpi = (val.index("(") if valnmhasps else -1);
             if (valnmhasps):
@@ -1461,10 +1528,10 @@ class myvalidator:
                 if (valnmhascma):
                     valbgcmai = val.index(",");
                     valfincmai = val.rindex(",");
-                    print(f"valfpi = {valfpi}");
-                    print(f"valbgcmai = {valbgcmai}");
-                    print(f"valfincmai = {valfincmai}");
-                    print(f"valfinpi = {valfinpi}");
+                    #print(f"valfpi = {valfpi}");
+                    #print(f"valbgcmai = {valbgcmai}");
+                    #print(f"valfincmai = {valfincmai}");
+                    #print(f"valfinpi = {valfinpi}");
 
                     if (valfpi < valbgcmai and valbgcmai < valfinpi and
                         valfpi < valfincmai and valfincmai < valfinpi):
@@ -1482,12 +1549,12 @@ class myvalidator:
                     return False;
 
             valbgnm = (val[0:valfpi] if valnmhasps else "" + val);
-            print(f"valbgnm = {valbgnm}");
+            #print(f"valbgnm = {valbgnm}");
 
             for mtp in mvtpslist:
                 nmhasps = ("(" in mtp and ")" in mtp);
-                print(f"mtp = {mtp}");
-                print(f"nmhasps = {nmhasps}");
+                #print(f"mtp = {mtp}");
+                #print(f"nmhasps = {nmhasps}");
 
                 if (valnmhasps == nmhasps):
                     #likely a match; otherwise definitely not a match
@@ -1500,20 +1567,20 @@ class myvalidator:
                         #ie only (max) is in there and after that is end of the string immediately
                         #then it is a perfect match...
                         bgpindx = mtp.index("(");
-                        print(f"bgpindx = {bgpindx}");
+                        #print(f"bgpindx = {bgpindx}");
 
                         bgnm = mtp[0:bgpindx];
-                        print(f"bgnm = {bgnm}");
+                        #print(f"bgnm = {bgnm}");
 
                         if (valbgnm == bgnm):
                             #it can be a perfect match and not be valid
                             #the only perfect matchs accepted are if no parenthesis,
                             #or with tpnm(max) only
                             if (val == mtp):
-                                print("found our perfect match!");
-                                print("only perfect matchs in the form tpnm(max) are allowed with " +
-                                      "parentheis, perfect matchs that only have alphabetic " +
-                                      "characters A-Z and a-z only are allowed!");
+                                #print("found our perfect match!");
+                                #print("only perfect matchs in the form tpnm(max) are allowed with " +
+                                #      "parentheis, perfect matchs that only have alphabetic " +
+                                #      "characters A-Z and a-z only are allowed!");
                                 return ((valbgnm + "(max)" == val) and (bgnm + "(max)" == mtp));
                             else:
                                 #need to know if unsigned...
@@ -1536,26 +1603,108 @@ class myvalidator:
                                 #-if the range does not match, move on there might be another.
                                 
                                 mynm = ("" + val if ("(max)" in val) else bgnm);
-                                #numpsonval = (0 if ("(max)" in val) else ?);
+                                psonval = ([] if ("(max)" in val) else cls.getParmsFromValType(val));
+                                numpsonval = (0 if ("(max)" in val) else len(psonval));
                                 tpobjslist = cls.getDataTypesObbsWithNameFromList(datatypesinfolist,
                                                                                   mynm);
-                                print(f"mynm = {mynm}");
-                                print(f"tpobjslist = {tpobjslist}");
-                                psonval = cls.getParmsFromValType(val);
-                                print(f"psonval = {psonval}");
-                                #for tpobj in tpobjslist:
-                                #    if (len(tpobj["paramnameswithranges"]) == numpsonval):
-                                #        if ()
-                                #        ?;
-                                raise ValueError("NOT DONE YET 3-5-2025 10 PM MST...");
+                                #print(f"mynm = {mynm}");
+                                #print(f"psonval = {psonval}");
+                                #print(f"numpsonval = {numpsonval}");
+                                #print(f"tpobjslist = {tpobjslist}");
+                                
+                                for tpobj in tpobjslist:
+                                    if (len(tpobj["paramnameswithranges"]) == numpsonval):
+                                        #then we check the values to see if they match or are valid
+                                        #if the length is zero no need to check the parameter values
+                                        #that one is valid. once a match is found
+                                        if (numpsonval == 0): return True;
+                                    elif (len(tpobj["paramnameswithranges"]) < numpsonval):
+                                        #if param type is an array or list, this is wrong
+                                        #so wrong for ENUMs and SETs for MYSQL for sure.
+                                        #print("number of params on val is more than for the type!");
+                                        if (mynm == "ENUM" or mynm == "SET"): pass;
+                                        else: continue;#not a match, maybe another is.
+                                    if (numpsonval == 0):
+                                        #check to see if all of the parameters have a default value
+                                        #if they do not move on
+                                        getnext = False;
+                                        for n in range(len(tpobj["paramnameswithranges"])):
+                                            cpobj = tpobj["paramnameswithranges"][n];
+                                            #print(f"cpobj = {cpobj}");
+
+                                            if (cpobj["hasadefault"]): pass;
+                                            else:
+                                                getnext = True;
+                                                break;
+                                        if (getnext): continue;
+                                        else: return True;
+                                    else:
+                                        #either equal to or less than the max parameters were provided
+                                        #if the param data type is a number,
+                                        #then the values will need to be converted to that first
+                                        #otherwise no conversion is needed.
+                                        #if can be signed or not is true, then number
+                                        finpsonval = [
+                                            (int(pval) if (tpobj["canbesignedornot"]) else pval)
+                                            for pval in psonval];
+                                        #print(f"finpsonval = {finpsonval}");
+                                        
+                                        #make sure the given values are in the ranges...
+                                        #if all have default values, you may not need any
+                                        #if one is different than the rest,
+                                        #you need to provide up to and including it,
+                                        #but do not have to provide after of course
+                                        getnext = False;
+                                        if (mynm == "ENUM" or mynm == "SET"):
+                                            #the values do not have a specified range,
+                                            #but they do have a specified length,
+                                            #but it is not a parameter
+                                            #the length or size is given on the type object,
+                                            #but not on the params range object(s).
+                                            #look for length or size on the main type object.
+                                            #then compare the length of the valparams against this
+                                            for valobj in tpobj["valuesranges"]:
+                                                #print(f"valobj = {valobj}");
+
+                                                if (valobj["paramname"] in ["length", "size"]):
+                                                    if (numpsonval < 0 or valobj["max"] < numpsonval):
+                                                        getnext = True;
+                                                        break;
+                                                    else: return True;
+                                            if (getnext): pass;
+                                            else:
+                                                raise ValueError("the data type info object was " +
+                                                                 "built wrong for (" + mynm +
+                                                                 ") for variant (" + varstr + ")!");
+                                        else:
+                                            for n in range(len(tpobj["paramnameswithranges"])):
+                                                isivforbth = (n < numpsonval);
+                                                #print(f"isivforbth = {isivforbth}");
+                                                
+                                                cpobj = tpobj["paramnameswithranges"][n];
+                                                cpval = (finpsonval[n] if isivforbth else None);
+                                                #print(f"cpval = {cpval}");
+                                                #print(f"cpobj = {cpobj}");
+
+                                                if (isivforbth):
+                                                    if (cpobj["canspecifyrange"]):
+                                                        if (cpval < cpobj["min"] or
+                                                            cpobj["max"] < cpval):
+                                                                getnext = True;#invalid
+                                                else:
+                                                    if (cpobj["hasadefault"]): pass;
+                                                    else: getnext = True;#invalid must have a default
+                                                if (getnext): break;
+                                        if (getnext): continue;
+                                        else: return True;
                     else:
                         #comma in name, but no parenthesis has already been handled.
                         #name must be alphabetic only for a perfect match without parenthesis
                         #to be valid.
                         if (val == mtp):
-                            print("found our perfect match!");
-                            print("only perfect matchs in the form tpnm(max) are allowed with " +
-                                    "parentheis, perfect matchs that only have alphabetic " +
-                                    "characters A-Z and a-z only are allowed!");
+                            #print("found our perfect match!");
+                            #print("only perfect matchs in the form tpnm(max) are allowed with " +
+                            #        "parentheis, perfect matchs that only have alphabetic " +
+                            #        "characters A-Z and a-z only are allowed!");
                             return val.isalpha();
             return False;

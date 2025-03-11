@@ -90,6 +90,29 @@ print("value -5, min 1, max 5 is value in range: " +
 print("value 2.5, min 1, max 5 is value in range: " +
       str(myvalidator.isValueInRangeWithMaxAndMin(2.5, 1, 5)));#true
 print();
+print("MY JOIN AND SPLIT METHOD (NOT SQL JOINS) TESTS:");
+print();
+print(myvalidator.myjoin("", ["some", " text", "with ", "other", "stuff"]));
+print();
+print(myvalidator.myjoin("\n", ["some", " text", "with ", "other", "stuff"]));
+print();
+print("\n".join(["some", " text", "with ", "other", "stuff"]));
+print();
+print(myvalidator.mysplitWithLen("the funny string", None, 2, 0));
+#print(myvalidator.mysplitWithLen("the funny string", [3, 8, 12], [2, 4], 0));#error
+#print(myvalidator.mysplit("the funny string", [3, 8, 12], [2, 4], 0));#error
+print(myvalidator.mysplit("the funny string", [3, 8, 12], [2, 4, 1], 0));#["the", "unn", "", "ing"]
+#the funny string
+#01234567890123456 indexes
+#          1
+#   ^    ^   ^
+#   ^^   ^^^^^
+#   ^^   ^^
+print(myvalidator.mysplitWithLen("the funny string", [3, 8], 2, 0));#["the", "unn", "string"];
+print(myvalidator.mysplitWithDelimeter("the funny string", "", 0));
+print();
+print("MY SQL VARIANT DATA TYPE INFO OBJECTS TESTS:");
+print();
 print("lite = ", end="");
 liteinfoobjlist = myvalidator.getSQLDataTypesInfo('LITE');
 myvalidator.printSQLDataTypesInfoObj(liteinfoobjlist);
@@ -106,21 +129,23 @@ print(myvalidator.getValidSQLDataTypesFromInfoList(liteinfoobjlist));
 print(myvalidator.getValidSQLDataTypesFromInfoList(mysqlinfoobjlist));
 print(myvalidator.getValidSQLDataTypesFromInfoList(sqlsrvrinfoobjlist));
 print();
+#quote did not actually get escaped
+print(myvalidator.getLevelsForValStr("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\'s poses)sive', 'something else, other', 'last')"));
+print(myvalidator.getLevelsForValStr("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')"));
+print(myvalidator.getParmsFromValType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')"));
+print();
 print(myvalidator.isValidDataType("OTHER, VARCHAR(max)", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("VARCHAR(max), OTHER", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("NUMERIC(p, s)", "SQLSERVER"));#false
-#quote did not actually get escaped
-#print(myvalidator.getLevelsForValStr("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\'s poses)sive', 'something else, other', 'last')"));
-print(myvalidator.getLevelsForValStr("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')"));
-print(myvalidator.getParmsFromValType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')"));
 #print(myvalidator.isValidDataType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last'", "MYSQL"));#false
-#print(myvalidator.isValidDataType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')", "MYSQL"));#true
-#print(myvalidator.isValidDataType("NUMERIC(39, 1)", "SQLSERVER"));#false#38 or less for both
-#print(myvalidator.isValidDataType("NUMERIC(1, 39)", "SQLSERVER"));#false#38 or less for both
+print(myvalidator.isValidDataType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')", "MYSQL"));#true
+#above tests crashes because not done with the code in the method for it 3-10-2025 10 PM
+print(myvalidator.isValidDataType("NUMERIC(1, 39, 20)", "SQLSERVER"));#false#too many parameters
+print(myvalidator.isValidDataType("NUMERIC(39, 1)", "SQLSERVER"));#false#38 or less for both
+print(myvalidator.isValidDataType("NUMERIC(1, 39)", "SQLSERVER"));#false#38 or less for both
+print(myvalidator.isValidDataType("NUMERIC(39)", "SQLSERVER"));#false#38 or less for both
+print(myvalidator.isValidDataType("NUMERIC(1)", "SQLSERVER"));#true
 print(myvalidator.isValidDataType("VARCHAR(max)", "SQLSERVER"));#true
-#crashes due to order otherwise would pass
-#need more tests for the isValidDataType method: one with valid numbers for the params, one without
-#one with an invalid number of params too
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 print();
 print("SQL GEN TESTS:");
