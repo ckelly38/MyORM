@@ -40,6 +40,10 @@ class myvalidator:
         else: return True;
 
     @classmethod
+    def isvaranumber(cls, val): 
+        return (False if (val == None) else (type(val) == int or type(val) == float));
+
+    @classmethod
     def varmustbeanumber(cls, val, varnm="varnm"):
         if (myvalidator.isvaremptyornull(varnm)): return cls.varmustbeanumber(val, "varnm");
         if (type(val) == int or type(val) == float): return True;
@@ -282,6 +286,16 @@ class myvalidator:
         else: myvalidator.varmustbethetypeonly(delimstr, str, "delimstr");
         delimis = [i for i in range(len(mystr)) if mystr.startswith(delimstr, i)];
         return cls.mysplitWithLen(mystr, delimis, len(delimstr), offset);
+
+    @classmethod
+    def genStringWithNumberText(cls, numchars):
+        if (myvalidator.isValueMoreThanOrAtTheMinOnly(numchars, 0)): pass;
+        else: raise ValueError("numchars must be at minimum 0, but it was not!");
+        #return myvalidator.myjoin("", [(n % 10) for n in range(numchars)]);
+        mystr = "";
+        for n in range(numchars):
+            mystr += str(n % 10);
+        return mystr;
 
     #pretty much all of these need the table name
     #it is my responsibility as the programmer to make sure that the columns are on the table
@@ -702,10 +716,11 @@ class myvalidator:
     #TEXT max length: 2^31-1 bytes max
     #BLOB max size in bytes: 2^31-1 bytes max
     #return ["NULL", "REAL", "INTEGER", "TEXT", "BLOB"];
+    #
     #if not using lite:
     #MYSQL:
     #
-    #CHAR(size) size 0 to 255 inclusive default is 1.
+    #CHAR(size) size is length 0 to 255 inclusive default is 1.
     #VARCHAR(size) size max length 0 to 65535 inclusive default is 1.
     #BINARY(size) size in bytes default is 1 similar to char (8 I believe, but not stated).
     #VARBINARY(size) size in bytes default is 1 similar to varchar (8 I believe, but not stated).
@@ -920,8 +935,6 @@ class myvalidator:
                     "TIMESTAMP", "SQL_VARIANT", "UNIQUEIDENTIFIER", "XML", "CURSOR", "TABLE"];
         else: return [];
 
-    #BELOW METHODS ARE NOT DONE YET 3-6-2025 1:41 AM MST
-
     #p, s -> ?;
     #what if no range can be specified, but we have a name
     #add default values for the parameter (if they have one)
@@ -1036,17 +1049,16 @@ class myvalidator:
             mxbts = (2**31) - 1;#max TEXT length and BLOB size in bytes 
             return [ myvalidator.genValueTypeInfoDict(["NULL"]),
                     myvalidator.genNonValueTypeInfoDict(["REAL"], True, [], [
-                        myvalidator.genRangeDataDict("range", True, True, -1 * ltrlmag, ltrlmag, 0)]),
+                        myvalidator.genRangeDataDict("values", True, True, -ltrlmag, ltrlmag, 0)]),
                     
                     myvalidator.genNonValueTypeInfoDict(["INTEGER"], True, [], [
-                        myvalidator.genRangeDataDict("signed", True, True,
-                                                     -1 * ltintmag, ltintmag - 1, 0),
+                        myvalidator.genRangeDataDict("signed", True, True, -ltintmag, ltintmag - 1, 0),
                         myvalidator.genRangeDataDict("unsigned", True, True, 0, ltintmxmag, 0)]),
                     
                     myvalidator.genNonNumNonValTypeInfoDict(["TEXT"], [], [
                         myvalidator.genRangeDataDict("length", True, True, 0, mxbts, "NULL")]),
                     myvalidator.genNonNumNonValTypeInfoDict(["BLOB"], [], [
-                        myvalidator.genRangeDataDict("length", True, True, 0, mxbts, "NULL")])];
+                        myvalidator.genRangeDataDict("size", True, True, 0, mxbts, "NULL")])];
             #return ["NULL", "REAL", "INTEGER", "TEXT", "BLOB"];
         elif (varstr == "MYSQL"):
             smlintmx = 65535;
@@ -1068,44 +1080,44 @@ class myvalidator:
                 [myvalidator.genRangeDataDictNoRange("range", True, "NULL")]),
                 
                 myvalidator.genNonValueTypeInfoDict(["TINYBLOB"], False, [], [
-                myvalidator.genRangeDataDict("length", True, False, 0, tnyintmx, None),
+                myvalidator.genRangeDataDict("length", True, True, 0, tnyintmx, 0),
                 myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
                 myvalidator.genNonValueTypeInfoDict(["TINYTEXT"], False, [], [
-                myvalidator.genRangeDataDict("length", True, False, 0, tnyintmx, None),
+                myvalidator.genRangeDataDict("length", True, True, 0, tnyintmx, 0),
                 myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
                 myvalidator.genNonValueTypeInfoDict(["BLOB"], False, [
-                    myvalidator.genRangeDataDictNoDefault("size", True, 0, smlintmx)], [
+                    myvalidator.genRangeDataDict("size", True, True, 0, smlintmx, 0)], [
                 myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
                 myvalidator.genNonValueTypeInfoDict(["TEXT"], False, [
-                    myvalidator.genRangeDataDictNoDefault("size", True, 0, smlintmx)], [
+                    myvalidator.genRangeDataDict("size", True, True, 0, smlintmx, 0)], [
                 myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
                 myvalidator.genNonValueTypeInfoDict(["MEDIUMBLOB"], False, [], [
-                myvalidator.genRangeDataDict("length", True, False, 0, 16777215, None),
+                myvalidator.genRangeDataDict("length", True, True, 0, 16777215, 0),
                 myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
                 myvalidator.genNonValueTypeInfoDict(["MEDIUMTEXT"], False, [], [
-                myvalidator.genRangeDataDict("length", True, False, 0, 16777215, None),
+                myvalidator.genRangeDataDict("length", True, True, 0, 16777215, 0),
                 myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
                 myvalidator.genNonValueTypeInfoDict(["LONGBLOB"], False, [], [
-                myvalidator.genRangeDataDict("length", True, False, 0, 4294967295, None),
+                myvalidator.genRangeDataDict("length", True, True, 0, 4294967295, 0),
                 myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
                 myvalidator.genNonValueTypeInfoDict(["LONGTEXT"], False, [], [
-                myvalidator.genRangeDataDict("length", True, False, 0, 4294967295, None),
+                myvalidator.genRangeDataDict("length", True, True, 0, 4294967295, 0),
                 myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
 
                 myvalidator.genNonValueTypeInfoDict(["ENUM"], False, [
                     myvalidator.genRangeDataDictNoRange("values", True, "NULL")], [
-                myvalidator.genRangeDataDict("length", True, False, 0, smlintmx, None)]),
+                myvalidator.genRangeDataDict("length", True, True, 0, smlintmx, 0)]),
 
                 myvalidator.genNonValueTypeInfoDict(["SET"], False, [
                     myvalidator.genRangeDataDictNoRange("values", True, "NULL")], [
-                myvalidator.genRangeDataDict("length", True, False, 0, 64, None)]),
+                myvalidator.genRangeDataDict("length", True, True, 0, 64, 0)]),
                 
                 myvalidator.genNonValueTypeInfoDict(["BIT"], False, [
                     myvalidator.genRangeDataDictNoDefault("size", True, 1, 64)], [
@@ -1337,7 +1349,7 @@ class myvalidator:
                     for mobj in mlist for nm in mobj["names"]];
 
     @classmethod
-    def getDataTypesObbsWithNameFromList(cls, mlist, tpnm):
+    def getDataTypesObjsWithNameFromList(cls, mlist, tpnm):
         if (mlist == None): return None;
         else: return [mobj for mobj in mlist for nm in mobj["names"] if (nm == tpnm)];
 
@@ -1504,6 +1516,8 @@ class myvalidator:
             return [mstr for mstr in strssplit if (0 < len(mstr))];
         else: return [];
 
+    #val is the data type value
+    #varstr is the sql variant string
     @classmethod
     def isValidDataType(cls, val, varstr):
         #get data types for the specific variant
@@ -1605,7 +1619,7 @@ class myvalidator:
                                 mynm = ("" + val if ("(max)" in val) else bgnm);
                                 psonval = ([] if ("(max)" in val) else cls.getParmsFromValType(val));
                                 numpsonval = (0 if ("(max)" in val) else len(psonval));
-                                tpobjslist = cls.getDataTypesObbsWithNameFromList(datatypesinfolist,
+                                tpobjslist = cls.getDataTypesObjsWithNameFromList(datatypesinfolist,
                                                                                   mynm);
                                 #print(f"mynm = {mynm}");
                                 #print(f"psonval = {psonval}");
@@ -1708,3 +1722,159 @@ class myvalidator:
                             #        "characters A-Z and a-z only are allowed!");
                             return val.isalpha();
             return False;
+
+    
+    #BELOW METHODS ARE NOT DONE YET 3-12-2025 1:08 AM MST
+
+    #tpnm is the SQL Data Type name for the specific variant specified by varstr
+    #val is the value we are inserting into the column of that type...
+    #useunsigned is for the signed or unsigned data range for numerical data types
+    #by default useunsigned is true because some data types non numerical ones are in fact unsigned.
+    #it is note worthy that some numerical data types are only signed or unsigned.
+    @classmethod
+    def isValueValidForDataType(cls, tpnm, val, varstr, useunsigned=True):
+        myvalidator.varmustbeboolean(useunsigned, "useunsigned");
+        if (cls.isValidDataType(tpnm, varstr)): pass;
+        else: return False;
+        
+        #if the type object is not specified then the value is assumed to be valid
+        datatypesinfolist = myvalidator.getSQLDataTypesInfo(varstr);
+        mvtpslist = myvalidator.getValidSQLDataTypesFromInfoList(datatypesinfolist);
+        if (myvalidator.isvaremptyornull(mvtpslist)): return True;
+
+        #numeric data types are going to be easier to validate than the others
+        #then dates probably
+        #then we will go by those that have some sort of length or size requirement
+        #then those without restrictions are valid.
+        #without restrictions means no range on the values and no limit on the size or length.
+        
+        nmhasps = ("(" in tpnm and ")" in tpnm);
+        bgnm = (tpnm[0:tpnm.index("(")] if (nmhasps) else "" + tpnm);
+        mynm = ("" + tpnm if ("(max)" in tpnm) else bgnm);
+        print(f"tpnm = {tpnm}");
+        print(f"varstr = {varstr}");
+        print(f"val = {val}");
+        print(f"nmhasps = {nmhasps}");
+        print(f"bgnm = {bgnm}");
+        print(f"mynm = {mynm}");
+        
+        tpobjslist = cls.getDataTypesObjsWithNameFromList(datatypesinfolist, mynm);
+        print(f"tpobjslist = {tpobjslist}");
+        print();
+
+        if (myvalidator.isvaremptyornull(tpobjslist)): return True;
+
+        for tobj in tpobjslist:
+            print(f"tobj = {tobj}");
+            print();
+
+            if (myvalidator.isvaremptyornull(tobj["valuesranges"])):
+                if (tobj["isvalue"]): return (val in tobj["names"]);
+                else:
+                    raise ValueError("the data type info object was built wrong for (" + mynm +
+                                     ") for variant (" + varstr + ")!");
+            else:
+                getnext = False;
+                for vrobj in tobj["valuesranges"]:
+                    print(f"vrobj = {vrobj}");
+                    print();
+
+                    isnumcomp = False;
+                    valforcomp = val;
+                    if (vrobj["paramname"] in ["length", "size"]):
+                        #enforce the length restriction here...
+                        #this may also come in as a required parameter
+                        print("vr has length or size as a required parameter!");
+                        
+                        if (vrobj["canspecifyrange"]):
+                            isnumcomp = True;
+                            valforcomp = len(val);
+                        else:
+                            raise ValueError("the data type info object was built wrong for (" + mynm +
+                                             ") for variant (" + varstr + ")!");
+                
+                    elif (vrobj["paramname"] in ["values", "range"]):
+                        #paramname is something else like values or range
+                        if (vrobj["hasadefault"]):
+                            if (val == vrobj["defaultval"]): return True;
+                        if (vrobj["canspecifyrange"]):
+                            #this value has a max and min
+                            #sensitive to format and type now
+                            #if it is some sort of number type comparisions are easy
+                            if (tobj["canbesignedornot"]):
+                                #these are numerical comparisons
+                                isnumcomp = True;
+                                #valforcomp = val;
+                            else:
+                                #value is not a number but has a range...
+                                print("type is not number, but has a range.");
+                                raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
+                
+                    elif (vrobj["paramname"] in ["signed", "unsigned"]):
+                        #need to know which one we are using signed or unsigned if it matches this
+                        #then this will be the range we use else skip it.
+                        #need to know if unsigned...
+                        print(f"useunsigned = {useunsigned}");
+                        
+                        if ((useunsigned and (vrobj["paramname"] == "unsigned")) or
+                            (not(useunsigned) and (vrobj["paramname"] == "signed"))):
+                                #these are numerical comparisons
+                                isnumcomp = True;
+                                #valforcomp = val;
+                    else:
+                        #this is the this should not make it here case
+                        #paramname is really specific to type and variant
+                        print(f"vrobj['paramname'] = {vrobj['paramname']}");
+                        print("this param name is really specific to the type and the range!");
+                        raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
+                    
+                    print(f"isnumcomp = {isnumcomp}");
+                    print(f"valforcomp = {valforcomp}");
+
+                    if (isnumcomp):
+                        #these are numerical comparisons
+                        if (myvalidator.isvaranumber(valforcomp)): pass;
+                        else:
+                            getnext = True;
+                            break;
+                        
+                        if (valforcomp < vrobj["min"] or vrobj["max"] < valforcomp):
+                            #invalid, but the next one in the type object might be
+                            #need to exit vrloop and need to move on to the next type object
+                            print("value is not in the range, not the default, and not valid!");
+                            getnext = True;
+                            break;
+                        else: print("value is in the range!");
+
+                if (getnext): pass;
+                else:
+                    #initially the type is correct and is given valid values
+                    #if that is not the case, the return False above has already been reached.
+                    #need to check the value against the type parameters here too
+                    #if the value does not meet the type parameters for the variant, then
+                    #we move on maybe it will meet another one
+                    #otherwise, ours is valid so now return True.
+                    if (myvalidator.isvaremptyornull(tobj["paramnameswithranges"])): return True;
+                    
+                    print();
+                    print("now we need to check the type parameters!");
+                    print();
+                    
+                    for pnmobj in tobj["paramnameswithranges"]:
+                        print(f"pnmobj = {pnmobj}");
+                    
+                        #there are several param names and type names where size is the display width
+                        #if the size is not the display width but actually refers to a value,
+                        #then it is more critical
+                        #if the size is just the display width which does not effect
+                        #the value or storage, then we can safely ignore the violation
+                        #but if that is not the case, we cannot.
+
+                        print("NOT DONE YET NEED TO DO SOMETHING HERE...!");
+                    
+                    raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
+                    #return True;
+
+        #do something here...
+        print("outside of the type objects loop!");
+        return False;

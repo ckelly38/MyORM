@@ -139,13 +139,47 @@ print(myvalidator.isValidDataType("VARCHAR(max), OTHER", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("NUMERIC(p, s)", "SQLSERVER"));#false
 #print(myvalidator.isValidDataType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last'", "MYSQL"));#false
 print(myvalidator.isValidDataType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')", "MYSQL"));#true
-#above tests crashes because not done with the code in the method for it 3-10-2025 10 PM
 print(myvalidator.isValidDataType("NUMERIC(1, 39, 20)", "SQLSERVER"));#false#too many parameters
 print(myvalidator.isValidDataType("NUMERIC(39, 1)", "SQLSERVER"));#false#38 or less for both
 print(myvalidator.isValidDataType("NUMERIC(1, 39)", "SQLSERVER"));#false#38 or less for both
 print(myvalidator.isValidDataType("NUMERIC(39)", "SQLSERVER"));#false#38 or less for both
 print(myvalidator.isValidDataType("NUMERIC(1)", "SQLSERVER"));#true
 print(myvalidator.isValidDataType("VARCHAR(max)", "SQLSERVER"));#true
+print();
+print(myvalidator.isValueValidForDataType("TINYINT", 256, "SQLSERVER"));#false 255 max
+print(myvalidator.isValueValidForDataType("TINYINT(4)", 256, "MYSQL"));#false 255 max and invalid size
+print(myvalidator.isValueValidForDataType("TINYINT(3)", 256, "MYSQL"));#false 255 max and invalid size
+print(myvalidator.isValueValidForDataType("TINYINT(3)", 1000, "MYSQL"));#false 255 max size disagreement
+#size problem is not tested for because the value is out of range and the range is checked first.
+#print(myvalidator.isValueValidForDataType("TINYINT(2)", 255, "MYSQL"));#crashes not done yet
+#false value is outside of display size range, but the type can still store it.
+print(myvalidator.isValueValidForDataType("TINYTEXT",
+                                          myvalidator.genStringWithNumberText(255), "MYSQL"));#true
+print(myvalidator.isValueValidForDataType("TINYTEXT",
+                                          myvalidator.genStringWithNumberText(256), "MYSQL"));#false
+#above test is out side of the 255 charcters that that can store so not valid
+#but I will note that although a range of values is not technically given, a range on the length is.
+#this type however has no parameters, so it is not exactly what I am looking for for the test.
+#
+#I need a test where the value is in the required range, but not when dictated by the parameters
+#to produce the test case the variant is probably MYSQL.
+#although we could use display width as the parameter to dictate that the value is out of range for
+#testing I want an example that does not use this as the parameter.
+#I should be able to get it with something like DECIMAL or NUMERIC or FLOAT or REAL ...
+#?
+
+#I need a test where the value in the required range, but it is specifically formated like a date.
+print(myvalidator.isValueValidForDataType("DATE", "2029-02-28", "SQLSERVER"));#true
+
+#tests where data in the wrong format goes into a type with formatted data.
+#like text into numbers or
+#text like a numbers and or other characters into something like a date for example.
+print(myvalidator.isValueValidForDataType("TINYINT", "adsfsad203e4", "SQLSERVER"));#false not a number
+print(myvalidator.isValueValidForDataType("DATE", "202afdssa2asdf", "SQLSERVER"));#false not a date.
+print(myvalidator.isValueValidForDataType("DATE", "202afdssa2", "SQLSERVER"));#false not a date.
+print(myvalidator.isValueValidForDataType("DATE", "2029302329", "SQLSERVER"));#false not a date.
+#also a test where the value is in the required range, but not actually valid like a date.
+print(myvalidator.isValueValidForDataType("DATE", "2029-02-29", "SQLSERVER"));#false not a valid date.
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 print();
 print("SQL GEN TESTS:");
