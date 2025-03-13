@@ -40,6 +40,28 @@ class myvalidator:
         else: return True;
 
     @classmethod
+    def isstranumber(cls, mstr):
+        if (myvalidator.isvaremptyornull(mstr)): return False;
+        if (myvalidator.isvaranumber(mstr)): return True;
+        else:
+            if (type(mstr) == str): pass;
+            else: return False;
+            #if (mstr.isnumeric() or mstr.isdecimal()): return True;
+            fnddpt = False;
+            for n in range(len(mstr)):
+                if (mstr[n].isdigit()): pass;
+                else:
+                    if (mstr[n] == '-'):
+                        if (n == 0): pass;
+                        else: return False;
+                    elif (mstr[n] == '.'):
+                        if (fnddpt): return False;
+                        else: fnddpt = True;
+                    else: return False;     
+            return True;
+
+
+    @classmethod
     def isvaranumber(cls, val): 
         return (False if (val == None) else (type(val) == int or type(val) == float));
 
@@ -813,9 +835,9 @@ class myvalidator:
     #SMALLINT allows integers between -32768 and 32767 inclusive.
     #INT allows integers between -2147483648 and 2147483647 inclusive.
     #BIGINT allows integers between -9223372036854775808 and 9223372036854775807 inclusive.
-    #DECIMAL(p, s) p is the total number of digits like size,
-    # and s is the number of digits after the decimal point.
-    #p must be from 1 to 38 inclusive. s default is 0, p default is 18.
+    #DECIMAL(size, d) size is the total number of digits like size,
+    # and d is the number of digits after the decimal point.
+    #size must be from 1 to 38 inclusive. d default is 0, size default is 18.
     #for fixed precision and scale numbers.
     #
     #note: 2^64-1 =                                      18,446,744,073,709,551,615
@@ -824,7 +846,7 @@ class myvalidator:
     #range is -10^38, 10^38-1: -100,000,000,000,000,000,000,000,000,000,000,000,000
     #                            99,999,999,999,999,999,999,999,999,999,999,999,999
     #                              ^           ^           ^           ^
-    #NUMERIC(p, s) is the same as DECIMAL(p, s).
+    #NUMERIC(size, d) is the same as DECIMAL(size, d).
     #SMALLMONEY allows numbers between -214748.3648 to 214748.3647 inclusive.
     #MONEY allows numbers between -922337203685477.5808 and 922337203685477.5807 inclusive.
     #FLOAT(p) p max value is 53 and min is 1 if p is less than 25: 4 bytes (7 digits),
@@ -1253,8 +1275,8 @@ class myvalidator:
                                                  -ltintmag, ltintmag - 1, 0)]),
 
                     myvalidator.genNonValueTypeInfoDict(["DECIMAL", "NUMERIC"], True, [
-                        myvalidator.genRangeDataDict("p", True, True, 0, 38, 18),
-                        myvalidator.genRangeDataDict("s", True, True, 0, 38, 0)], [
+                        myvalidator.genRangeDataDict("size", True, True, 0, 38, 18),
+                        myvalidator.genRangeDataDict("d", True, True, 0, 38, 0)], [
                     myvalidator.genRangeDataDict("values", True, True, -decmxmg, decmxmg - 1, 0)]),
                     
                     myvalidator.genNonValueTypeInfoDict(["SMALLMONEY"], True, [], [
@@ -1319,7 +1341,7 @@ class myvalidator:
 
             #return ["CHAR(n)", "VARCHAR(n)", "VARCHAR(max)", "NCHAR(n)", "NVARCHAR(n)",
             #        "NVARCHAR(max)", "BINARY(n)", "VARBINARY(n)", "VARBINARY(max)", "BIT", "TINYINT",
-            #        "SMALLINT", "INT", "BIGINT", "DECIMAL(p, s)", "NUMERIC(p, s)", "SMALLMONEY",
+            #        "SMALLINT", "INT", "BIGINT", "DECIMAL(size, d)", "NUMERIC(size, d)", "SMALLMONEY",
             #        "MONEY", "FLOAT(p)", "REAL", "DATETIME", "DATETIME2", "SMALLDATETIME", "DATE",
             #        "TIME", "DATETIMEOFFSET", "TIMESTAMP", "SQL_VARIANT", "UNIQUEIDENTIFIER", "XML",
             #        "CURSOR", "TABLE"];
@@ -1621,10 +1643,10 @@ class myvalidator:
                                 numpsonval = (0 if ("(max)" in val) else len(psonval));
                                 tpobjslist = cls.getDataTypesObjsWithNameFromList(datatypesinfolist,
                                                                                   mynm);
-                                #print(f"mynm = {mynm}");
-                                #print(f"psonval = {psonval}");
-                                #print(f"numpsonval = {numpsonval}");
-                                #print(f"tpobjslist = {tpobjslist}");
+                                print(f"mynm = {mynm}");
+                                print(f"psonval = {psonval}");
+                                print(f"numpsonval = {numpsonval}");
+                                print(f"tpobjslist = {tpobjslist}");
                                 
                                 for tpobj in tpobjslist:
                                     if (len(tpobj["paramnameswithranges"]) == numpsonval):
@@ -1658,9 +1680,27 @@ class myvalidator:
                                         #then the values will need to be converted to that first
                                         #otherwise no conversion is needed.
                                         #if can be signed or not is true, then number
-                                        finpsonval = [
-                                            (int(pval) if (tpobj["canbesignedornot"]) else pval)
-                                            for pval in psonval];
+                                        #cannot use a list comprehension here because
+                                        #that is too comprehensive
+                                        getnext = False;
+                                        finpsonval = None;
+                                        if (tpobj["canbesignedornot"]):
+                                            finpsonval = [];
+                                            for pval in psonval:
+                                                if (myvalidator.isstranumber(pval)):
+                                                    if ("." in pval):
+                                                        #the parameters are not valid
+                                                        #return False;
+                                                        getnext = True;
+                                                        break;
+                                                    finpsonval.append(int(pval));
+                                                else:
+                                                    #the parameters are not valid
+                                                    #return False;
+                                                    getnext = True;
+                                                    break;
+                                            if (getnext): continue;
+                                        else: finpsonval = [pval for pval in psonval];
                                         #print(f"finpsonval = {finpsonval}");
                                         
                                         #make sure the given values are in the ranges...
@@ -1668,7 +1708,6 @@ class myvalidator:
                                         #if one is different than the rest,
                                         #you need to provide up to and including it,
                                         #but do not have to provide after of course
-                                        getnext = False;
                                         if (mynm == "ENUM" or mynm == "SET"):
                                             #the values do not have a specified range,
                                             #but they do have a specified length,
@@ -1729,10 +1768,14 @@ class myvalidator:
     #tpnm is the SQL Data Type name for the specific variant specified by varstr
     #val is the value we are inserting into the column of that type...
     #useunsigned is for the signed or unsigned data range for numerical data types
-    #by default useunsigned is true because some data types non numerical ones are in fact unsigned.
-    #it is note worthy that some numerical data types are only signed or unsigned.
+    #-by default useunsigned is true because some data types non numerical ones are in fact unsigned.
+    #-it is note worthy that some numerical data types are only signed or unsigned.
+    #isnonnull is by default false to allow null as a value,
+    #-however sometimes the user does not want null to be an option at all.
+    #-Setting this to true ensures that.
     @classmethod
-    def isValueValidForDataType(cls, tpnm, val, varstr, useunsigned=True):
+    def isValueValidForDataType(cls, tpnm, val, varstr, useunsigned=True, isnonnull=False):
+        myvalidator.varmustbeboolean(isnonnull, "isnonnull");
         myvalidator.varmustbeboolean(useunsigned, "useunsigned");
         if (cls.isValidDataType(tpnm, varstr)): pass;
         else: return False;
@@ -1796,7 +1839,13 @@ class myvalidator:
                     elif (vrobj["paramname"] in ["values", "range"]):
                         #paramname is something else like values or range
                         if (vrobj["hasadefault"]):
-                            if (val == vrobj["defaultval"]): return True;
+                            if (val == vrobj["defaultval"]):
+                                if (val == "NULL"):
+                                    if (isnonnull):
+                                        getnext = True;
+                                        break;
+                                    else: return True;
+                                else: return True;
                         if (vrobj["canspecifyrange"]):
                             #this value has a max and min
                             #sensitive to format and type now

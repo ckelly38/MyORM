@@ -146,6 +146,7 @@ print(myvalidator.isValidDataType("NUMERIC(39)", "SQLSERVER"));#false#38 or less
 print(myvalidator.isValidDataType("NUMERIC(1)", "SQLSERVER"));#true
 print(myvalidator.isValidDataType("VARCHAR(max)", "SQLSERVER"));#true
 print();
+print(myvalidator.isValueValidForDataType("TINYINT", "a", "SQLSERVER"));#false not a number
 print(myvalidator.isValueValidForDataType("TINYINT", 256, "SQLSERVER"));#false 255 max
 print(myvalidator.isValueValidForDataType("TINYINT(4)", 256, "MYSQL"));#false 255 max and invalid size
 print(myvalidator.isValueValidForDataType("TINYINT(3)", 256, "MYSQL"));#false 255 max and invalid size
@@ -160,13 +161,24 @@ print(myvalidator.isValueValidForDataType("TINYTEXT",
 #above test is out side of the 255 charcters that that can store so not valid
 #but I will note that although a range of values is not technically given, a range on the length is.
 #this type however has no parameters, so it is not exactly what I am looking for for the test.
-#
+
+#there is another note-worthy bug I need to check for, if non-null values are properly enforced.
+#the type may allow null values as a default, but if non-null is selected,
+#null should not be used or is not valid.
+print(myvalidator.isValueValidForDataType("TINYTEXT", "NULL", "MYSQL", True, False));#true
+print(myvalidator.isValueValidForDataType("TINYTEXT", "NULL", "MYSQL", True, True));#false
+
 #I need a test where the value is in the required range, but not when dictated by the parameters
 #to produce the test case the variant is probably MYSQL.
 #although we could use display width as the parameter to dictate that the value is out of range for
 #testing I want an example that does not use this as the parameter.
 #I should be able to get it with something like DECIMAL or NUMERIC or FLOAT or REAL ...
-#?
+
+print(myvalidator.isValueValidForDataType("DECIMAL(3, 1)", 312.5, "SQLSERVER"));#false
+print(myvalidator.isValueValidForDataType("NUMERIC(3, 1)", 312.5, "SQLSERVER"));#false
+#the number is in the really big range of -10^38 to 10^38,
+#but according to the parameters the total number of digits should be 3,
+#and 1 should be after the decimal point which is not the case. Both paremeters should be less than 38.
 
 #I need a test where the value in the required range, but it is specifically formated like a date.
 print(myvalidator.isValueValidForDataType("DATE", "2029-02-28", "SQLSERVER"));#true
