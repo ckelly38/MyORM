@@ -129,6 +129,11 @@ print(myvalidator.getValidSQLDataTypesFromInfoList(liteinfoobjlist));
 print(myvalidator.getValidSQLDataTypesFromInfoList(mysqlinfoobjlist));
 print(myvalidator.getValidSQLDataTypesFromInfoList(sqlsrvrinfoobjlist));
 print();
+print(myvalidator.getAllDataTypesThatHaveASetAmountOfDigitsAfterDecimalPoint(None));
+print(myvalidator.getAllDataTypesThatHaveASetAmountOfDigitsAfterDecimalPoint("LITE"));
+print(myvalidator.getAllDataTypesThatHaveASetAmountOfDigitsAfterDecimalPoint("MYSQL"));
+print(myvalidator.getAllDataTypesThatHaveASetAmountOfDigitsAfterDecimalPoint("SQLSERVER"));
+print();
 #quote did not actually get escaped
 print(myvalidator.getLevelsForValStr("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\'s poses)sive', 'something else, other', 'last')"));
 print(myvalidator.getLevelsForValStr("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')"));
@@ -147,6 +152,7 @@ print(myvalidator.isValidDataType("NUMERIC(1)", "SQLSERVER"));#true
 print(myvalidator.isValidDataType("VARCHAR(max)", "SQLSERVER"));#true
 print();
 print(myvalidator.isValueValidForDataType("TINYINT", "a", "SQLSERVER"));#false not a number
+print(myvalidator.isValueValidForDataType("TINYINT", "adsfsad203e4", "SQLSERVER"));#false not a number
 print(myvalidator.isValueValidForDataType("TINYINT", 256, "SQLSERVER"));#false 255 max
 print(myvalidator.isValueValidForDataType("TINYINT(4)", 256, "MYSQL"));#false 255 max and invalid size
 print(myvalidator.isValueValidForDataType("TINYINT(3)", 256, "MYSQL"));#false 255 max and invalid size
@@ -176,9 +182,25 @@ print(myvalidator.isValueValidForDataType("TINYTEXT", "NULL", "MYSQL", True, Tru
 
 print(myvalidator.isValueValidForDataType("DECIMAL(3, 1)", 312.5, "SQLSERVER"));#false
 print(myvalidator.isValueValidForDataType("NUMERIC(3, 1)", 312.5, "SQLSERVER"));#false
+print(myvalidator.isValueValidForDataType("DECIMAL(3, 1)", 12.5, "SQLSERVER"));#true
+print(myvalidator.isValueValidForDataType("NUMERIC(3, 1)", 12.5, "SQLSERVER"));#true
+
 #the number is in the really big range of -10^38 to 10^38,
 #but according to the parameters the total number of digits should be 3,
 #and 1 should be after the decimal point which is not the case. Both paremeters should be less than 38.
+
+#need tests for the other class(es) of data types with parameters here
+#
+#
+
+#these conduct some other tests on the method and for the data type.
+#
+#print(myvalidator.isValueValidForDataType("FLOAT(3, 1)", ?, "SQLSERVER"));#false invalid type
+#print(myvalidator.isValueValidForDataType("FLOAT(53)", ?, "SQLSERVER", True, False));
+#false cannot be null
+#print(myvalidator.isValueValidForDataType("FLOAT(53)", ?, "SQLSERVER", True, True));#false signed only
+#print(myvalidator.isValueValidForDataType("FLOAT(24)", ?, "SQLSERVER", False, True));#false too small
+#print(myvalidator.isValueValidForDataType("FLOAT(53)", ?, "SQLSERVER", False, True));#true
 
 #I need a test where the value in the required range, but it is specifically formated like a date.
 print(myvalidator.isValueValidForDataType("DATE", "2029-02-28", "SQLSERVER"));#true
@@ -186,7 +208,6 @@ print(myvalidator.isValueValidForDataType("DATE", "2029-02-28", "SQLSERVER"));#t
 #tests where data in the wrong format goes into a type with formatted data.
 #like text into numbers or
 #text like a numbers and or other characters into something like a date for example.
-print(myvalidator.isValueValidForDataType("TINYINT", "adsfsad203e4", "SQLSERVER"));#false not a number
 print(myvalidator.isValueValidForDataType("DATE", "202afdssa2asdf", "SQLSERVER"));#false not a date.
 print(myvalidator.isValueValidForDataType("DATE", "202afdssa2", "SQLSERVER"));#false not a date.
 print(myvalidator.isValueValidForDataType("DATE", "2029302329", "SQLSERVER"));#false not a date.
