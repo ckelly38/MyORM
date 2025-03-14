@@ -1086,10 +1086,12 @@ class myvalidator:
                         myvalidator.genRangeDataDict("unsigned", True, True, 0, ltintmxmag, 0)]),
                     
                     myvalidator.genNonNumNonValTypeInfoDict(["TEXT"], [], [
-                        myvalidator.genRangeDataDict("length", True, True, 0, mxbts, "NULL")]),
+                        myvalidator.genRangeDataDict("length", True, True, 0, mxbts, 0),
+                        myvalidator.genRangeDataDictNoRange("values", True, "NULL")]),
                     
                     myvalidator.genNonNumNonValTypeInfoDict(["BLOB"], [], [
-                        myvalidator.genRangeDataDict("size", True, True, 0, mxbts, "NULL")])];
+                        myvalidator.genRangeDataDict("size", True, True, 0, mxbts, 0),
+                        myvalidator.genRangeDataDictNoRange("values", True, "NULL")])];
             #return ["NULL", "REAL", "INTEGER", "TEXT", "BLOB"];
         elif (varstr == "MYSQL"):
             smlintmx = 65535;
