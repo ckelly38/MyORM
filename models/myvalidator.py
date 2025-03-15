@@ -1376,6 +1376,202 @@ class myvalidator:
     #
     #
 
+    #may want to make a method that determines the recommended
+    #useunsigned and/or isnonnull values for a given type on the varient or if it is up to the user
+    #
+    #
+
+    #begin date time methods section here...
+
+    #also need date and time methods
+    #need a method to generate the time string
+    #to take a string and given format and extract the hours, minutes and seconds values
+    @classmethod
+    def getMonthNames(cls):
+        return ["January", "February", "March", "April", "May", "June", "July", "August",
+                "September", "October", "November", "December"];
+    @classmethod
+    def getAllThreeLetterAbbreviationsForMonthNames(cls):
+        return [mnth[0:3] for mnth in myvalidator.getMonthNames()];
+    @classmethod
+    def getAllFourLetterAbbreviationsForMonthNames(cls):
+        return [(mnth[0:4] if (3 < len(mnth)) else mnth) for mnth in myvalidator.getMonthNames()];
+    @classmethod
+    def getAllThreeOrFourLetterAbbreviationsForMonthNames(cls, usefrltrs):
+        myvalidator.varmustbeboolean(usefrltrs, "usefrltrs");
+        if (usefrltrs): return myvalidator.getAllFourLetterAbbreviationsForMonthNames();
+        else: return myvalidator.getAllThreeLetterAbbreviationsForMonthNames();
+
+    @classmethod
+    def getThreeOrFourLetterAbbreviationForMonthName(cls, mnthnm, usefrltrs):
+        myvalidator.varmustbeboolean(usefrltrs, "usefrltrs");
+        myvalidator.varmustbethetypeonly(mnthnm, str, "mnthnm");
+        lwrmnthnm = mnthnm.lower();
+        finmnthnm = lwrmnthnm[0].upper() + lwrmnthnm[1:];
+        if (finmnthnm in myvalidator.getMonthNames()):
+            if (len(finmnthnm) == 3): return finmnthnm;
+            else: return finmnthnm[0: (4 if (usefrltrs) else 3)];
+        else: raise ValueError("illegal month name used (" + mnthnm + ")");
+    @classmethod
+    def getThreeLetterAbbreviationForMonthName(cls, mnthnm):
+        return cls.getThreeOrFourLetterAbbreviationForMonthName(mnthnm, False);
+    @classmethod
+    def getFourLetterAbbreviationForMonthName(cls, mnthnm):
+        return cls.getThreeOrFourLetterAbbreviationForMonthName(mnthnm, True);
+
+    @classmethod
+    def getFullMonthNameFromAbreviation(cls, abbr):
+        lwrmnthnm = abbr.lower();
+        finmnthnm = lwrmnthnm[0].upper() + lwrmnthnm[1:];
+        mnthnms = myvalidator.getMonthNames();
+        for mtnm in mnthnms:
+            if finmnthnm in mtnm: return mtnm;
+        raise ValueError("illegal abbreviated month name used (" + abbr + ")");
+
+    @classmethod
+    def getMonthNumFromName(cls, mnthnm):
+        myvalidator.varmustbethetypeonly(mnthnm, str, "mnthnm");
+        lwrmnthnm = mnthnm.lower();
+        finmnthnm = lwrmnthnm[0].upper() + lwrmnthnm[1:];
+        mnthnms = myvalidator.getMonthNames();
+        for n in range(len(mnthnms)):
+            if (mnthnms[n] == finmnthnm): return n + 1;
+        raise ValueError("illegal month name used (" + mnthnm + ")");
+
+    @classmethod
+    def getMonthNameFromNum(cls, mnthnum):
+        myvalidator.valueMustBeInRange(mnthnum, 1, 12, True, True, "mnthnum");
+        mnthnms = myvalidator.getMonthNames();
+        return mnthnms[mnthnum - 1];
+
+    @classmethod
+    def getNumDaysInMonth(cls, mnthnum, islpyr):
+        myvalidator.varmustbeboolean(islpyr, "islpyr");
+        myvalidator.valueMustBeInRange(mnthnum, 1, 12, True, True, "mnthnum");
+        #(30 days has (9)September, (4)April, (6)June, and (11)November, all the rest have 31 except
+        #(2)Februrary which has 28 or 29 if leap year)
+        if (mnthnum in [4, 6, 9, 11]): return 30;
+        elif (mnthnum == 2): return (29 if islpyr else 28);
+        else: return 31;
+
+    @classmethod
+    def addLeadingZeros(cls, val, numdgts):
+        myvalidator.varmustbeanumber(val, "val");
+        myvalidator.valueMustBeInRange(numdgts, 1, 0, True, False, "numdgts");
+        if (val < 0): return "-" + cls.addLeadingZeros(-val, numdgts - 1);
+        valstr = str(val);
+        valstrlen = len(valstr);
+        if (valstrlen < numdgts):
+            mystr = "";
+            for n in range(numdgts - valstrlen):
+                mystr += "0";
+            return mystr + valstr;
+        elif (valstrlen == numdgts): return valstr;
+        else:
+            raise ValueError("the length of the numstr (" + str(valstrlen) + ") must be less than " +
+                             "or equal to the number of digits (" + str(numdgts) +
+                             "), but it was not!");
+
+    #https://en.wikipedia.org/wiki/Leap_year
+    @classmethod
+    def isLeapYear(cls, yrnum):
+        myvalidator.varmustbethetypeonly(yrnum, int, "yrnum");
+        myvalidator.valueMustBeInRange(yrnum, 1, 0, True, False);
+        #every 4 years except (if divisible by 400 it is otherwise not on the 100s)
+        return (((yrnum % 400 == 0) if (yrnum % 100 == 0) else True) if (yrnum % 4 == 0) else False);
+
+    @classmethod
+    def isValidDate(cls, mnthnum, daynum, yrnum):
+        if (myvalidator.isValueInRangeWithMaxAndMin(mnthnum, 1, 12)):
+            dysinmnth = myvalidator.getNumDaysInMonth(mnthnum, myvalidator.isLeapYear(yrnum));
+            if (myvalidator.isValueInRangeWithMaxAndMin(daynum, 1, dysinmnth)): return True;
+        return False;
+    @classmethod
+    def isValidDateFromObj(cls, mdyrobj):
+        myvalidator.varmustnotbenull(mdyrobj, "mdyrobj");
+        return myvalidator.isValidDate(mdyrobj["monthnum"], mdyrobj["daynum"], mdyrobj["yearnum"]);
+    @classmethod
+    def isValidDateFromString(cls, datestr):
+        mdyrobj = None;
+        try:
+            mdyrobj = myvalidator.getMonthDayYearFromDateString(datestr);
+        except Exception as ex:
+            #print(ex);
+            return False;
+        return myvalidator.isValidDateFromObj(mdyrobj);
+    
+
+    @classmethod
+    def genDateString(cls, mnthnum, daynum, yrnum, usemthdyyr, usedshs):
+        dysinmnth = myvalidator.getNumDaysInMonth(mnthnum, myvalidator.isLeapYear(yrnum));
+        myvalidator.valueMustBeInRange(daynum, 1, dysinmnth, True, True, "daynum");
+        myvalidator.valueMustBeInRange(yrnum, 1, 9999, True, True);#max may be wrong here
+        #well strictly speaking sql allows 4 digit years, but we humans want to live forever
+        #so theoretically there is no max..., but one is being imposed by the current restrictions.
+        mdshorslsh = ("-" if usedshs else "/");
+        myretstr = None;
+        if (usemthdyyr):
+            #MM-DD-YYYY
+            myretstr = myvalidator.addLeadingZeros(mnthnum, 2) + mdshorslsh;
+            myretstr += myvalidator.addLeadingZeros(daynum, 2) + mdshorslsh;
+            myretstr += myvalidator.addLeadingZeros(yrnum, 4);
+        else:
+            #YYYY-MM-DD
+            #0123456789
+            myretstr = myvalidator.addLeadingZeros(yrnum, 4) + mdshorslsh;
+            myretstr += myvalidator.addLeadingZeros(mnthnum, 2) + mdshorslsh;
+            myretstr += myvalidator.addLeadingZeros(daynum, 2);
+        return myretstr;
+    @classmethod
+    def genDateStringFromObj(cls, mdyrobj, usedshs):
+        myvalidator.varmustnotbenull(mdyrobj, "mdyrobj");
+        return myvalidator.genDateString(mdyrobj["monthnum"], mdyrobj["daynum"], mdyrobj["yearnum"],
+                                         (list(mdyrobj.keys())[0] == "monthnum"), usedshs);
+    @classmethod
+    def genDateStringUseMonthDayYear(cls, mnthnum, daynum, yrnum, usedshs):
+        return cls.genDateString(mnthnum, daynum, yrnum, True, usedshs);
+    @classmethod
+    def genDateStringUseYearMonthDay(cls, mnthnum, daynum, yrnum, usedshs):
+        return cls.genDateString(mnthnum, daynum, yrnum, False, usedshs);
+    @classmethod
+    def genDateStringUseSlashes(cls, mnthnum, daynum, yrnum, usemthdyyr):
+        return cls.genDateString(mnthnum, daynum, yrnum, usemthdyyr, False);
+    @classmethod
+    def genDateStringUseDashes(cls, mnthnum, daynum, yrnum, usemthdyyr):
+        return cls.genDateString(mnthnum, daynum, yrnum, usemthdyyr, True);
+    
+    @classmethod
+    def getDelimeterIndexesForDateStrings(cls, usemthdyyr):
+        #MM-DD-YYYY
+        #YYYY-MM-DD
+        #0123456789
+        myvalidator.varmustbeboolean(usemthdyyr, "usemthdyyr");
+        return ([2, 5] if (usemthdyyr) else [4, 7]);
+
+    @classmethod
+    def getMonthDayYearFromDateString(cls, datestr):
+        myvalidator.stringMustHaveAtMinNumChars(datestr, 10, "datestr");
+        dimdyr = myvalidator.getDelimeterIndexesForDateStrings(True);
+        diyrmd = myvalidator.getDelimeterIndexesForDateStrings(False);
+        if ((datestr[dimdyr[0]] == datestr[dimdyr[1]]) and (datestr[dimdyr[0]] in ["-", "/"])):
+            #MM-DD-YYYY
+            marr = myvalidator.mysplitWithLen(datestr, dimdyr, 1, 0);
+            if (len(marr[2]) == 4): pass;
+            else: raise ValueError("invalid date string not in the correct format!");
+            return {"monthnum": int(marr[0]), "daynum": int(marr[1]), "yearnum": int(marr[2])};
+        else:
+            if ((datestr[diyrmd[0]] == datestr[diyrmd[1]]) and (datestr[diyrmd[0]] in ["-", "/"])):
+                #YYYY-MM-DD
+                marr = myvalidator.mysplitWithLen(datestr, diyrmd, 1, 0);
+                if (len(marr[2]) == 2): pass;
+                else: raise ValueError("invalid date string not in the correct format!");
+                return {"yearnum": int(marr[0]), "monthnum": int(marr[1]), "daynum": int(marr[2])};
+            else: raise ValueError("invalid date string not in the correct format!");
+
+
+    #end of date time methods section
+
+
     @classmethod
     def printSQLDataTypesInfoObj(cls, mlistobjs):
         if (myvalidator.isvaremptyornull(mlistobjs)): print("list is empty or null!");
@@ -1796,7 +1992,7 @@ class myvalidator:
                             return val.isalpha();
             return False;
 
-    
+
     #BELOW METHODS ARE NOT DONE YET 3-12-2025 1:08 AM MST
 
     #tpnm is the SQL Data Type name for the specific variant specified by varstr
@@ -1834,6 +2030,9 @@ class myvalidator:
         print(f"nmhasps = {nmhasps}");
         print(f"bgnm = {bgnm}");
         print(f"mynm = {mynm}");
+        print(f"isnonnull = {isnonnull}");
+        print(f"useunsigned = {useunsigned}");
+        
         
         # or not(nmhasps)
         psonval = ([] if ("(max)" in tpnm) else cls.getParmsFromValType(tpnm));
@@ -1862,6 +2061,8 @@ class myvalidator:
                                      ") for variant (" + varstr + ")!");
             else:
                 getnext = False;
+                twodiffranges = False;
+                minrngval = 0;
                 for vrobj in tobj["valuesranges"]:
                     print(f"vrobj = {vrobj}");
                     print();
@@ -1912,6 +2113,7 @@ class myvalidator:
                         if ((useunsigned and (vrobj["paramname"] == "unsigned")) or
                             (not(useunsigned) and (vrobj["paramname"] == "signed"))):
                                 #these are numerical comparisons
+                                twodiffranges = True;
                                 isnumcomp = True;
                                 #valforcomp = val;
                     else:
@@ -1924,14 +2126,14 @@ class myvalidator:
                     
                     print(f"isnumcomp = {isnumcomp}");
                     print(f"valforcomp = {valforcomp}");
-
+                    
                     if (isnumcomp):
                         #these are numerical comparisons
                         if (myvalidator.isvaranumber(valforcomp)): pass;
                         else:
                             getnext = True;
                             break;
-                        
+                        minrngval = vrobj["min"];
                         if (valforcomp < vrobj["min"] or vrobj["max"] < valforcomp):
                             #invalid, but the next one in the type object might be
                             #need to exit vrloop and need to move on to the next type object
@@ -1944,8 +2146,30 @@ class myvalidator:
                 if (getnext): pass;
                 else:
                     if (tobj["canbesignedornot"]):
+                        print(f"twodiffranges = {twodiffranges}");
+                        print(f"isnonnull = {isnonnull}");
+                        print(f"useunsigned = {useunsigned}");
+                        print(f"minrngval = {minrngval}");
+                        #if not a number, then useunsigned must be true.
+                        #if some kind of number:
+                        #-if two different ranges is true, then we can for sure use unsigned
+                        #-if one range, depends on what the minimum is if minimum is at least 0
+                        #then this is unsigned otherwise, error if useunsigned is true.
+
+                        if (isnonnull):
+                            if (twodiffranges): pass;#useunsigned can be true or false in this case
+                            else:
+                                if (minrngval < 0):
+                                    if (useunsigned): getnext = True;
+                                else:
+                                    if (useunsigned): pass;
+                                    else: getnext = True;
+                                #raise ValueError("NOT SURE ON THIS CASE HERE 3-14-2025 11 PM MST!");
+                        else: getnext = True;
+
                         finpsonval = [];
                         for pval in psonval:
+                            if (getnext): break;
                             if (myvalidator.isstranumber(pval)):
                                 if ("." in pval):
                                     #the parameters are not valid
@@ -1958,7 +2182,9 @@ class myvalidator:
                                 #return False;
                                 getnext = True;
                                 break;
-                    else: finpsonval = [pval for pval in psonval];
+                    else:
+                        if (useunsigned): finpsonval = [pval for pval in psonval];
+                        else: getnext = True;
                     #print(f"finpsonval = {finpsonval}");
 
                 if (getnext): pass;

@@ -111,6 +111,43 @@ print(myvalidator.mysplit("the funny string", [3, 8, 12], [2, 4, 1], 0));#["the"
 print(myvalidator.mysplitWithLen("the funny string", [3, 8], 2, 0));#["the", "unn", "string"];
 print(myvalidator.mysplitWithDelimeter("the funny string", "", 0));
 print();
+print(myvalidator.getMonthNames());
+for n in range(12): print(myvalidator.getMonthNameFromNum(n + 1));
+print(myvalidator.getAllThreeLetterAbbreviationsForMonthNames());
+print(myvalidator.getAllFourLetterAbbreviationsForMonthNames());
+for tltrabr in myvalidator.getAllThreeLetterAbbreviationsForMonthNames():
+      print(myvalidator.getFullMonthNameFromAbreviation(tltrabr));
+for frltrabr in myvalidator.getAllThreeLetterAbbreviationsForMonthNames():
+      print(myvalidator.getFullMonthNameFromAbreviation(frltrabr));
+for mnthnm in myvalidator.getMonthNames(): print(myvalidator.getMonthNumFromName(mnthnm));
+for n in range(12):
+      if (n == 1):
+            print("Feb Num Days:");
+            print(myvalidator.getNumDaysInMonth(n + 1, True));
+            print(myvalidator.getNumDaysInMonth(n + 1, False));
+            print();
+      else: print(myvalidator.getNumDaysInMonth(n + 1, False));
+print(myvalidator.getDelimeterIndexesForDateStrings(True));
+print(myvalidator.getDelimeterIndexesForDateStrings(False));
+print(myvalidator.genDateString(2, 29, 2024, True, True));#02-29-2024
+print(myvalidator.genDateString(2, 29, 2024, True, False));#02/29/2024
+print(myvalidator.genDateString(2, 29, 2024, False, True));#2024-02-29
+print(myvalidator.genDateString(2, 29, 2024, False, False));#2024/02/29
+#print(myvalidator.genDateString(2, 29, 2025, True, True));#error invalid date
+print(myvalidator.isValidDate(2, 29, 2024));#true
+print(myvalidator.isValidDate(2, 29, 2025));#false
+#print(myvalidator.getMonthDayYearFromDateString("202afdssa2asdf"));#error
+print(myvalidator.isValidDateFromString("202afdssa2asdf"));#false
+print(myvalidator.getMonthDayYearFromDateString("02-29-2024"));
+print(myvalidator.getMonthDayYearFromDateString("2024-02-29"));
+print(myvalidator.getMonthDayYearFromDateString("02-29-2025"));#may error due to it being invalid
+print(myvalidator.getMonthDayYearFromDateString("2025-02-29"));#may error due to it being invalid
+#print(myvalidator.getMonthDayYearFromDateString("2024-02-29-2024"));#error
+print(myvalidator.isValidDateFromObj(myvalidator.getMonthDayYearFromDateString("02-29-2024")));#true
+print(myvalidator.isValidDateFromObj(myvalidator.getMonthDayYearFromDateString("02-29-2025")));#false
+print(myvalidator.genDateStringFromObj(myvalidator.getMonthDayYearFromDateString("02-29-2024"), True));
+print(myvalidator.genDateStringFromObj(myvalidator.getMonthDayYearFromDateString("02-29-2024"), False));
+print();
 print("MY SQL VARIANT DATA TYPE INFO OBJECTS TESTS:");
 print();
 print("lite = ", end="");
@@ -180,10 +217,11 @@ print(myvalidator.isValueValidForDataType("TINYTEXT", "NULL", "MYSQL", True, Tru
 #testing I want an example that does not use this as the parameter.
 #I should be able to get it with something like DECIMAL or NUMERIC or FLOAT or REAL ...
 
-print(myvalidator.isValueValidForDataType("DECIMAL(3, 1)", 312.5, "SQLSERVER"));#false
-print(myvalidator.isValueValidForDataType("NUMERIC(3, 1)", 312.5, "SQLSERVER"));#false
-print(myvalidator.isValueValidForDataType("DECIMAL(3, 1)", 12.5, "SQLSERVER"));#true
-print(myvalidator.isValueValidForDataType("NUMERIC(3, 1)", 12.5, "SQLSERVER"));#true
+#useunsigned, isnonnull
+print(myvalidator.isValueValidForDataType("DECIMAL(3, 1)", 312.5, "SQLSERVER", False, True));#false
+print(myvalidator.isValueValidForDataType("NUMERIC(3, 1)", 312.5, "SQLSERVER", False, True));#false
+print(myvalidator.isValueValidForDataType("DECIMAL(3, 1)", 12.5, "SQLSERVER", False, True));#true
+print(myvalidator.isValueValidForDataType("NUMERIC(3, 1)", 12.5, "SQLSERVER", False, True));#true
 
 #the number is in the really big range of -10^38 to 10^38,
 #but according to the parameters the total number of digits should be 3,
@@ -194,13 +232,17 @@ print(myvalidator.isValueValidForDataType("NUMERIC(3, 1)", 12.5, "SQLSERVER"));#
 #
 
 #these conduct some other tests on the method and for the data type.
-#
-#print(myvalidator.isValueValidForDataType("FLOAT(3, 1)", ?, "SQLSERVER"));#false invalid type
-#print(myvalidator.isValueValidForDataType("FLOAT(53)", ?, "SQLSERVER", True, False));
+myfltval = 1234.567890123;
+print(myvalidator.isValueValidForDataType("FLOAT(3, 1)", myfltval, "SQLSERVER"));#false invalid type
+print(myvalidator.isValueValidForDataType("FLOAT(53)", myfltval, "SQLSERVER", True, False));
+#false signed only and cannot be null
+print(myvalidator.isValueValidForDataType("FLOAT(53)", myfltval, "SQLSERVER", True, True));
+#false signed only
+print(myvalidator.isValueValidForDataType("FLOAT(53)", myfltval, "SQLSERVER", False, False));
 #false cannot be null
-#print(myvalidator.isValueValidForDataType("FLOAT(53)", ?, "SQLSERVER", True, True));#false signed only
-#print(myvalidator.isValueValidForDataType("FLOAT(24)", ?, "SQLSERVER", False, True));#false too small
-#print(myvalidator.isValueValidForDataType("FLOAT(53)", ?, "SQLSERVER", False, True));#true
+print(myvalidator.isValueValidForDataType("FLOAT(24)", myfltval, "SQLSERVER", False, True));#crashes
+#false too small
+print(myvalidator.isValueValidForDataType("FLOAT(53)", myfltval, "SQLSERVER", False, True));#true
 
 #I need a test where the value in the required range, but it is specifically formated like a date.
 print(myvalidator.isValueValidForDataType("DATE", "2029-02-28", "SQLSERVER"));#true
