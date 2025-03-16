@@ -147,6 +147,26 @@ print(myvalidator.isValidDateFromObj(myvalidator.getMonthDayYearFromDateString("
 print(myvalidator.isValidDateFromObj(myvalidator.getMonthDayYearFromDateString("02-29-2025")));#false
 print(myvalidator.genDateStringFromObj(myvalidator.getMonthDayYearFromDateString("02-29-2024"), True));
 print(myvalidator.genDateStringFromObj(myvalidator.getMonthDayYearFromDateString("02-29-2024"), False));
+#print(myvalidator.genTimeString(23, 59, "a", True, True, True));#error on seconds
+#print(myvalidator.genTimeString(23, 59, 59.99999999, True, True, True));#error on seconds
+#print(myvalidator.genTimeString(23, 59, 60, True, True, True));#error on seconds
+#print(myvalidator.genTimeString(23, 59, -1, True, True, True));#error on seconds
+#print(myvalidator.genTimeString(23, 60, 59.99999999, True, True, True));#error on minutes
+#print(myvalidator.genTimeString(23, -1, 59.99999999, True, True, True));#error on minutes
+#print(myvalidator.genTimeString(839, 59, 59.9999999, True, True, True));#error on hours
+print(myvalidator.genTimeString(838, 59, 59.9999999, True, True, True));#838:59:59.9999999
+print(myvalidator.genTimeString(23, 59, 59.9999999, True, True, True));#23:59:59.9999999
+print(myvalidator.getTimeObject("838:59:59.9999999", True));
+print(myvalidator.getTimeObject("838:59", True));
+print(myvalidator.getTimeObject("59:59.9999999", False));
+#print(myvalidator.getTimeObject("59:59.9999999", True));#error invalid string given the parameters
+#print(myvalidator.getTimeObject(" ", True));#error invalid characters found on this
+print(myvalidator.getTimeObject("", True));
+print(myvalidator.getTimeObject(None, True));
+print(myvalidator.genTimeStringFromObj({}));
+print(myvalidator.genTimeStringFromObj(None));
+print(myvalidator.genTimeStringFromObj(myvalidator.getTimeObject("838:59", True)));
+raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 print();
 print("MY SQL VARIANT DATA TYPE INFO OBJECTS TESTS:");
 print();
@@ -172,15 +192,18 @@ print(myvalidator.getAllDataTypesThatHaveASetAmountOfDigitsAfterDecimalPoint("MY
 print(myvalidator.getAllDataTypesThatHaveASetAmountOfDigitsAfterDecimalPoint("SQLSERVER"));
 print();
 #quote did not actually get escaped
-print(myvalidator.getLevelsForValStr("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\'s poses)sive', 'something else, other', 'last')"));
-print(myvalidator.getLevelsForValStr("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')"));
-print(myvalidator.getParmsFromValType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')"));
+enmbasestr = "ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', ";
+enmodptstr = "'something else, other', 'last'";
+finenmstr = enmbasestr + "'mychar\\\'s poses)sive', " + enmodptstr;
+print(myvalidator.getLevelsForValStr(enmbasestr + "'mychar\'s poses)sive', " + enmodptstr + ")"));
+print(myvalidator.getLevelsForValStr(finenmstr + ")"));
+print(myvalidator.getParmsFromValType(finenmstr + ")"));
 print();
 print(myvalidator.isValidDataType("OTHER, VARCHAR(max)", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("VARCHAR(max), OTHER", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("NUMERIC(p, s)", "SQLSERVER"));#false
-#print(myvalidator.isValidDataType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last'", "MYSQL"));#false
-print(myvalidator.isValidDataType("ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', 'mychar\\\'s poses)sive', 'something else, other', 'last')", "MYSQL"));#true
+#print(myvalidator.isValidDataType(finenmstr, "MYSQL"));#false
+print(myvalidator.isValidDataType(finenmstr + ")", "MYSQL"));#true
 print(myvalidator.isValidDataType("NUMERIC(1, 39, 20)", "SQLSERVER"));#false#too many parameters
 print(myvalidator.isValidDataType("NUMERIC(39, 1)", "SQLSERVER"));#false#38 or less for both
 print(myvalidator.isValidDataType("NUMERIC(1, 39)", "SQLSERVER"));#false#38 or less for both

@@ -1368,6 +1368,13 @@ class myvalidator:
         elif (varnm == "MYSQL"): return ["DECIMAL", "DEC", "FLOAT", "DOUBLE", "DOUBLE PRECISION"];
         else: return [];
 
+    #fsp on the date and time data types for mysql variants controls
+    #how many digits are allowed after the decimal point.
+    #what other data types have parameters like that?
+    #"DATETIME(fsp)", "TIMESTAMP(fsp)", "TIME(fsp)"  on MYSQL
+    #FLOAT(p) on SQLSERVER
+    #
+
     #we need to know if something has a parameter that dictates the length and maybe which it is
     #
     #
@@ -1383,9 +1390,6 @@ class myvalidator:
 
     #begin date time methods section here...
 
-    #also need date and time methods
-    #need a method to generate the time string
-    #to take a string and given format and extract the hours, minutes and seconds values
     @classmethod
     def getMonthNames(cls):
         return ["January", "February", "March", "April", "May", "June", "July", "August",
@@ -1468,9 +1472,10 @@ class myvalidator:
             return mystr + valstr;
         elif (valstrlen == numdgts): return valstr;
         else:
-            raise ValueError("the length of the numstr (" + str(valstrlen) + ") must be less than " +
-                             "or equal to the number of digits (" + str(numdgts) +
-                             "), but it was not!");
+            #raise ValueError("the length of the numstr (" + str(valstrlen) + ") must be less than " +
+            #                 "or equal to the number of digits (" + str(numdgts) +
+            #                 "), but it was not!");
+            return valstr;
 
     #https://en.wikipedia.org/wiki/Leap_year
     @classmethod
@@ -1500,7 +1505,6 @@ class myvalidator:
             return False;
         return myvalidator.isValidDateFromObj(mdyrobj);
     
-
     @classmethod
     def genDateString(cls, mnthnum, daynum, yrnum, usemthdyyr, usedshs):
         dysinmnth = myvalidator.getNumDaysInMonth(mnthnum, myvalidator.isLeapYear(yrnum));
@@ -1568,6 +1572,113 @@ class myvalidator:
                 return {"yearnum": int(marr[0]), "monthnum": int(marr[1]), "daynum": int(marr[2])};
             else: raise ValueError("invalid date string not in the correct format!");
 
+    @classmethod
+    def genTimeString(cls, hrnum, minnum, secs, inchrnum=True, incminnum=True, incsecs=True):
+        myvalidator.varmustbeboolean(inchrnum, "inchrnum");
+        myvalidator.varmustbeboolean(incminnum, "incminnum");
+        myvalidator.varmustbeboolean(incsecs, "incsecs");
+        myvalidator.valueMustBeInRange(hrnum, -838, 838, True, True, "hrnum");#no idea why on the range
+        myvalidator.valueMustBeInRange(minnum, 0, 59.9999999, True, True, "minnum");
+        myvalidator.valueMustBeInRange(secs, 0, 59.9999999, True, True, "secs");
+        if (incsecs):
+            if (inchrnum):
+                if (incminnum): pass;
+                else: raise ValueError("if including seconds and hours, minutes must be included!");
+        mystr = "";
+        if (inchrnum): mystr += myvalidator.addLeadingZeros(hrnum, 2);
+        if (incminnum): mystr += (":" if inchrnum else "") + myvalidator.addLeadingZeros(minnum, 2);
+        if (incsecs): mystr += (":" if incminnum else "") + str(secs);
+        return mystr;
+    @classmethod
+    def genTimeStringFromObj(cls, mhrsobj):
+        if (mhrsobj == None): return cls.genTimeString(0, 0, 0, False, False, False);
+        mkys = mhrsobj.keys();
+        #if not on the keys list then not included in the resulting string that gets generated
+        inchrnum = ("hoursnum" in mkys);
+        incminnum = ("minutesnum" in mkys);
+        incsecs = ("secondsnum" in mkys);
+        hrnum = (mhrsobj["hoursnum"] if inchrnum else 0);
+        minnum = (mhrsobj["minutesnum"] if incminnum else 0);
+        secs = (float(str(mhrsobj["secondsnum"]) + "." + str(mhrsobj["fractionalsecondsnum"]))
+                if incsecs else 0);
+        return cls.genTimeString(hrnum, minnum, secs, inchrnum, incminnum, incsecs);
+
+    #inchrs tells us if we include hours or not when we just have one colon on the string
+    #this tells us to use hours:minutes for the format if true,
+    #else it will use minutes:seconds.fractionalsecondsnum
+    #this returns an object with hoursnum, minutesnum, secondsnum, and fractionalsecondsnum keys
+    #the values returned in the object are all integers
+    @classmethod
+    def getTimeObject(cls, mstr, inchrs):
+        #HHH:MM:SS.SSSSSSS OR MM:SS.SSSSSSS OR HHH:MM
+        #with just a colon we do not know the format hours and minutes or minutes and seconds?
+        myvalidator.varmustbeboolean(inchrs, "inchrs");
+        
+        #print(f"mstr = {mstr}");
+        
+        mkys = ["hoursnum", "minutesnum", "secondsnum", "fractionalsecondsnum"];
+        if (myvalidator.isvaremptyornull(mstr)):
+            mdict = {};
+            for n in range(len(mkys)): mdict[mkys[n]] = 0;
+            return mdict;
+
+        numclns = 0;
+        clis = [];
+        pfnd = False;
+        pdi = -1;
+        for i in range(len(mstr)):
+            c = mstr[i];
+            if (c == ":"):
+                if (0 < i):
+                    numclns += 1;
+                    clis.append(i);
+                    if (2 < numclns):
+                        raise ValueError("invalid string found and used here for the time string!");
+                else: raise ValueError("invalid string found and used here for the time string!");
+            elif (c == "."):
+                if (0 < i):
+                    if (pfnd):
+                        raise ValueError("invalid string found and used here for the time string!");
+                    else:
+                        pdi = i;
+                        pfnd = True;
+                else: raise ValueError("invalid string found and used here for the time string!");
+            elif (c.isdigit()): pass;
+            else:
+                raise ValueError("invalid character found on the string and invalid string " +
+                    "found and used here for the time string!");
+        #print("mstr is valid!");
+        #print(f"clis = {clis}");
+        #print(f"pfnd = {pfnd}");
+
+        if (len(clis) in [1, 2]): pass;
+        else: raise ValueError("invalid number of colons found on the time string!");
+
+        usehms = (len(clis) == 2);
+        #print(f"usehms = {usehms}");
+        #print(f"inchrs = {inchrs}");
+
+        mydelimis = [c for c in clis];
+        if (pfnd): mydelimis.append(pdi);
+        finkys = ([ky for ky in mkys] if (usehms) else 
+                  ([mkys[0], mkys[1]] if (inchrs) else [mkys[1], mkys[2], mkys[3]]));
+        marr = myvalidator.mysplitWithLen(mstr, mydelimis, 1, 0);
+        if (pfnd): pass;
+        else:
+            if (usehms or not(inchrs)): marr.append(0);
+            
+        #print(f"mydelimis = {mydelimis}");
+        #print(f"finkys = {finkys}");
+        #print(f"marr = {marr}");
+
+        if (len(finkys) == len(marr)): pass;
+        else: raise ValueError("the number of final keys and the number of values must match!");
+        
+        mdict = {};
+        for n in range(len(finkys)): mdict[finkys[n]] = int(marr[n]);
+        #print(f"mdict = {mdict}");
+
+        return mdict;
 
     #end of date time methods section
 
