@@ -1040,8 +1040,86 @@ class myvalidator:
                             isvalid = False;
                             break;
                 if (not isvalid): raise ValueError("the typename must be alphabetic, but it was not!");
+        
+        #add some additional defaults for the data type properties that can be inferred
+        useunsigneddefault = False;
+        isnonnulldefault = False;
+        signedhasadefault = False;
+        if (canbesignedornot):
+            isnonnulldefault = True;
+            #if signed and unsigned are present on the ranges then no default for signed
+            #otherwise a default is present and can be determined.
+            #is a number type so default initally for the number type isnonnull: True
+            #but still cannot say one way or the other on the signed until we check the ranges
+            #if "signed", "unsigned" are present, that means two ranges
+            #no default present for signed
+            #print("this is a number type!");
+            #print(f"names = {names}");
+            #print(f"valsranges = {valsranges}");
+            
+            sp = False;
+            usp = False;
+            valsp = False;
+            minsp = 0;
+            minusp = 0;
+            for rngobj in valsranges:
+                if (rngobj["paramname"] == "values" or rngobj["paramname"] == "range"):
+                    valsp = True;
+                if (rngobj["paramname"] == "signed"):
+                    sp = True;
+                    minsp = rngobj["min"];
+                elif (rngobj["paramname"] == "unsigned"):
+                    usp = True;
+                    minusp = rngobj["min"];
+                if (sp and usp): break;
+            #print(f"sp = {sp}");
+            #print(f"usp = {usp}");
+            #print(f"minsp = {minsp}");
+            #print(f"minusp = {minusp}");
+            #print(f"valsp = {valsp}");
+
+            if (sp and usp):
+                #two ranges most likely no default present for signed
+                #if the minimum for both of these is at least 0, then use unsigned
+                #if the minimum for both of these is less than 0, use signed
+                #otherwise no default is present
+                if (minsp < 0 and minusp < 0):
+                    useunsigneddefault = False;
+                    signedhasadefault = True;
+                elif (0 <= minsp and 0 <= minusp):
+                    useunsigneddefault = True;
+                    signedhasadefault = True;
+                else:
+                    useunsigneddefault = False;
+                    signedhasadefault = False;
+            else:
+                #one range is present, so a default will be assigned.
+                #but still do not know what it is yet.
+                #look for the param name with values or range.
+                if (valsp):
+                    for rngobj in valsranges:
+                        if (rngobj["paramname"] == "values" or rngobj["paramname"] == "range"):
+                            if (rngobj["min"] < 0):
+                                useunsigneddefault = False;
+                                signedhasadefault = True;
+                            else:
+                                useunsigneddefault = True;
+                                signedhasadefault = True;
+                            break;
+                else:
+                    raise ValueError(f"the range object was built wrong for type with names: {names}!");
+        else:
+            useunsigneddefault = True;
+            isnonnulldefault = False;
+            signedhasadefault = True;
+        #print(f"useunsigneddefault = {useunsigneddefault}");
+        #print(f"isnonnulldefault = {isnonnulldefault}");
+        #print(f"signedhasadefault = {signedhasadefault}");
+        
         return {"names": names, "isvalue": isval, "canbesignedornot": canbesignedornot,
-                "paramnameswithranges": pnmsranges, "valuesranges": valsranges};
+                "useunsigneddefault": useunsigneddefault, "isnonnulldefault": isnonnulldefault,
+                "signedhasadefault": signedhasadefault, "paramnameswithranges": pnmsranges,
+                "valuesranges": valsranges};
     @classmethod
     def genValueTypeInfoDict(cls, names): return cls.genTypeInfoDict(names, True, False, [], []);
     @classmethod
@@ -1362,29 +1440,23 @@ class myvalidator:
     #this method identifies all of the type names by variant that has
     #total number of digits and the number of digits after the decimal point
     @classmethod
-    def getAllDataTypesThatHaveASetAmountOfDigitsAfterDecimalPoint(cls, varnm):
+    def getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint(cls, varnm):
         #but not all floats on MYSQL one does one does not
         if (varnm == "SQLSERVER"): return ["DECIMAL", "NUMERIC"];
         elif (varnm == "MYSQL"): return ["DECIMAL", "DEC", "FLOAT", "DOUBLE", "DOUBLE PRECISION"];
         else: return [];
 
-    #fsp on the date and time data types for mysql variants controls
-    #how many digits are allowed after the decimal point.
-    #what other data types have parameters like that?
-    #"DATETIME(fsp)", "TIMESTAMP(fsp)", "TIME(fsp)"  on MYSQL
-    #FLOAT(p) on SQLSERVER
-    #
+    #what data types for the variants controls how many digits are allowed after the decimal point?
+    #these only have one parameter. unlike the method above.
+    @classmethod
+    def getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly(cls, varnm):
+        if (varnm == "SQLSERVER"): return ["FLOAT"];
+        elif (varnm == "MYSQL"): return ["DATETIME", "TIMESTAMP", "TIME"];
+        else: return [];
 
     #we need to know if something has a parameter that dictates the length and maybe which it is
-    #
-    #
-
     #we need to know when size as a parameter is length, and when it is not relevant
     #
-    #
-
-    #may want to make a method that determines the recommended
-    #useunsigned and/or isnonnull values for a given type on the varient or if it is up to the user
     #
     #
 
@@ -2157,7 +2229,7 @@ class myvalidator:
 
         if (myvalidator.isvaremptyornull(tpobjslist)): return True;
 
-        tpnmswithfdptdgts = myvalidator.getAllDataTypesThatHaveASetAmountOfDigitsAfterDecimalPoint(
+        tpnmswithfdptdgts = myvalidator.getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint(
             varstr);
         print(f"tpnmswithfdptdgts = {tpnmswithfdptdgts}");
 
