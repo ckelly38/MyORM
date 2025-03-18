@@ -111,6 +111,8 @@ print(myvalidator.mysplit("the funny string", [3, 8, 12], [2, 4, 1], 0));#["the"
 print(myvalidator.mysplitWithLen("the funny string", [3, 8], 2, 0));#["the", "unn", "string"];
 print(myvalidator.mysplitWithDelimeter("the funny string", "", 0));
 print();
+print("DATE AND TIME METHODS TESTS:");
+print();
 print(myvalidator.getMonthNames());
 for n in range(12): print(myvalidator.getMonthNameFromNum(n + 1));
 print(myvalidator.getAllThreeLetterAbbreviationsForMonthNames());
@@ -122,10 +124,8 @@ for frltrabr in myvalidator.getAllThreeLetterAbbreviationsForMonthNames():
 for mnthnm in myvalidator.getMonthNames(): print(myvalidator.getMonthNumFromName(mnthnm));
 for n in range(12):
       if (n == 1):
-            print("Feb Num Days:");
-            print(myvalidator.getNumDaysInMonth(n + 1, True));
-            print(myvalidator.getNumDaysInMonth(n + 1, False));
-            print();
+            print("FEB NORMAL: " + str(myvalidator.getNumDaysInMonth(n + 1, False)) + " LEAP YEAR: " +
+                  str(myvalidator.getNumDaysInMonth(n + 1, True)));
       else: print(myvalidator.getNumDaysInMonth(n + 1, False));
 print(myvalidator.getDelimeterIndexesForDateStrings(True));
 print(myvalidator.getDelimeterIndexesForDateStrings(False));
@@ -182,20 +182,79 @@ print("sqlserver = ", end="");
 sqlsrvrinfoobjlist = myvalidator.getSQLDataTypesInfo('SQLSERVER');
 myvalidator.printSQLDataTypesInfoObj(sqlsrvrinfoobjlist);
 print();
+print("ALL:");
+print();
 print(myvalidator.getValidSQLDataTypesFromInfoList(liteinfoobjlist));
 print(myvalidator.getValidSQLDataTypesFromInfoList(mysqlinfoobjlist));
 print(myvalidator.getValidSQLDataTypesFromInfoList(sqlsrvrinfoobjlist));
 print();
-print(myvalidator.getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint(None));
-print(myvalidator.getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint("LITE"));
-print(myvalidator.getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint("MYSQL"));
-print(myvalidator.getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint("SQLSERVER"));
+print("NO PARAMETERS ONLY (NOPSONLY):");
 print();
-print(myvalidator.getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly(None));
-print(myvalidator.getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly("LITE"));
-print(myvalidator.getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly("MYSQL"));
-print(myvalidator.getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly("SQLSERVER"));
+print(myvalidator.getValidSQLDataTypesWithNoParametersOnlyFromInfoList(liteinfoobjlist));
+print(myvalidator.getValidSQLDataTypesWithNoParametersOnlyFromInfoList(mysqlinfoobjlist));
+print(myvalidator.getValidSQLDataTypesWithNoParametersOnlyFromInfoList(sqlsrvrinfoobjlist));
 print();
+print("PARAMETERS ONLY (PSONLY):");
+print();
+psonlylite = myvalidator.getValidSQLDataTypesWithParametersOnlyFromInfoList(liteinfoobjlist);
+psonlymysql = myvalidator.getValidSQLDataTypesWithParametersOnlyFromInfoList(mysqlinfoobjlist);
+psonlysqlsrvr = myvalidator.getValidSQLDataTypesWithParametersOnlyFromInfoList(sqlsrvrinfoobjlist);
+print(psonlylite);
+print(psonlymysql);
+print(psonlysqlsrvr);
+print();
+print("BEGIN TYPES WITH PARAMETERS CLASSIFICATIONS:");
+print();
+print("1. SET TOTAL AMOUNT OF DIGITS AND SET AMOUNT AFTER THE DECIMAL POINT:");
+print();
+#None is not needed but will not crash this method
+#print(myvalidator.getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint(None));
+tdgtsandadptlite = myvalidator.getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint("LITE");
+tdgtsandadptmysql = myvalidator.getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint("MYSQL");
+tdgtsandadptsqlsrvr = myvalidator.getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint("SQLSERVER");
+print(tdgtsandadptlite);
+print(tdgtsandadptmysql);
+print(tdgtsandadptsqlsrvr);
+print();
+print("2. SET AMOUNT OF DIGITS AFTER THE DECIMAL POINT ONLY:");
+print();
+#None is not needed but will not crash this method
+#print(myvalidator.getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly(None));
+dgtsadptonlylite = myvalidator.getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly("LITE");
+dgtsadptonlymysql = myvalidator.getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly("MYSQL");
+dgtsadptonlysqlsrvr = myvalidator.getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly(
+      "SQLSERVER");
+print(dgtsadptonlylite);
+print(dgtsadptonlymysql);
+print(dgtsadptonlysqlsrvr);
+print();
+print("3. HAS A LIST AS THE ONLY PARAMETER:");
+print();
+listasonlyplite = myvalidator.getAllDataTypesWithAListAsTheParameter("LITE");
+listasonlypmysql = myvalidator.getAllDataTypesWithAListAsTheParameter("MYSQL");
+listasonlypsqlsrvr = myvalidator.getAllDataTypesWithAListAsTheParameter("SQLSERVER");
+print(listasonlyplite);
+print(listasonlypmysql);
+print(listasonlypsqlsrvr);
+print();
+#if on one of the lists, the type name matches, and number of parameters implied matches
+#then not remaining
+print("WHAT I STILL HAVE REMAINING TO DO:");
+print();
+rempsonlite = myvalidator.getRemainingParameters(psonlylite,
+                                                 [tdgtsandadptlite, dgtsadptonlylite, listasonlyplite],
+                                                 [2, 1, 1]);
+rempsonmysql = myvalidator.getRemainingParameters(psonlymysql,
+                                                  [tdgtsandadptmysql, dgtsadptonlymysql,
+                                                   listasonlypmysql],
+                                                 [2, 1, 1]);
+rempsonsqlsrvr = myvalidator.getRemainingParameters(psonlysqlsrvr,
+                                                    [tdgtsandadptsqlsrvr, dgtsadptonlysqlsrvr,
+                                                     listasonlypsqlsrvr],
+                                                    [2, 1, 1]);
+print(rempsonlite);
+print(rempsonmysql);
+print(rempsonsqlsrvr);
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 #quote did not actually get escaped
 enmbasestr = "ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', ";

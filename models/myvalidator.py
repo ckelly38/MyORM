@@ -739,15 +739,18 @@ class myvalidator:
     #https://www.linkedin.com/pulse/part-8-overview-sqlite-data-types-integer-text-blob-etc-julles/
     #
     #if using lite:
+    #
     #INTEGER AND REAL ARE 8 BYTES MAX (1byte=8bits,so 64bits, signed)
     #integer signed range: -9223372036854775808 to 9223372036854775807
     #integer unsigned range: 0 to 18446744073709551615 (2^64-1 absolute max of course).
     #real signed range: -3.402*10^38 to 3.402*10^38
     #TEXT max length: 2^31-1 bytes max
     #BLOB max size in bytes: 2^31-1 bytes max
+    #
     #return ["NULL", "REAL", "INTEGER", "TEXT", "BLOB"];
     #
     #if not using lite:
+    #
     #MYSQL:
     #
     #CHAR(size) size is length 0 to 255 inclusive default is 1.
@@ -1454,10 +1457,27 @@ class myvalidator:
         elif (varnm == "MYSQL"): return ["DATETIME", "TIMESTAMP", "TIME"];
         else: return [];
 
+    @classmethod
+    def getAllDataTypesWithAListAsTheParameter(cls, varnm):
+        if (varnm == "MYSQL"): return ["ENUM", "SET"];
+        else: return [];
+
     #we need to know if something has a parameter that dictates the length and maybe which it is
     #we need to know when size as a parameter is length, and when it is not relevant
     #
+    #for sql server anything with CHAR(n) n is the length (EXCLUDING THOSE WITH max OF COURSE)
     #
+    #also the BINARY(n)s on sql server (n is byte related so maybe not quite)
+    #so maybe take nmax multiply by 8 for bit length IE actual length stored???
+    #the BLOB(size)s on my sql are similar.
+    #
+    #
+    #same for char and varchar and text on mysql size is length BUT NOT SURE ON THE OTHERS.
+    #
+    #
+    #all INTs on mysql have the size parameter being the display width.
+    #this does not effect how the value is stored at all.
+    #"TINYINT", "SMALLINT", "MEDIUMINT", "INTEGER", "INT", "BIGINT"
     #
 
     #begin date time methods section here...
@@ -1525,7 +1545,7 @@ class myvalidator:
         myvalidator.varmustbeboolean(islpyr, "islpyr");
         myvalidator.valueMustBeInRange(mnthnum, 1, 12, True, True, "mnthnum");
         #(30 days has (9)September, (4)April, (6)June, and (11)November, all the rest have 31 except
-        #(2)Februrary which has 28 or 29 if leap year)
+        #(2)February which has 28 or 29 if leap year)
         if (mnthnum in [4, 6, 9, 11]): return 30;
         elif (mnthnum == 2): return (29 if islpyr else 28);
         else: return 31;
@@ -1700,25 +1720,24 @@ class myvalidator:
         pdi = -1;
         for i in range(len(mstr)):
             c = mstr[i];
+            errstr = "";
             if (c == ":"):
                 if (0 < i):
                     numclns += 1;
                     clis.append(i);
-                    if (2 < numclns):
-                        raise ValueError("invalid string found and used here for the time string!");
-                else: raise ValueError("invalid string found and used here for the time string!");
+                    if (2 < numclns): errstr = "invalid number of colons found in the string! ";
+                else: errstr = "colon cannot start the string! ";
             elif (c == "."):
                 if (0 < i):
-                    if (pfnd):
-                        raise ValueError("invalid string found and used here for the time string!");
+                    if (pfnd): errstr = "only one period can be found on the string! ";
                     else:
                         pdi = i;
                         pfnd = True;
-                else: raise ValueError("invalid string found and used here for the time string!");
+                else: errstr = "period cannot start the string! ";
             elif (c.isdigit()): pass;
-            else:
-                raise ValueError("invalid character found on the string and invalid string " +
-                    "found and used here for the time string!");
+            else: errstr = "invalid character found on the string! ";
+            if (0 < len(errstr)):
+                raise ValueError(errstr + " invalid string found and used here for the time string!");
         #print("mstr is valid!");
         #print(f"clis = {clis}");
         #print(f"pfnd = {pfnd}");
@@ -1771,12 +1790,93 @@ class myvalidator:
             pnames = [pobj["paramname"] for pobj in mobj["paramnameswithranges"]];
             return "(" + (", ".join(pnames)) + ")";
 
+    #ptpstr is PSONLY means parameters only
+    #ptpstr is NOPSONLY means no parameters only
+    #ptpstr is anything else ALL
     @classmethod
-    def getValidSQLDataTypesFromInfoList(cls, mlist):
+    def getUseParamsOrNotOrAll(cls, mpobjlist, ptpstr="ALL"):
+        #need to know if getting everything
+        #those with parameters only
+        #those without parameters only
+        if (ptpstr == None): return True;
+        else:
+            if (ptpstr.isupper()): pass;
+            else: return cls.getUseParamsOrNotOrAll(mpobjlist, ptpstr.upper());
+        if (ptpstr == "PSONLY"): return not(myvalidator.isvaremptyornull(mpobjlist));
+        elif (ptpstr == "NOPSONLY"): return (myvalidator.isvaremptyornull(mpobjlist));
+        else: return True;#use all
+
+    @classmethod
+    def getValidSQLDataTypesFromInfoList(cls, mlist, ptype="ALL"):
         if (mlist == None): return None;
         else:
             return [nm + cls.getParamNamesFromInfoListObj(mobj)
-                    for mobj in mlist for nm in mobj["names"]];
+                    for mobj in mlist for nm in mobj["names"]
+                    if (myvalidator.getUseParamsOrNotOrAll(mobj["paramnameswithranges"], ptype))];
+    @classmethod
+    def getValidSQLDataTypesWithParametersOnlyFromInfoList(cls, mlist):
+        return cls.getValidSQLDataTypesFromInfoList(mlist, "PSONLY");
+    @classmethod
+    def getValidSQLDataTypesWithNoParametersOnlyFromInfoList(cls, mlist):
+        return cls.getValidSQLDataTypesFromInfoList(mlist, "NOPSONLY");
+    @classmethod
+    def getAllValidSQLDataTypesFromInfoList(cls, mlist):
+        return cls.getValidSQLDataTypesFromInfoList(mlist, "ALL");
+
+    #this is meant more for the test file and not meant for production
+    #this helps me know what data types have been classified and what are remaining
+    #what is classified and the number of parameters for each goes in
+    #a list of all for the variant also goes in
+    #then using this we can get what we still need to classify
+    @classmethod
+    def getRemainingParameters(cls, alllist, objlistsfvar, numrpslist):
+        #print(f"alllist = {alllist}");
+        #print(f"objlistsfvar = {objlistsfvar}");
+        #print(f"numrpslist = {numrpslist}");
+        #the last two lists must be the same
+        #if all is empty or null, then they all must be empty or null
+        #with the exception of the last one, that is constant
+        if (myvalidator.isvaremptyornull(alllist)):
+            if (len(objlistsfvar) == len(numrpslist)):
+                for mlist in objlistsfvar:
+                    if (len(mlist) < 1): pass;
+                    else: raise ValueError("the lists of all of the objects must be empty!");
+            else: raise ValueError("the objlistsfvar and numrpslist must be the same length!");
+            return [];
+        if (len(objlistsfvar) == len(numrpslist)): pass;
+        else: raise ValueError("the objlistsfvar and numrpslist must be the same length!");
+        myexlist = [];
+        for n in range(len(objlistsfvar)):
+            clistpnms = objlistsfvar[n];
+            numpsoneach = numrpslist[n];
+            #print(f"clistpnms = {clistpnms}");
+            #print(f"numpsoneach = {numpsoneach}");
+            
+            for mynm in clistpnms:
+                #print(f"mynm = {mynm}");
+                #print();
+
+                for itemnm in alllist:
+                    absnm = itemnm[0:itemnm.index("(")];
+                    #print(f"itemnm = {itemnm}");
+                    #print(f"absnm = {absnm}");
+
+                    if (mynm == absnm):
+                        #print("found a possible match!");
+        
+                        #see if the number of parameters match
+                        #if the number of parameters match then this is our match else not
+                        #if it is a match add this on our exclusion list and exit this loop
+                        valsps = myvalidator.getParmsFromValType(itemnm);
+                        #print(f"valsps = {valsps}");
+
+                        if (len(valsps) == numpsoneach):
+                            #print("this is a match!");
+                            myexlist.append(itemnm);
+                        #else: print("this is not a match!");
+        #print(f"alllist = {alllist}");
+        #print(f"myexlist = {myexlist}");
+        return [itemnm for itemnm in alllist if itemnm not in myexlist];
 
     @classmethod
     def getDataTypesObjsWithNameFromList(cls, mlist, tpnm):
