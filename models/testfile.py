@@ -237,25 +237,52 @@ print(listasonlyplite);
 print(listasonlypmysql);
 print(listasonlypsqlsrvr);
 print();
+print("4. HAS A DISPLAY WIDTH AS THE ONLY PARAMETER:");
+print();
+dpwdthasonlyplite = myvalidator.getTypesThatHaveADisplayWidthParam("LITE");
+dpwdthasonlypmysql = myvalidator.getTypesThatHaveADisplayWidthParam("MYSQL");
+dpwdthasonlypsqlsrvr = myvalidator.getTypesThatHaveADisplayWidthParam("SQLSERVER");
+print(dpwdthasonlyplite);
+print(dpwdthasonlypmysql);
+print(dpwdthasonlypsqlsrvr);
+print();
+print("5. HAS A LENGTH AS THE ONLY PARAMETER:");
+print();
+lenasonlyplite = myvalidator.getTypesThatHaveLengthAsTheParam("LITE");
+lenasonlypmysql = myvalidator.getTypesThatHaveLengthAsTheParam("MYSQL");
+lenasonlypsqlsrvr = myvalidator.getTypesThatHaveLengthAsTheParam("SQLSERVER");
+print(lenasonlyplite);
+print(lenasonlypmysql);
+print(lenasonlypsqlsrvr);
+print();
+print("6. HAS A BYTE RELATED LENGTH AS THE ONLY PARAMETER:");
+print();
+lenrbtsasonlyplite = myvalidator.getTypesThatHaveAByteRelatedLengthAsTheParam("LITE");
+lenrbtsasonlypmysql = myvalidator.getTypesThatHaveAByteRelatedLengthAsTheParam("MYSQL");
+lenrbtsasonlypsqlsrvr = myvalidator.getTypesThatHaveAByteRelatedLengthAsTheParam("SQLSERVER");
+print(lenrbtsasonlyplite);
+print(lenrbtsasonlypmysql);
+print(lenrbtsasonlypsqlsrvr);
+print();
 #if on one of the lists, the type name matches, and number of parameters implied matches
 #then not remaining
 print("WHAT I STILL HAVE REMAINING TO DO:");
 print();
-rempsonlite = myvalidator.getRemainingParameters(psonlylite,
-                                                 [tdgtsandadptlite, dgtsadptonlylite, listasonlyplite],
-                                                 [2, 1, 1]);
-rempsonmysql = myvalidator.getRemainingParameters(psonlymysql,
-                                                  [tdgtsandadptmysql, dgtsadptonlymysql,
-                                                   listasonlypmysql],
-                                                 [2, 1, 1]);
-rempsonsqlsrvr = myvalidator.getRemainingParameters(psonlysqlsrvr,
-                                                    [tdgtsandadptsqlsrvr, dgtsadptonlysqlsrvr,
-                                                     listasonlypsqlsrvr],
-                                                    [2, 1, 1]);
+numreqpsarr = [2, 1, 1, 1, 1, 1];
+myliteusedlist = [tdgtsandadptlite, dgtsadptonlylite, listasonlyplite, dpwdthasonlyplite,
+                  lenasonlyplite, lenrbtsasonlyplite];
+mysqlusedlist = [tdgtsandadptmysql, dgtsadptonlymysql, listasonlypmysql, dpwdthasonlypmysql,
+                 lenasonlypmysql, lenrbtsasonlypmysql];
+sqlsrvrusedlist = [tdgtsandadptsqlsrvr, dgtsadptonlysqlsrvr, listasonlypsqlsrvr, dpwdthasonlypsqlsrvr,
+                   lenasonlypsqlsrvr, lenrbtsasonlypsqlsrvr];
+rempsonlite = myvalidator.getRemainingParameters(psonlylite, myliteusedlist, numreqpsarr);
+rempsonmysql = myvalidator.getRemainingParameters(psonlymysql, mysqlusedlist, numreqpsarr);
+rempsonsqlsrvr = myvalidator.getRemainingParameters(psonlysqlsrvr, sqlsrvrusedlist, numreqpsarr);
 print(rempsonlite);
 print(rempsonmysql);
 print(rempsonsqlsrvr);
-raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
 #quote did not actually get escaped
 enmbasestr = "ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', ";
 enmodptstr = "'something else, other', 'last'";
@@ -276,15 +303,25 @@ print(myvalidator.isValidDataType("NUMERIC(39)", "SQLSERVER"));#false#38 or less
 print(myvalidator.isValidDataType("NUMERIC(1)", "SQLSERVER"));#true
 print(myvalidator.isValidDataType("VARCHAR(max)", "SQLSERVER"));#true
 print();
-print(myvalidator.isValueValidForDataType("TINYINT", "a", "SQLSERVER"));#false not a number
-print(myvalidator.isValueValidForDataType("TINYINT", "adsfsad203e4", "SQLSERVER"));#false not a number
-print(myvalidator.isValueValidForDataType("TINYINT", 256, "SQLSERVER"));#false 255 max
-print(myvalidator.isValueValidForDataType("TINYINT(4)", 256, "MYSQL"));#false 255 max and invalid size
-print(myvalidator.isValueValidForDataType("TINYINT(3)", 256, "MYSQL"));#false 255 max and invalid size
-print(myvalidator.isValueValidForDataType("TINYINT(3)", 1000, "MYSQL"));#false 255 max size disagreement
+print(myvalidator.isValueValidForDataType("TINYINT", "a", "SQLSERVER", True, True));#false not a number
+print(myvalidator.isValueValidForDataType("TINYINT", "adsfsad203e4", "SQLSERVER", True, True));
+#false not a number
+print(myvalidator.isValueValidForDataType("TINYINT", 256, "SQLSERVER", True, True));#false 255 max
+print(myvalidator.isValueValidForDataType("TINYINT(4)", 256, "MYSQL", True, True));
+#false 255 max and invalid size
+print(myvalidator.isValueValidForDataType("TINYINT(3)", 256, "MYSQL", True, True));
+#false 255 max and invalid size
+print(myvalidator.isValueValidForDataType("TINYINT(3)", 1000, "MYSQL", True, True));
+#false 255 max size disagreement
+print(myvalidator.isValueValidForDataType("TINYINT(2)", 255, "MYSQL", True, False));
+#false null cannot be allowed for this data type.
+#
+#display width type class test here:
+#
 #size problem is not tested for because the value is out of range and the range is checked first.
-#print(myvalidator.isValueValidForDataType("TINYINT(2)", 255, "MYSQL"));#crashes not done yet
-#false value is outside of display size range, but the type can still store it.
+print(myvalidator.isValueValidForDataType("TINYINT(2)", 255, "MYSQL", True, True));#true valid
+#false value is outside of display size range, but the type can still store it. so returns true valid.
+
 print(myvalidator.isValueValidForDataType("TINYTEXT",
                                           myvalidator.genStringWithNumberText(255), "MYSQL"));#true
 print(myvalidator.isValueValidForDataType("TINYTEXT",
@@ -305,6 +342,9 @@ print(myvalidator.isValueValidForDataType("TINYTEXT", "NULL", "MYSQL", True, Tru
 #testing I want an example that does not use this as the parameter.
 #I should be able to get it with something like DECIMAL or NUMERIC or FLOAT or REAL ...
 
+#parameters limit the length of the value and
+#how many digits can be stored after the decimal point class tests:
+
 #useunsigned, isnonnull
 print(myvalidator.isValueValidForDataType("DECIMAL(3, 1)", 312.5, "SQLSERVER", False, True));#false
 print(myvalidator.isValueValidForDataType("NUMERIC(3, 1)", 312.5, "SQLSERVER", False, True));#false
@@ -315,11 +355,30 @@ print(myvalidator.isValueValidForDataType("NUMERIC(3, 1)", 12.5, "SQLSERVER", Fa
 #but according to the parameters the total number of digits should be 3,
 #and 1 should be after the decimal point which is not the case. Both paremeters should be less than 38.
 
+#length test class tests:
+
+print(myvalidator.isValueValidForDataType("CHAR(255)",
+                                          myvalidator.genStringWithNumberText(255), "MYSQL"));#true
+print(myvalidator.isValueValidForDataType("CHAR(255)",
+                                          myvalidator.genStringWithNumberText(256), "MYSQL"));#false
+print(myvalidator.isValueValidForDataType("BIT(2)", "01", "MYSQL"));#true
+print(myvalidator.isValueValidForDataType("BIT(64)",
+                                          myvalidator.genStringWithNumberText(65), "MYSQL"));#false
+#invalid length and invalid data stored on a bit
+print(myvalidator.isValueValidForDataType("BIT(64)",
+                                          myvalidator.genStringWithNumberText(64), "MYSQL"));#false
+#invalid data stored on a bit
+
 #need tests for the other class(es) of data types with parameters here
+#
+#
 #
 #
 
 #these conduct some other tests on the method and for the data type.
+
+#parameter limits the number of digits after the decimal point class tests:
+
 myfltval = 1234.567890123;
 print(myvalidator.isValueValidForDataType("FLOAT(3, 1)", myfltval, "SQLSERVER"));#false invalid type
 print(myvalidator.isValueValidForDataType("FLOAT(53)", myfltval, "SQLSERVER", True, False));
@@ -328,9 +387,15 @@ print(myvalidator.isValueValidForDataType("FLOAT(53)", myfltval, "SQLSERVER", Tr
 #false signed only
 print(myvalidator.isValueValidForDataType("FLOAT(53)", myfltval, "SQLSERVER", False, False));
 #false cannot be null
-print(myvalidator.isValueValidForDataType("FLOAT(24)", myfltval, "SQLSERVER", False, True));#crashes
+print(myvalidator.isValueValidForDataType("FLOAT(24)", myfltval, "SQLSERVER", False, True));
 #false too small
 print(myvalidator.isValueValidForDataType("FLOAT(53)", myfltval, "SQLSERVER", False, True));#true
+
+#MYSQL TIME RANGE IS: "-838:59:59.000000", "838:59:59.999999"
+print(myvalidator.isValueValidForDataType("TIME(0)", "24:59:59.999999", "MYSQL"));#false
+print(myvalidator.isValueValidForDataType("TIME(6)", "24:59:59.999999", "MYSQL"));#true
+
+#tests on string types
 
 #I need a test where the value in the required range, but it is specifically formated like a date.
 print(myvalidator.isValueValidForDataType("DATE", "2029-02-28", "SQLSERVER"));#true

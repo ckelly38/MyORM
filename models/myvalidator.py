@@ -1453,32 +1453,40 @@ class myvalidator:
     #these only have one parameter. unlike the method above.
     @classmethod
     def getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly(cls, varnm):
-        if (varnm == "SQLSERVER"): return ["FLOAT"];
-        elif (varnm == "MYSQL"): return ["DATETIME", "TIMESTAMP", "TIME"];
-        else: return [];
+        return (["FLOAT"] if (varnm == "SQLSERVER") else
+                (["DATETIME", "TIMESTAMP", "TIME"] if (varnm == "MYSQL") else []));
 
     @classmethod
     def getAllDataTypesWithAListAsTheParameter(cls, varnm):
-        if (varnm == "MYSQL"): return ["ENUM", "SET"];
-        else: return [];
+        return (["ENUM", "SET"] if (varnm == "MYSQL") else []);
+    
+    #the BINARY(n)s on sql server (n is byte related so maybe not quite)
+    #so maybe take nmax multiply by 8 for bit length IE actual length stored???
+    #the BLOB(size)s on my sql are similar.
+    #the BINARY(size)s on my sql are similar, but not sure on the max???.
+    @classmethod
+    def getTypesThatHaveAByteRelatedLengthAsTheParam(cls, varstr):
+        return (["BINARY", "VARBINARY", "BLOB"] if (varstr == "MYSQL") else
+                (["BINARY", "VARBINARY"] if (varstr == "SQLSERVER") else []));
 
     #we need to know if something has a parameter that dictates the length and maybe which it is
     #we need to know when size as a parameter is length, and when it is not relevant
     #
     #for sql server anything with CHAR(n) n is the length (EXCLUDING THOSE WITH max OF COURSE)
-    #
-    #also the BINARY(n)s on sql server (n is byte related so maybe not quite)
-    #so maybe take nmax multiply by 8 for bit length IE actual length stored???
-    #the BLOB(size)s on my sql are similar.
-    #
-    #
-    #same for char and varchar and text on mysql size is length BUT NOT SURE ON THE OTHERS.
-    #
-    #
+    #same for char and varchar and text and bit on mysql size is length.
+    @classmethod
+    def getTypesThatHaveLengthAsTheParam(cls, varstr):
+        return (["CHAR", "VARCHAR", "NCHAR", "NVARCHAR"] if (varstr == "SQLSERVER") else
+                (["CHAR", "VARCHAR", "TEXT", "BIT"] if (varstr == "MYSQL") else []));
+    
     #all INTs on mysql have the size parameter being the display width.
     #this does not effect how the value is stored at all.
     #"TINYINT", "SMALLINT", "MEDIUMINT", "INTEGER", "INT", "BIGINT"
-    #
+    @classmethod
+    def getTypesThatHaveADisplayWidthParam(cls, varstr):
+        return (["TINYINT", "SMALLINT", "MEDIUMINT", "INTEGER", "INT", "BIGINT"]
+                if (varstr == "MYSQL") else []);
+
 
     #begin date time methods section here...
 
@@ -2197,7 +2205,31 @@ class myvalidator:
                                         #that is too comprehensive
                                         getnext = False;
                                         finpsonval = None;
-                                        if (tpobj["canbesignedornot"]):
+                                        
+                                        #if type is a number then the parameters are numbers for sure
+                                        #if type is not a number, then it may have parameters
+                                        #which are numbers and it may not.
+                                        #we need to know which types do have parameters
+                                        #which are numbers and the ones that do not
+                                        #print(f"tpobj = {tpobj}");
+
+                                        #we really only care about the parameters sake
+                                        #if can specify range is true for all of the parameters
+                                        #then this is a number type too
+                                        tphasnumparams = tpobj["canbesignedornot"];
+                                        if (tphasnumparams): pass;
+                                        else:
+                                            if (myvalidator.isvaremptyornull(
+                                                tpobj["paramnameswithranges"])): pass;
+                                            else: tphasnumparams = True;
+                                            for paramobj in tpobj["paramnameswithranges"]:
+                                                if (paramobj["canspecifyrange"]): pass;
+                                                else:
+                                                    tphasnumparams = False;
+                                                    break;
+                                        #print(f"tphasnumparams = {tphasnumparams}");
+
+                                        if (tphasnumparams):
                                             finpsonval = [];
                                             for pval in psonval:
                                                 if (myvalidator.isstranumber(pval)):
@@ -2275,7 +2307,19 @@ class myvalidator:
                             return val.isalpha();
             return False;
 
+    @classmethod
+    def isDataTypeOnList(cls, tobj, tpnmslist, numps):
+        myvalidator.varmustnotbenull(tobj, "tobj");
+        myvalidator.varmustbethetypeonly(numps, int, "numps");
+        myvalidator.valueMustBeInRange(numps, 0, 0, True, False, "numps");
+        rkys = ["names", "paramnameswithranges"];
+        if (myvalidator.isListAInListB(rkys, tobj.keys())): pass;
+        else:
+            raise ValueError("invalid tobj was used here because it did not have the required " +
+                             "keys on it!");
+        return (myvalidator.isListAInListB(tobj[rkys[0]], tpnmslist) and len(tobj[rkys[1]]) == numps);
 
+    
     #BELOW METHODS ARE NOT DONE YET 3-12-2025 1:08 AM MST
 
     #tpnm is the SQL Data Type name for the specific variant specified by varstr
@@ -2332,6 +2376,18 @@ class myvalidator:
         tpnmswithfdptdgts = myvalidator.getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint(
             varstr);
         print(f"tpnmswithfdptdgts = {tpnmswithfdptdgts}");
+        dgtsadptonly = myvalidator.getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly(
+            varstr);
+        print(f"dgtsadptonly = {dgtsadptonly}");
+        tpswithlistp = myvalidator.getAllDataTypesWithAListAsTheParameter(varstr);
+        print(f"tpswithlistp = {tpswithlistp}");
+        tpswdispwp = myvalidator.getTypesThatHaveADisplayWidthParam(varstr);
+        print(f"tpswdispwp = {tpswdispwp}");
+        tpslenasp = myvalidator.getTypesThatHaveLengthAsTheParam(varstr);
+        print(f"tpslenasp = {tpslenasp}");
+        tpsrellenasp = myvalidator.getTypesThatHaveAByteRelatedLengthAsTheParam(varstr);
+        print(f"tpsrellenasp = {tpsrellenasp}");
+        print();
 
         for tobj in tpobjslist:
             print(f"tobj = {tobj}");
@@ -2414,6 +2470,7 @@ class myvalidator:
                         #these are numerical comparisons
                         if (myvalidator.isvaranumber(valforcomp)): pass;
                         else:
+                            print("value is not not a number on a numerical comparison!");
                             getnext = True;
                             break;
                         minrngval = vrobj["min"];
@@ -2425,7 +2482,6 @@ class myvalidator:
                             break;
                         else: print("value is in the range!");
 
-                finpsonval = None;
                 if (getnext): pass;
                 else:
                     if (tobj["canbesignedornot"]):
@@ -2449,10 +2505,31 @@ class myvalidator:
                                     else: getnext = True;
                                 #raise ValueError("NOT SURE ON THIS CASE HERE 3-14-2025 11 PM MST!");
                         else: getnext = True;
+                    else:
+                        if (useunsigned): pass;
+                        else: getnext = True;
 
+                finpsonval = None;
+                if (getnext): pass;
+                else:
+                    #we really only care about the parameters sake
+                    #if can specify range is true for all of the parameters
+                    #then this is a number type too
+                    tphasnumparams = tobj["canbesignedornot"];
+                    if (tphasnumparams): pass;
+                    else:
+                        if (myvalidator.isvaremptyornull(tobj["paramnameswithranges"])): pass;
+                        else: tphasnumparams = True;
+                        for paramobj in tobj["paramnameswithranges"]:
+                            if (paramobj["canspecifyrange"]): pass;
+                            else:
+                                tphasnumparams = False;
+                                break;
+                    #print(f"tphasnumparams = {tphasnumparams}");
+
+                    if (tphasnumparams):
                         finpsonval = [];
                         for pval in psonval:
-                            if (getnext): break;
                             if (myvalidator.isstranumber(pval)):
                                 if ("." in pval):
                                     #the parameters are not valid
@@ -2465,9 +2542,8 @@ class myvalidator:
                                 #return False;
                                 getnext = True;
                                 break;
-                    else:
-                        if (useunsigned): finpsonval = [pval for pval in psonval];
-                        else: getnext = True;
+                        if (getnext): continue;
+                    else: finpsonval = [pval for pval in psonval];
                     #print(f"finpsonval = {finpsonval}");
 
                 if (getnext): pass;
@@ -2488,37 +2564,96 @@ class myvalidator:
                     print(f"tpnm = {tpnm}");
                     print(f"finpsonval = {finpsonval}");
 
-                    if (myvalidator.isListAInListB(tobj["names"], tpnmswithfdptdgts) and
-                        len(tobj["paramnameswithranges"]) == 2):
-                            print("need to handle the total number of digits and the num digits " +
-                                "after the decimal point here!");
+                    if (myvalidator.isDataTypeOnList(tobj, tpnmswithfdptdgts, 2)):
+                        print("need to handle the total number of digits and the num digits " +
+                            "after the decimal point here!");
+                        
+                        mdict = {};
+                        for n in range(len(tobj["paramnameswithranges"])):
+                            pnmobj = tobj["paramnameswithranges"][n];
+                            print(f"pnmobj = {pnmobj}");
+                            print();
                             
-                            mdict = {};
-                            for n in range(len(tobj["paramnameswithranges"])):
-                                pnmobj = tobj["paramnameswithranges"][n];
-                                print(f"pnmobj = {pnmobj}");
-                                print();
-                                
-                                mdict[pnmobj["paramname"]] = finpsonval[n];
-                            print(f"mdict = {mdict}");
+                            mdict[pnmobj["paramname"]] = finpsonval[n];
+                        print(f"mdict = {mdict}");
 
-                            #now do the length check against the value here...
-                            usedkys = ["size"];
-                            okys = [ky for ky in list(mdict.keys()) if ky not in usedkys];
-                            
-                            #note the plus 1 for the decimal point
-                            #the without it for normal integer only
-                            valstr = str(val);
-                            szvld = ((len(valstr) == mdict["size"] + 1) if ("." in valstr) else
-                                     (len(valstr) == mdict["size"]));
-                            nmdsz = 0;
-                            if ("." in valstr): nmdsz = len(valstr[valstr.index(".") + 1:]);
-                            numdvld = (nmdsz == mdict[okys[0]]);
-                            print(f"szvld = {szvld}");
-                            print(f"numdvld = {numdvld}");
+                        #now do the length check against the value here...
+                        usedkys = ["size"];
+                        okys = [ky for ky in list(mdict.keys()) if ky not in usedkys];
+                        
+                        #note the plus 1 for the decimal point
+                        #the without it for normal integer only
+                        valstr = str(val);
+                        szvld = ((len(valstr) == mdict["size"] + 1) if ("." in valstr) else
+                                    (len(valstr) == mdict["size"]));
+                        nmdsz = 0;
+                        if ("." in valstr): nmdsz = len(valstr[valstr.index(".") + 1:]);
+                        numdvld = (nmdsz == mdict[okys[0]]);
+                        print(f"szvld = {szvld}");
+                        print(f"numdvld = {numdvld}");
 
-                            if (szvld and numdvld): pass;#valid
-                            else: getnext = True;
+                        if (szvld and numdvld): pass;#valid
+                        else: getnext = True;
+                    elif (myvalidator.isDataTypeOnList(tobj, dgtsadptonly, 1)):
+                        print("this has a set digits after the decimal point only!");
+
+                        pval = finpsonval[0];
+                        numdgts = -1;
+                        if (varstr == "SQLSERVER" and ("FLOAT" in tobj["names"])):
+                            numdgts = (7 if (pval < 25) else 15);
+                        else: numdgts = pval;
+                        print(f"pval = {pval}");
+                        print(f"numdgts = {numdgts}");
+
+                        valstr = str(val);
+                        valstradpt = valstr[valstr.index(".") + 1:];
+                        numdgtsadptonval = len(valstradpt);
+                        print(f"valstradpt = {valstradpt}");
+                        print(f"numdgtsadptonval = {numdgtsadptonval}");
+
+                        if (numdgts < numdgtsadptonval): getnext = True;#invalid
+                    elif (myvalidator.isDataTypeOnList(tobj, tpswithlistp, 1)):
+                        print("these types have a list as the parameter!");
+                        raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
+                    elif (myvalidator.isDataTypeOnList(tobj, tpswdispwp, 1)):
+                        print("these types have a display width as the parameter!");
+                        
+                        #note the display width does not effect what value can be stored
+                        #that is the range, we can however enforce it here,
+                        #but that would piss off the users.
+                        print("the display width will be depricated soon!");
+                        print("this however is not really enforced anyways!");
+                        print("however for the time being these types need it!");
+                        
+                        pval = finpsonval[0];
+                        valstr = str(val);
+                        if (pval < len(valstr)):
+                            print("you are storing a value (" + valstr + ") longer than the " +
+                                    "display width (" + str(pval) + ")!");
+                            print("but this is not actually enforced!");
+
+                        print("moving on!");
+                    elif (myvalidator.isDataTypeOnList(tobj, tpslenasp, 1)):
+                        print("these data types have the length as the parameter!");
+                        
+                        pval = finpsonval[0];
+                        valstr = str(val);
+                        print(f"pval = {pval}");
+                        print(f"len(valstr) = {len(valstr)}");
+
+                        if (pval < len(valstr)): getnext = True;
+                        else:
+                            #here make sure the BIT type is storing the correct data
+                            if ("BIT" in tobj["names"]):
+                                for c in valstr:
+                                    if (c == "0" or c == "1"): pass;
+                                    else:
+                                        print("invalid value stored on a bit!");
+                                        getnext = True;
+                                        break;
+                    elif (myvalidator.isDataTypeOnList(tobj, tpsrellenasp, 1)):
+                        print("these types are byte length relative!");
+                        raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
                     else:
                         for pnmobj in tobj["paramnameswithranges"]:
                             print(f"pnmobj = {pnmobj}");
