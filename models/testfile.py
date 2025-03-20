@@ -369,11 +369,48 @@ print(myvalidator.isValueValidForDataType("BIT(64)",
                                           myvalidator.genStringWithNumberText(64), "MYSQL"));#false
 #invalid data stored on a bit
 
-#need tests for the other class(es) of data types with parameters here
+#length byte related test class tests
+
+btbinnum=2040;#255*8
+print(myvalidator.isValueValidForDataType("BINARY(255)",
+                                          myvalidator.genStringWithNumberText(btbinnum, 10),
+                                          "MYSQL"));#false invalid data
+print(myvalidator.isValueValidForDataType("BINARY(255)",
+                                          myvalidator.genStringWithNumberText(btbinnum, 2),
+                                          "MYSQL"));#true
+print(myvalidator.isValueValidForDataType("BINARY(255)",
+                                          myvalidator.genStringWithNumberText(btbinnum + 1, 2),
+                                          "MYSQL"));#false invalid length
+
+#TINYBLOB test for mysql here (very similar to above)
+print(myvalidator.isValueValidForDataType("TINYBLOB",
+                                          myvalidator.genStringWithNumberText(btbinnum, 10),
+                                          "MYSQL"));#false invalid data (FAILED 3-20-2025 2:50 AM)
+#this test actually does return false, but it is saying the length is wrong,
+#the length for this test is in fact legal.
+#but the data given to it is invalid.
+print(myvalidator.isValueValidForDataType("TINYBLOB",
+                                          myvalidator.genStringWithNumberText(btbinnum, 2),
+                                          "MYSQL"));#true (FAILED 3-20-2025 2:50 AM)
+raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+print(myvalidator.isValueValidForDataType("TINYBLOB",
+                                          myvalidator.genStringWithNumberText(btbinnum + 1, 2),
+                                          "MYSQL"));#false invalid length (FAILED 3-20-2025 2:50 AM)
+#this is saying the length is invalid, which is in fact true. So this test kind of passes.
+#but it is using the wrong lengths as noted for comparison.
+#once the lengths get fixed, then this and the second tests will be right. The first test will be wrong.
+#The first test will pass once the data is checked for specific types because that can only store
+#certain characters. I have stopped for today because I need to go to bed due to a meeting tomorrow.
+#I may need a special classification method for the data to tell me to check the characters for those.
+
+#param is a list test class tests here
 #
 #
+
+#need a test for FLOAT(p) or figure out what test class to put it in
 #
 #
+raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 #these conduct some other tests on the method and for the data type.
 
@@ -395,7 +432,8 @@ print(myvalidator.isValueValidForDataType("FLOAT(53)", myfltval, "SQLSERVER", Fa
 print(myvalidator.isValueValidForDataType("TIME(0)", "24:59:59.999999", "MYSQL"));#false
 print(myvalidator.isValueValidForDataType("TIME(6)", "24:59:59.999999", "MYSQL"));#true
 
-#tests on string types
+#tests on string types (ALL OF THESE FAIL DUE TO NEEDING SPECIAL FORMATTING 3-12-2025 1 AM MST)
+#that includes anything similar to it at the moment.
 
 #I need a test where the value in the required range, but it is specifically formated like a date.
 print(myvalidator.isValueValidForDataType("DATE", "2029-02-28", "SQLSERVER"));#true

@@ -75,6 +75,17 @@ class myvalidator:
     def isClass(clsnm, val): return (type(val) == type);
 
     @classmethod
+    def objvarmusthavethesekeysonit(cls, mobj, rkys, varnm="mobj"):
+        if (myvalidator.isvaremptyornull(rkys)): return True;
+        if (myvalidator.isvaremptyornull(varnm)):
+            return cls.objvarmusthavethesekeysonit(mobj, rkys, "mobj");
+        myvalidator.varmustnotbenull(mobj, varnm);
+        errmsg = "the object " + varnm + " must have " + (", ".join(rkys));
+        errmsg += " as keys on it, but it did not!";
+        if (myvalidator.isListAInListB(rkys, mobj.keys())): return True;
+        else: raise ValueError(errmsg);
+
+    @classmethod
     def listMustContainUniqueValuesOnly(clsnm, mlist, varnm="varnm"):
         if (clsnm.isvaremptyornull(varnm)):
             return clsnm.listMustContainUniqueValuesOnly(mlist, "varnm");
@@ -318,13 +329,15 @@ class myvalidator:
         return cls.mysplitWithLen(mystr, delimis, len(delimstr), offset);
 
     @classmethod
-    def genStringWithNumberText(cls, numchars):
+    def genStringWithNumberText(cls, numchars, modval=10):
         if (myvalidator.isValueMoreThanOrAtTheMinOnly(numchars, 0)): pass;
         else: raise ValueError("numchars must be at minimum 0, but it was not!");
-        #return myvalidator.myjoin("", [(n % 10) for n in range(numchars)]);
+        myvalidator.varmustbethetypeonly(modval, int, "modval");
+        myvalidator.valueMustBeInRange(modval, 1, 0, True, False, "modval");
+        #return myvalidator.myjoin("", [(n % modval) for n in range(numchars)]);
         mystr = "";
         for n in range(numchars):
-            mystr += str(n % 10);
+            mystr += str(n % modval);
         return mystr;
 
     #pretty much all of these need the table name
@@ -1792,10 +1805,12 @@ class myvalidator:
     def getParamNamesFromInfoListObj(cls, mobj):
         #if no param names return an empty string else
         #get a list of names and then join them
-        myvalidator.varmustnotbenull(mobj, "mobj");
+        myvalidator.objvarmusthavethesekeysonit(mobj, ["paramnameswithranges"], "mobj");
         if (myvalidator.isvaremptyornull(mobj["paramnameswithranges"])): return "";
         else:
-            pnames = [pobj["paramname"] for pobj in mobj["paramnameswithranges"]];
+            #note the validator method returns True or errors out.
+            pnames = [pobj["paramname"] for pobj in mobj["paramnameswithranges"]
+                      if (myvalidator.objvarmusthavethesekeysonit(pobj, ["paramname"], "pobj"))];
             return "(" + (", ".join(pnames)) + ")";
 
     #ptpstr is PSONLY means parameters only
@@ -2309,14 +2324,10 @@ class myvalidator:
 
     @classmethod
     def isDataTypeOnList(cls, tobj, tpnmslist, numps):
-        myvalidator.varmustnotbenull(tobj, "tobj");
         myvalidator.varmustbethetypeonly(numps, int, "numps");
         myvalidator.valueMustBeInRange(numps, 0, 0, True, False, "numps");
         rkys = ["names", "paramnameswithranges"];
-        if (myvalidator.isListAInListB(rkys, tobj.keys())): pass;
-        else:
-            raise ValueError("invalid tobj was used here because it did not have the required " +
-                             "keys on it!");
+        myvalidator.objvarmusthavethesekeysonit(tobj, rkys, "tobj");
         return (myvalidator.isListAInListB(tobj[rkys[0]], tpnmslist) and len(tobj[rkys[1]]) == numps);
 
     
@@ -2566,7 +2577,7 @@ class myvalidator:
 
                     if (myvalidator.isDataTypeOnList(tobj, tpnmswithfdptdgts, 2)):
                         print("need to handle the total number of digits and the num digits " +
-                            "after the decimal point here!");
+                            "after the decimal point here!");#class 1
                         
                         mdict = {};
                         for n in range(len(tobj["paramnameswithranges"])):
@@ -2595,7 +2606,7 @@ class myvalidator:
                         if (szvld and numdvld): pass;#valid
                         else: getnext = True;
                     elif (myvalidator.isDataTypeOnList(tobj, dgtsadptonly, 1)):
-                        print("this has a set digits after the decimal point only!");
+                        print("this has a set digits after the decimal point only!");#class 2
 
                         pval = finpsonval[0];
                         numdgts = -1;
@@ -2613,10 +2624,10 @@ class myvalidator:
 
                         if (numdgts < numdgtsadptonval): getnext = True;#invalid
                     elif (myvalidator.isDataTypeOnList(tobj, tpswithlistp, 1)):
-                        print("these types have a list as the parameter!");
+                        print("these types have a list as the parameter!");#class 3
                         raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
                     elif (myvalidator.isDataTypeOnList(tobj, tpswdispwp, 1)):
-                        print("these types have a display width as the parameter!");
+                        print("these types have a display width as the parameter!");#class 4
                         
                         #note the display width does not effect what value can be stored
                         #that is the range, we can however enforce it here,
@@ -2634,7 +2645,7 @@ class myvalidator:
 
                         print("moving on!");
                     elif (myvalidator.isDataTypeOnList(tobj, tpslenasp, 1)):
-                        print("these data types have the length as the parameter!");
+                        print("these data types have the length as the parameter!");#class 5
                         
                         pval = finpsonval[0];
                         valstr = str(val);
@@ -2643,7 +2654,9 @@ class myvalidator:
 
                         if (pval < len(valstr)): getnext = True;
                         else:
-                            #here make sure the BIT type is storing the correct data
+                            #here make sure the BIT type is storing the correct data here...
+                            #this may be wrong I am not really sure yet how python handles binary
+                            #nor the best way to send it to SQL...
                             if ("BIT" in tobj["names"]):
                                 for c in valstr:
                                     if (c == "0" or c == "1"): pass;
@@ -2652,8 +2665,26 @@ class myvalidator:
                                         getnext = True;
                                         break;
                     elif (myvalidator.isDataTypeOnList(tobj, tpsrellenasp, 1)):
-                        print("these types are byte length relative!");
-                        raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
+                        print("these types are byte length relative!");#class 6
+                        
+                        pval = finpsonval[0];
+                        valstr = str(val);
+                        mxvlen = pval * 8;
+                        print(f"pval = {pval}");
+                        print(f"mxvlen = {mxvlen}");
+                        print(f"len(valstr) = {len(valstr)}");
+
+                        if (mxvlen < len(valstr)): getnext = True;
+                        else:
+                            #checks to see if they are storing the correct data here...
+                            #this may be wrong I am not really sure yet how python handles binary
+                            #nor the best way to send it to SQL...
+                            for c in valstr:
+                                if (c == "0" or c == "1"): pass;
+                                else:
+                                    print(f"invalid value stored on a {(', '.join(tobj['names']))}!");
+                                    getnext = True;
+                                    break;
                     else:
                         for pnmobj in tobj["paramnameswithranges"]:
                             print(f"pnmobj = {pnmobj}");
