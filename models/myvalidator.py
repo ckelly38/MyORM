@@ -1478,9 +1478,30 @@ class myvalidator:
     #the BLOB(size)s on my sql are similar.
     #the BINARY(size)s on my sql are similar, but not sure on the max???.
     @classmethod
+    def getTypesThatHaveAByteRelatedLength(cls, varstr, tp="ALL"):
+        if (varstr == "MYSQL"):
+            if (tp == "PSONLY"): return ["BINARY", "VARBINARY", "BLOB"];
+            elif (tp == "NOPSONLY"): return ["TINYBLOB", "MEDIUMBLOB", "LONGBLOB"];
+            else: return ["BINARY", "VARBINARY", "BLOB", "TINYBLOB", "MEDIUMBLOB", "LONGBLOB"];
+        elif (varstr == "SQLSERVER"):
+            if (tp == "PSONLY"): return ["BINARY", "VARBINARY"];
+            elif (tp == "NOPSONLY"): return ["VARBINARY(max)"];
+            else: return ["BINARY", "VARBINARY", "VARBINARY(max)"];
+        elif (varstr == "LITE"):
+            nopsalllist = ["BLOB"];
+            if (tp == "NOPSONLY"): return nopsalllist;
+            elif (tp == "PSONLY"): return [];
+            else: return nopsalllist;
+        else: return [];
+    @classmethod
     def getTypesThatHaveAByteRelatedLengthAsTheParam(cls, varstr):
-        return (["BINARY", "VARBINARY", "BLOB"] if (varstr == "MYSQL") else
-                (["BINARY", "VARBINARY"] if (varstr == "SQLSERVER") else []));
+        return cls.getTypesThatHaveAByteRelatedLength(varstr, "PSONLY");
+    @classmethod
+    def getTypesThatHaveAByteRelatedLengthNoParams(cls, varstr):
+        return cls.getTypesThatHaveAByteRelatedLength(varstr, "NOPSONLY");
+    @classmethod
+    def getAllTypesThatHaveAByteRelatedLength(cls, varstr):
+        return cls.getTypesThatHaveAByteRelatedLength(varstr, "ALL");
 
     #we need to know if something has a parameter that dictates the length and maybe which it is
     #we need to know when size as a parameter is length, and when it is not relevant
@@ -2398,6 +2419,8 @@ class myvalidator:
         print(f"tpslenasp = {tpslenasp}");
         tpsrellenasp = myvalidator.getTypesThatHaveAByteRelatedLengthAsTheParam(varstr);
         print(f"tpsrellenasp = {tpsrellenasp}");
+        alltpsrelen = myvalidator.getAllTypesThatHaveAByteRelatedLength(varstr);
+        print(f"alltpsrelen = {alltpsrelen}");
         print();
 
         for tobj in tpobjslist:
@@ -2484,14 +2507,32 @@ class myvalidator:
                             print("value is not not a number on a numerical comparison!");
                             getnext = True;
                             break;
+                        
                         minrngval = vrobj["min"];
-                        if (valforcomp < vrobj["min"] or vrobj["max"] < valforcomp):
+                        maxrngval = vrobj["max"];
+                        dobooldatacheck = myvalidator.isListAInListB(tobj["names"], alltpsrelen);
+                        if (dobooldatacheck):
+                            minrngval *= 8;
+                            maxrngval *= 8;
+                        
+                        if (valforcomp < minrngval or maxrngval < valforcomp):
                             #invalid, but the next one in the type object might be
                             #need to exit vrloop and need to move on to the next type object
                             print("value is not in the range, not the default, and not valid!");
                             getnext = True;
                             break;
-                        else: print("value is in the range!");
+                        else:
+                            print("value is in the range!");
+
+                            if (dobooldatacheck):
+                                valstr = str(val);
+                                for c in valstr:
+                                    if (c == "0" or c == "1"): pass;
+                                    else:
+                                        print("invalid value stored on a " +
+                                              (', '.join(tobj['names'])) + "!");
+                                        getnext = True;
+                                        break;
 
                 if (getnext): pass;
                 else:

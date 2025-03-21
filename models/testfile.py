@@ -385,27 +385,20 @@ print(myvalidator.isValueValidForDataType("BINARY(255)",
 #TINYBLOB test for mysql here (very similar to above)
 print(myvalidator.isValueValidForDataType("TINYBLOB",
                                           myvalidator.genStringWithNumberText(btbinnum, 10),
-                                          "MYSQL"));#false invalid data (FAILED 3-20-2025 2:50 AM)
-#this test actually does return false, but it is saying the length is wrong,
-#the length for this test is in fact legal.
-#but the data given to it is invalid.
+                                          "MYSQL"));#false invalid data
 print(myvalidator.isValueValidForDataType("TINYBLOB",
                                           myvalidator.genStringWithNumberText(btbinnum, 2),
-                                          "MYSQL"));#true (FAILED 3-20-2025 2:50 AM)
-raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+                                          "MYSQL"));#true
 print(myvalidator.isValueValidForDataType("TINYBLOB",
                                           myvalidator.genStringWithNumberText(btbinnum + 1, 2),
-                                          "MYSQL"));#false invalid length (FAILED 3-20-2025 2:50 AM)
-#this is saying the length is invalid, which is in fact true. So this test kind of passes.
-#but it is using the wrong lengths as noted for comparison.
-#once the lengths get fixed, then this and the second tests will be right. The first test will be wrong.
-#The first test will pass once the data is checked for specific types because that can only store
-#certain characters. I have stopped for today because I need to go to bed due to a meeting tomorrow.
-#I may need a special classification method for the data to tell me to check the characters for those.
+                                          "MYSQL"));#false invalid length
 
 #param is a list test class tests here
-#
-#
+#print(myvalidator.isValueValidForDataType(finenmstr + ")", ?, "MYSQL"));
+#https://dev.mysql.com/doc/refman/8.4/en/constraint-enum.html
+#https://dev.mysql.com/doc/refman/8.4/en/enum.html
+#https://www.geeksforgeeks.org/enumerator-enum-in-mysql/
+#https://www.tutorialspoint.com/mysql/mysql-enum.htm
 
 #need a test for FLOAT(p) or figure out what test class to put it in
 #
