@@ -294,8 +294,6 @@ print();
 print(myvalidator.isValidDataType("OTHER, VARCHAR(max)", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("VARCHAR(max), OTHER", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("NUMERIC(p, s)", "SQLSERVER"));#false
-#print(myvalidator.isValidDataType(finenmstr, "MYSQL"));#false
-print(myvalidator.isValidDataType(finenmstr + ")", "MYSQL"));#true
 print(myvalidator.isValidDataType("NUMERIC(1, 39, 20)", "SQLSERVER"));#false#too many parameters
 print(myvalidator.isValidDataType("NUMERIC(39, 1)", "SQLSERVER"));#false#38 or less for both
 print(myvalidator.isValidDataType("NUMERIC(1, 39)", "SQLSERVER"));#false#38 or less for both
@@ -394,11 +392,41 @@ print(myvalidator.isValueValidForDataType("TINYBLOB",
                                           "MYSQL"));#false invalid length
 
 #param is a list test class tests here
-#print(myvalidator.isValueValidForDataType(finenmstr + ")", ?, "MYSQL"));
+#if the value is not on the enum list, then it is not valid
+#(in strict error, not strict, empty or null will be inserted instead)
+#either way it should return false.
+#
+#a set is different, if it is a member of one or more it is valid
+#both set and enum do not allow duplicate values
+#SET('a', 'b', 'c');
+#new values: '' valid, 'NULL' valid, 'a,b' valid, but 'ab' is not (in strict error, not strict, ignored)
 #https://dev.mysql.com/doc/refman/8.4/en/constraint-enum.html
 #https://dev.mysql.com/doc/refman/8.4/en/enum.html
 #https://www.geeksforgeeks.org/enumerator-enum-in-mysql/
 #https://www.tutorialspoint.com/mysql/mysql-enum.htm
+#print(myvalidator.isValidDataType(finenmstr, "MYSQL"));#false
+print(myvalidator.isValidDataType(finenmstr + ")", "MYSQL"));#true
+print(myvalidator.isValidDataType("ENUM('vala', 'vala', 'valb', 'my val')", "MYSQL"));
+#false duplicate values
+print(myvalidator.isValidDataType("SET('vala', 'vala', 'valb', 'my val')", "MYSQL"));
+#false duplicate values
+
+myreslist = myvalidator.getCompleteSetListFromList(["a", "b", "c", "d", "e", "f"]);
+print(myreslist);
+print("b,d,e" in myreslist);
+#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
+print(myvalidator.isValueValidForDataType("ENUM('vala', 'other', 'else')", "'vala,other'", "MYSQL"));
+#false invalid if not on the list
+print(myvalidator.isValueValidForDataType("ENUM('vala', 'other', 'else')", "'other'", "MYSQL"));#true
+print(myvalidator.isValueValidForDataType("SET('vala', 'other', 'else')", "'something'", "MYSQL"));
+#false invalid if not on the list and cannot be made by a combination of the elements
+print(myvalidator.isValueValidForDataType("SET('vala', 'other', 'else')", "'other'", "MYSQL"));#true
+#direct match
+print(myvalidator.isValueValidForDataType("SET('vala', 'other', 'else')", "'vala,other'", "MYSQL"));
+#true because you can take the values on the list and make this one
+#or true because it is a direct match
+
 
 #need a test for FLOAT(p) or figure out what test class to put it in
 #

@@ -225,6 +225,17 @@ class myvalidator:
         return cls.stringMustHaveAtMaxOrAtMinNumChars(mstr, mxormnlen, False, varnm);
 
     @classmethod
+    def stringMustStartAndEndWith(cls, mstr, mc, varnm="varnm"):
+        myvalidator.varmustnotbeempty(mstr, "mstr");
+        myvalidator.varmustbethetypeonly(mstr, str, "mstr");
+        myvalidator.varmustbethetypeonly(mc, str, "mc");
+        if (myvalidator.isvaremptyornull(varnm)): return cls.strMustStartAndEndWith(mstr, mc, "varnm");
+        if (mstr.startswith(mc) and mstr.endswith(mc)): return True;
+        else:
+            raise ValueError("the string " + varnm + " does not start and end with " + mc +
+                             ", but it must!");
+
+    @classmethod
     def isValueInRange(cls, val, minval, maxval, hasmin, hasmax):
         myvalidator.varmustbeboolean(hasmin, "hasmin");
         myvalidator.varmustbeboolean(hasmax, "hasmax");
@@ -2200,10 +2211,10 @@ class myvalidator:
                                 numpsonval = (0 if ("(max)" in val) else len(psonval));
                                 tpobjslist = cls.getDataTypesObjsWithNameFromList(datatypesinfolist,
                                                                                   mynm);
-                                print(f"mynm = {mynm}");
-                                print(f"psonval = {psonval}");
-                                print(f"numpsonval = {numpsonval}");
-                                print(f"tpobjslist = {tpobjslist}");
+                                #print(f"mynm = {mynm}");
+                                #print(f"psonval = {psonval}");
+                                #print(f"numpsonval = {numpsonval}");
+                                #print(f"tpobjslist = {tpobjslist}");
                                 
                                 for tpobj in tpobjslist:
                                     if (len(tpobj["paramnameswithranges"]) == numpsonval):
@@ -2297,7 +2308,18 @@ class myvalidator:
                                             #but not on the params range object(s).
                                             #look for length or size on the main type object.
                                             #then compare the length of the valparams against this
+                                            
+                                            #both ENUMS and SETS cannot have duplicate values
+                                            #print("THIS IS AN ENUM OR A SET!");
+                                            for n in range(len(finpsonval)):
+                                                if (getnext): break;
+                                                for k in range(n + 1, len(finpsonval)):
+                                                    if (finpsonval[n] == finpsonval[k]):
+                                                        getnext = True;
+                                                        break;
+                                            
                                             for valobj in tpobj["valuesranges"]:
+                                                if (getnext): break;
                                                 #print(f"valobj = {valobj}");
 
                                                 if (valobj["paramname"] in ["length", "size"]):
@@ -2341,6 +2363,7 @@ class myvalidator:
                             #        "parentheis, perfect matchs that only have alphabetic " +
                             #        "characters A-Z and a-z only are allowed!");
                             return val.isalpha();
+            #print("data type is not valid!");
             return False;
 
     @classmethod
@@ -2351,8 +2374,35 @@ class myvalidator:
         myvalidator.objvarmusthavethesekeysonit(tobj, rkys, "tobj");
         return (myvalidator.isListAInListB(tobj[rkys[0]], tpnmslist) and len(tobj[rkys[1]]) == numps);
 
-    
     #BELOW METHODS ARE NOT DONE YET 3-12-2025 1:08 AM MST
+
+    @classmethod
+    def getCompleteSetListFromList(cls, mlist):
+        #print(f"mlist = {mlist}");
+        if (mlist == None): return None;
+        elif (len(mlist) < 1): return [];
+        elif (len(mlist) == 1): return [mlist[0]];
+        elif (len(mlist) == 2):
+            #a, b
+            #a,b, b,a
+            return [mlist[0], mlist[1], mlist[0] + "," + mlist[1], mlist[1] + "," + mlist[0]];
+        else:
+            #keep all items initially on the list
+            #then take a and add 1 of them only
+            #then take a and add 2 of them only
+            #then take a and add 3 of them only
+            #... until all are done for item a
+            #then repeat for the other items
+            #example: a, b, c, d, e, f
+            #a,b, a,c, a,d, a,e, a,f
+            #a,b,c, a,b,d, a,b,e, a,b,f, a,c,d, a,c,e, a,c,f, 
+            retlist = [mitem for mitem in mlist];
+            for mitem in mlist:
+                tmplist = cls.getCompleteSetListFromList([item for item in mlist
+                                                          if not(item == mitem)]);
+                #print(f"tmplist = {tmplist}");
+                for item in tmplist: retlist.append(mitem + "," + item);
+            return retlist;
 
     #tpnm is the SQL Data Type name for the specific variant specified by varstr
     #val is the value we are inserting into the column of that type...
@@ -2666,7 +2716,29 @@ class myvalidator:
                         if (numdgts < numdgtsadptonval): getnext = True;#invalid
                     elif (myvalidator.isDataTypeOnList(tobj, tpswithlistp, 1)):
                         print("these types have a list as the parameter!");#class 3
-                        raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
+
+                        #now for these types we need to strip the quotes off of each string first
+                        nwfinpsontp = [mstr[1:len(mstr) - 1] for mstr in finpsonval
+                                       if myvalidator.stringMustStartAndEndWith(mstr, "'", "mstr")];
+                        nwval = val[1:len(val) - 1];
+                        print(f"nwfinpsontp = {nwfinpsontp}");
+                        
+                        #regardless of the type if the value is on the list it is a match
+                        isvalid = (nwval in nwfinpsontp);
+                        print(f"isvalid = {isvalid}");
+
+                        #the sets have an additional check
+                        if (isvalid): pass;
+                        else:
+                            if ("SET" in tobj["names"]):
+                                print("THIS IS A SET!");
+                                if (nwval in myvalidator.getCompleteSetListFromList(nwfinpsontp)):
+                                    #print("found it on the full list!");
+                                    pass;
+                                else: getnext = True;
+                            else: getnext = True;
+                            print(f"NEW getnext = {getnext}");
+                
                     elif (myvalidator.isDataTypeOnList(tobj, tpswdispwp, 1)):
                         print("these types have a display width as the parameter!");#class 4
                         
