@@ -70,6 +70,8 @@ tstobjc = MyModelWithCompPrimaryKey();
 tstobjd = MyModelWithCompForeignKey();
 
 print();
+print("IS VALUE IN RANGE OR STRING HAS AT MOST OR AT MIN AMOUNT OF CHARS TESTS:");
+print();
 print("mystr has at max 0 characters: " + str(myvalidator.stringHasAtMaxNumChars("mystr", 0)));#false
 print("mystr has at min 6 characters: " + str(myvalidator.stringHasAtMinNumChars("mystr", 6)));#false
 print("mystr has at max 5 characters: " + str(myvalidator.stringHasAtMaxNumChars("mystr", 5)));#true
@@ -90,6 +92,7 @@ print("value -5, min 1, max 5 is value in range: " +
 print("value 2.5, min 1, max 5 is value in range: " +
       str(myvalidator.isValueInRangeWithMaxAndMin(2.5, 1, 5)));#true
 print();
+
 print("MY JOIN AND SPLIT METHOD (NOT SQL JOINS) TESTS:");
 print();
 print(myvalidator.myjoin("", ["some", " text", "with ", "other", "stuff"]));
@@ -111,10 +114,13 @@ print(myvalidator.mysplit("the funny string", [3, 8, 12], [2, 4, 1], 0));#["the"
 print(myvalidator.mysplitWithLen("the funny string", [3, 8], 2, 0));#["the", "unn", "string"];
 print(myvalidator.mysplitWithDelimeter("the funny string", "", 0));
 print();
-print("DATE AND TIME METHODS TESTS:");
+
+print("BEGIN DATE AND TIME METHODS TESTS:");
 print();
 print(myvalidator.getMonthNames());
 for n in range(12): print(myvalidator.getMonthNameFromNum(n + 1));
+print();
+print("MONTH ABBREVIATION TESTS:");
 print(myvalidator.getAllThreeLetterAbbreviationsForMonthNames());
 print(myvalidator.getAllFourLetterAbbreviationsForMonthNames());
 for tltrabr in myvalidator.getAllThreeLetterAbbreviationsForMonthNames():
@@ -122,6 +128,8 @@ for tltrabr in myvalidator.getAllThreeLetterAbbreviationsForMonthNames():
 for frltrabr in myvalidator.getAllThreeLetterAbbreviationsForMonthNames():
       print(myvalidator.getFullMonthNameFromAbreviation(frltrabr));
 for mnthnm in myvalidator.getMonthNames(): print(myvalidator.getMonthNumFromName(mnthnm));
+print();
+print("GET NUM DAYS IN THE MONTH TESTS:");
 for n in range(12):
       if (n == 1):
             print("FEB NORMAL: " + str(myvalidator.getNumDaysInMonth(n + 1, False)) + " LEAP YEAR: " +
@@ -129,15 +137,21 @@ for n in range(12):
       else: print(myvalidator.getNumDaysInMonth(n + 1, False));
 print(myvalidator.getDelimeterIndexesForDateStrings(True));
 print(myvalidator.getDelimeterIndexesForDateStrings(False));
+print();
+print("GEN DATE STRING TESTS:");
 print(myvalidator.genDateString(2, 29, 2024, True, True));#02-29-2024
 print(myvalidator.genDateString(2, 29, 2024, True, False));#02/29/2024
 print(myvalidator.genDateString(2, 29, 2024, False, True));#2024-02-29
 print(myvalidator.genDateString(2, 29, 2024, False, False));#2024/02/29
 #print(myvalidator.genDateString(2, 29, 2025, True, True));#error invalid date
+print();
+print("IS VALID DATE TESTS:");
 print(myvalidator.isValidDate(2, 29, 2024));#true
 print(myvalidator.isValidDate(2, 29, 2025));#false
 #print(myvalidator.getMonthDayYearFromDateString("202afdssa2asdf"));#error
 print(myvalidator.isValidDateFromString("202afdssa2asdf"));#false
+print();
+print("GET MONTH DAY YEAR FROM DATE STRING AND REVERSE TESTS:");
 print(myvalidator.getMonthDayYearFromDateString("02-29-2024"));
 print(myvalidator.getMonthDayYearFromDateString("2024-02-29"));
 print(myvalidator.getMonthDayYearFromDateString("02-29-2025"));#may error due to it being invalid
@@ -147,6 +161,8 @@ print(myvalidator.isValidDateFromObj(myvalidator.getMonthDayYearFromDateString("
 print(myvalidator.isValidDateFromObj(myvalidator.getMonthDayYearFromDateString("02-29-2025")));#false
 print(myvalidator.genDateStringFromObj(myvalidator.getMonthDayYearFromDateString("02-29-2024"), True));
 print(myvalidator.genDateStringFromObj(myvalidator.getMonthDayYearFromDateString("02-29-2024"), False));
+print();
+print("GEN TIME STRING TESTS:");
 #print(myvalidator.genTimeString(23, 59, "a", True, True, True));#error on seconds
 #print(myvalidator.genTimeString(23, 59, 59.99999999, True, True, True));#error on seconds
 #print(myvalidator.genTimeString(23, 59, 60, True, True, True));#error on seconds
@@ -156,6 +172,8 @@ print(myvalidator.genDateStringFromObj(myvalidator.getMonthDayYearFromDateString
 #print(myvalidator.genTimeString(839, 59, 59.9999999, True, True, True));#error on hours
 print(myvalidator.genTimeString(838, 59, 59.9999999, True, True, True));#838:59:59.9999999
 print(myvalidator.genTimeString(23, 59, 59.9999999, True, True, True));#23:59:59.9999999
+print();
+print("GET TIME OBJECT FROM TIME STRING AND REVERSE TESTS:");
 print(myvalidator.getTimeObject("838:59:59.9999999", True));
 print(myvalidator.getTimeObject("838:59", True));
 print(myvalidator.getTimeObject("59:59.9999999", False));
@@ -166,8 +184,12 @@ print(myvalidator.getTimeObject(None, True));
 print(myvalidator.genTimeStringFromObj({}));
 print(myvalidator.genTimeStringFromObj(None));
 print(myvalidator.genTimeStringFromObj(myvalidator.getTimeObject("838:59", True)));
-#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 print();
+print("DONE WITH DATE AND TIME METHODS TESTS:");
+print();
+#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
+
 print("MY SQL VARIANT DATA TYPE INFO OBJECTS TESTS:");
 print();
 print("lite = ", end="");
@@ -202,6 +224,7 @@ psonlysqlsrvr = myvalidator.getValidSQLDataTypesWithParametersOnlyFromInfoList(s
 print(psonlylite);
 print(psonlymysql);
 print(psonlysqlsrvr);
+
 print();
 print("BEGIN TYPES WITH PARAMETERS CLASSIFICATIONS:");
 print();
@@ -281,6 +304,15 @@ rempsonsqlsrvr = myvalidator.getRemainingParameters(psonlysqlsrvr, sqlsrvrusedli
 print(rempsonlite);
 print(rempsonmysql);
 print(rempsonsqlsrvr);
+print();
+print("DONE WITH TYPES WITH PARAMETERS CLASSIFICATIONS TESTS!");
+print();
+#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
+myreslist = myvalidator.getCompleteSetListFromList(["a", "b", "c", "d", "e", "f"]);
+print(myreslist);
+print("b,d,e" in myreslist);
+print();
 #raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 #quote did not actually get escaped
@@ -290,6 +322,13 @@ finenmstr = enmbasestr + "'mychar\\\'s poses)sive', " + enmodptstr;
 print(myvalidator.getLevelsForValStr(enmbasestr + "'mychar\'s poses)sive', " + enmodptstr + ")"));
 print(myvalidator.getLevelsForValStr(finenmstr + ")"));
 print(myvalidator.getParmsFromValType(finenmstr + ")"));
+print();
+#print(myvalidator.isValidDataType(finenmstr, "MYSQL"));#false
+print(myvalidator.isValidDataType(finenmstr + ")", "MYSQL"));#true
+print(myvalidator.isValidDataType("ENUM('vala', 'vala', 'valb', 'my val')", "MYSQL"));
+#false duplicate values
+print(myvalidator.isValidDataType("SET('vala', 'vala', 'valb', 'my val')", "MYSQL"));
+#false duplicate values
 print();
 print(myvalidator.isValidDataType("OTHER, VARCHAR(max)", "SQLSERVER"));#false
 print(myvalidator.isValidDataType("VARCHAR(max), OTHER", "SQLSERVER"));#false
@@ -355,66 +394,32 @@ print(myvalidator.isValueValidForDataType("NUMERIC(3, 1)", 12.5, "SQLSERVER", Fa
 
 #length test class tests:
 
-print(myvalidator.isValueValidForDataType("CHAR(255)",
-                                          myvalidator.genStringWithNumberText(255), "MYSQL"));#true
-print(myvalidator.isValueValidForDataType("CHAR(255)",
-                                          myvalidator.genStringWithNumberText(256), "MYSQL"));#false
+print(myvalidator.isValueValidForDataType("CHAR(255)", myvalidator.genStringWithNumberText(255),
+                                          "MYSQL"));#true
+print(myvalidator.isValueValidForDataType("CHAR(255)", myvalidator.genStringWithNumberText(256),
+                                          "MYSQL"));#false
 print(myvalidator.isValueValidForDataType("BIT(2)", "01", "MYSQL"));#true
-print(myvalidator.isValueValidForDataType("BIT(64)",
-                                          myvalidator.genStringWithNumberText(65), "MYSQL"));#false
+print(myvalidator.isValueValidForDataType("BIT(64)", myvalidator.genStringWithNumberText(65),
+                                          "MYSQL"));#false
 #invalid length and invalid data stored on a bit
-print(myvalidator.isValueValidForDataType("BIT(64)",
-                                          myvalidator.genStringWithNumberText(64), "MYSQL"));#false
+print(myvalidator.isValueValidForDataType("BIT(64)", myvalidator.genStringWithNumberText(64),
+                                          "MYSQL"));#false
 #invalid data stored on a bit
 
 #length byte related test class tests
 
+#BINARY(255) and TINYBLOB tests for mysql here
 btbinnum=2040;#255*8
-print(myvalidator.isValueValidForDataType("BINARY(255)",
-                                          myvalidator.genStringWithNumberText(btbinnum, 10),
-                                          "MYSQL"));#false invalid data
-print(myvalidator.isValueValidForDataType("BINARY(255)",
-                                          myvalidator.genStringWithNumberText(btbinnum, 2),
-                                          "MYSQL"));#true
-print(myvalidator.isValueValidForDataType("BINARY(255)",
-                                          myvalidator.genStringWithNumberText(btbinnum + 1, 2),
-                                          "MYSQL"));#false invalid length
-
-#TINYBLOB test for mysql here (very similar to above)
-print(myvalidator.isValueValidForDataType("TINYBLOB",
-                                          myvalidator.genStringWithNumberText(btbinnum, 10),
-                                          "MYSQL"));#false invalid data
-print(myvalidator.isValueValidForDataType("TINYBLOB",
-                                          myvalidator.genStringWithNumberText(btbinnum, 2),
-                                          "MYSQL"));#true
-print(myvalidator.isValueValidForDataType("TINYBLOB",
-                                          myvalidator.genStringWithNumberText(btbinnum + 1, 2),
-                                          "MYSQL"));#false invalid length
+btnumpone = btbinnum + 1;
+for tpnm in ["BINARY(255)", "TINYBLOB"]:
+      print(myvalidator.isValueValidForDataType(tpnm, myvalidator.genStringWithNumberText(btbinnum, 10),
+                                                "MYSQL"));#false invalid data
+      print(myvalidator.isValueValidForDataType(tpnm, myvalidator.genStringWithNumberText(btbinnum, 2),
+                                                "MYSQL"));#true
+      print(myvalidator.isValueValidForDataType(tpnm, myvalidator.genStringWithNumberText(btnumpone, 2),
+                                                "MYSQL"));#false invalid length
 
 #param is a list test class tests here
-#if the value is not on the enum list, then it is not valid
-#(in strict error, not strict, empty or null will be inserted instead)
-#either way it should return false.
-#
-#a set is different, if it is a member of one or more it is valid
-#both set and enum do not allow duplicate values
-#SET('a', 'b', 'c');
-#new values: '' valid, 'NULL' valid, 'a,b' valid, but 'ab' is not (in strict error, not strict, ignored)
-#https://dev.mysql.com/doc/refman/8.4/en/constraint-enum.html
-#https://dev.mysql.com/doc/refman/8.4/en/enum.html
-#https://www.geeksforgeeks.org/enumerator-enum-in-mysql/
-#https://www.tutorialspoint.com/mysql/mysql-enum.htm
-#print(myvalidator.isValidDataType(finenmstr, "MYSQL"));#false
-print(myvalidator.isValidDataType(finenmstr + ")", "MYSQL"));#true
-print(myvalidator.isValidDataType("ENUM('vala', 'vala', 'valb', 'my val')", "MYSQL"));
-#false duplicate values
-print(myvalidator.isValidDataType("SET('vala', 'vala', 'valb', 'my val')", "MYSQL"));
-#false duplicate values
-
-myreslist = myvalidator.getCompleteSetListFromList(["a", "b", "c", "d", "e", "f"]);
-print(myreslist);
-print("b,d,e" in myreslist);
-#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 print(myvalidator.isValueValidForDataType("ENUM('vala', 'other', 'else')", "'vala,other'", "MYSQL"));
 #false invalid if not on the list
@@ -429,9 +434,22 @@ print(myvalidator.isValueValidForDataType("SET('vala', 'other', 'else')", "'vala
 
 
 #need a test for FLOAT(p) or figure out what test class to put it in
-#
-#
-raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+myofltval = 1.8*(10**38);#NOT SURE ON THESE TESTS AND ON THE RANGE HERE.
+print(myvalidator.isValueValidForDataType("FLOAT(54)", myofltval, "MYSQL"));#false invalid type
+print(myvalidator.isValueValidForDataType("FLOAT(53)", myofltval, "MYSQL", True, False));
+#false signed only and cannot be null
+print(myvalidator.isValueValidForDataType("FLOAT(53)", myofltval, "MYSQL", True, True));
+#false signed only
+print(myvalidator.isValueValidForDataType("FLOAT(53)", myofltval, "MYSQL", False, False));
+#false cannot be null
+#not entirely sure on the values that can and cannot be stored depending on the p value.
+#the tests may need to change.
+#so the below 2 tests will return true if the number is in the given range.
+#I am also not that confident on the range used.
+print(myvalidator.isValueValidForDataType("FLOAT(24)", myofltval, "MYSQL", False, True));
+#false too small
+print(myvalidator.isValueValidForDataType("FLOAT(53)", myofltval, "MYSQL", False, True));#true
+#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 #these conduct some other tests on the method and for the data type.
 
@@ -467,8 +485,10 @@ print(myvalidator.isValueValidForDataType("DATE", "202afdssa2", "SQLSERVER"));#f
 print(myvalidator.isValueValidForDataType("DATE", "2029302329", "SQLSERVER"));#false not a date.
 #also a test where the value is in the required range, but not actually valid like a date.
 print(myvalidator.isValueValidForDataType("DATE", "2029-02-29", "SQLSERVER"));#false not a valid date.
-raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 print();
+raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
+
 print("SQL GEN TESTS:");
 print(myvalidator.genUniqueConstraint("constraintname", ["itema", "itemb", "itemc"]));
 #counts
@@ -556,6 +576,7 @@ print(myvalidator.genSQLSum("price", False));
 #WHAT I STILL NEED TO DO: 2-25-2025
 #-CREATE TABLE, INSERT INTO, UPDATE, DELETE, SELECT INTO, INSERT INTO SELECT
 #-LEFT JOIN, RIGHT JOIN, INNER JOIN, FULL JOIN, NATURAL JOIN, UNIONS
+#--note: some of these are different from LITE to normal SQL.
 #-figure out a way to let the user determine what to name the db
 #-figure out how to integrate mysql/postgressql...
 #-figure out a way to tell the program if using sqllite or sql and

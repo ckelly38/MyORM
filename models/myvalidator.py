@@ -747,7 +747,7 @@ class myvalidator:
     #https://www.w3schools.com/sql/sql_datatypes.asp
     #https://www.w3resource.com/sqlite/sqlite-data-types.php
     #https://www.w3resource.com/mysql/mysql-data-types.php
-    #https://blog.devart.com/
+    #https://blog.devart.com/mysql-data-types.html
     #https://www.geeksforgeeks.org/sql-tutorial/?ref=shm
     #https://www.tutorialspoint.com/mysql/
     #https://dev.mysql.com/doc/refman/8.4/en/fractional-seconds.html#:
@@ -761,6 +761,11 @@ class myvalidator:
     #https://support.microsoft.com/en-us/office/
     #introduction-to-data-types-and-field-properties-30ad644f-946c-442e-8bd2-be067361987c
     #https://www.linkedin.com/pulse/part-8-overview-sqlite-data-types-integer-text-blob-etc-julles/
+    #https://dev.mysql.com/doc/refman/8.4/en/constraint-enum.html
+    #https://dev.mysql.com/doc/refman/8.4/en/enum.html
+    #https://www.geeksforgeeks.org/enumerator-enum-in-mysql/
+    #https://www.tutorialspoint.com/mysql/mysql-enum.htm
+    #https://learnsql.com/blog/mysql-data-types/
     #
     #if using lite:
     #
@@ -789,6 +794,19 @@ class myvalidator:
     #MEDIUMBLOB for (Binary Large OBjects) size in bytes max length is 16,777,215 bytes.
     #LONGTEXT max length in characters is 4,294,967,295 characters.
     #LONGBLOB for (Binary Large OBjects) size in bytes max length is 4,294,967,295 bytes.
+    #
+    #NOTES FOR ENUMS AND SETS HERE:
+    #
+    #if the value is not on the enum list, then it is not valid
+    #(in strict error, not strict, empty or null will be inserted instead)
+    #either way it should return false.
+    #
+    #a set is different, if it is a member of one or more it is valid
+    #both set and enum do not allow duplicate values
+    #SET('a', 'b', 'c');
+    #new values: '' valid, 'NULL' valid, 'a,b' valid, but 'ab' is not
+    #(in strict error, not strict, ignored).
+    #
     #ENUM(values) you can have 65,535 values and they map to an integer index,
     # you can either use that or the given values in the ENUM.
     # If a value not on the list is entered then a blank value will be inserted.
@@ -2473,19 +2491,21 @@ class myvalidator:
         print(f"alltpsrelen = {alltpsrelen}");
         print();
 
+        dtpinfoobjerrmsg = "the data type info object was built wrong for (" + mynm;
+        dtpinfoobjerrmsg += ") for the variant (" + varstr + ")!";
+
         for tobj in tpobjslist:
             print(f"tobj = {tobj}");
             print();
 
             if (myvalidator.isvaremptyornull(tobj["valuesranges"])):
                 if (tobj["isvalue"]): return (val in tobj["names"]);
-                else:
-                    raise ValueError("the data type info object was built wrong for (" + mynm +
-                                     ") for variant (" + varstr + ")!");
+                else: raise ValueError(dtpinfoobjerrmsg);
             else:
                 getnext = False;
                 twodiffranges = False;
                 minrngval = 0;
+                invalidvalontperrmsg = "invalid value stored on a " + (', '.join(tobj['names'])) + "!";
                 for vrobj in tobj["valuesranges"]:
                     print(f"vrobj = {vrobj}");
                     print();
@@ -2500,9 +2520,7 @@ class myvalidator:
                         if (vrobj["canspecifyrange"]):
                             isnumcomp = True;
                             valforcomp = len(val);
-                        else:
-                            raise ValueError("the data type info object was built wrong for (" + mynm +
-                                             ") for variant (" + varstr + ")!");
+                        else: raise ValueError(dtpinfoobjerrmsg);
                 
                     elif (vrobj["paramname"] in ["values", "range"]):
                         #paramname is something else like values or range
@@ -2510,6 +2528,7 @@ class myvalidator:
                             if (val == vrobj["defaultval"]):
                                 if (val == "NULL"):
                                     if (isnonnull):
+                                        print("non-null required, but NULL found!");
                                         getnext = True;
                                         break;
                                     else: return True;
@@ -2525,6 +2544,7 @@ class myvalidator:
                             else:
                                 #value is not a number but has a range...
                                 print("type is not number, but has a range.");
+                                #DATEs TIMEs stuff like that here...
                                 raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
                 
                     elif (vrobj["paramname"] in ["signed", "unsigned"]):
@@ -2544,8 +2564,7 @@ class myvalidator:
                         #paramname is really specific to type and variant
                         print(f"vrobj['paramname'] = {vrobj['paramname']}");
                         print("this param name is really specific to the type and the range!");
-                        raise ValueError("the parameters need to be handled, " +
-                                         "but as of yet have not been!");
+                        raise ValueError("the parameters need to be handled, but have not been!");
                     
                     print(f"isnumcomp = {isnumcomp}");
                     print(f"valforcomp = {valforcomp}");
@@ -2579,8 +2598,7 @@ class myvalidator:
                                 for c in valstr:
                                     if (c == "0" or c == "1"): pass;
                                     else:
-                                        print("invalid value stored on a " +
-                                              (', '.join(tobj['names'])) + "!");
+                                        print(invalidvalontperrmsg);
                                         getnext = True;
                                         break;
 
@@ -2601,15 +2619,22 @@ class myvalidator:
                             if (twodiffranges): pass;#useunsigned can be true or false in this case
                             else:
                                 if (minrngval < 0):
-                                    if (useunsigned): getnext = True;
+                                    if (useunsigned):
+                                        print("using unsigned, but the min range value is signed!");
+                                        getnext = True;
                                 else:
                                     if (useunsigned): pass;
-                                    else: getnext = True;
-                                #raise ValueError("NOT SURE ON THIS CASE HERE 3-14-2025 11 PM MST!");
-                        else: getnext = True;
+                                    else:
+                                        print("using signed, but the min range value is unsigned!");
+                                        getnext = True;
+                        else:
+                            print("this is a number, therefore not null, but null required!");
+                            getnext = True;
                     else:
                         if (useunsigned): pass;
-                        else: getnext = True;
+                        else:
+                            print("this is not a number, but required to be signed!");
+                            getnext = True;
 
                 finpsonval = None;
                 if (getnext): pass;
@@ -2636,12 +2661,14 @@ class myvalidator:
                                 if ("." in pval):
                                     #the parameters are not valid
                                     #return False;
+                                    print("the parameters must be an integer number only!");
                                     getnext = True;
                                     break;
                                 finpsonval.append(int(pval));
                             else:
                                 #the parameters are not valid
                                 #return False;
+                                print("the parameters must be an integer number only!");
                                 getnext = True;
                                 break;
                         if (getnext): continue;
@@ -2695,7 +2722,9 @@ class myvalidator:
                         print(f"numdvld = {numdvld}");
 
                         if (szvld and numdvld): pass;#valid
-                        else: getnext = True;
+                        else:
+                            print("either the size or the number itself is out of range!");
+                            getnext = True;
                     elif (myvalidator.isDataTypeOnList(tobj, dgtsadptonly, 1)):
                         print("this has a set digits after the decimal point only!");#class 2
 
@@ -2713,7 +2742,10 @@ class myvalidator:
                         print(f"valstradpt = {valstradpt}");
                         print(f"numdgtsadptonval = {numdgtsadptonval}");
 
-                        if (numdgts < numdgtsadptonval): getnext = True;#invalid
+                        if (numdgts < numdgtsadptonval):
+                            print("the number of digits on the val must be at most the " +
+                                  "required amount, but was not!");
+                            getnext = True;#invalid
                     elif (myvalidator.isDataTypeOnList(tobj, tpswithlistp, 1)):
                         print("these types have a list as the parameter!");#class 3
 
@@ -2735,8 +2767,14 @@ class myvalidator:
                                 if (nwval in myvalidator.getCompleteSetListFromList(nwfinpsontp)):
                                     #print("found it on the full list!");
                                     pass;
-                                else: getnext = True;
-                            else: getnext = True;
+                                else:
+                                    print("the value must be present on the set or on the " +
+                                          "combo list that can be generated from the elements " +
+                                          "on the set, but was not!");
+                                    getnext = True;
+                            else:
+                                print("the value was not present on the enum and must be!");
+                                getnext = True;
                             print(f"NEW getnext = {getnext}");
                 
                     elif (myvalidator.isDataTypeOnList(tobj, tpswdispwp, 1)):
@@ -2765,7 +2803,9 @@ class myvalidator:
                         print(f"pval = {pval}");
                         print(f"len(valstr) = {len(valstr)}");
 
-                        if (pval < len(valstr)): getnext = True;
+                        if (pval < len(valstr)):
+                            print("the value was too long!");
+                            getnext = True;
                         else:
                             #here make sure the BIT type is storing the correct data here...
                             #this may be wrong I am not really sure yet how python handles binary
@@ -2774,7 +2814,7 @@ class myvalidator:
                                 for c in valstr:
                                     if (c == "0" or c == "1"): pass;
                                     else:
-                                        print("invalid value stored on a bit!");
+                                        print(invalidvalontperrmsg);
                                         getnext = True;
                                         break;
                     elif (myvalidator.isDataTypeOnList(tobj, tpsrellenasp, 1)):
@@ -2787,7 +2827,9 @@ class myvalidator:
                         print(f"mxvlen = {mxvlen}");
                         print(f"len(valstr) = {len(valstr)}");
 
-                        if (mxvlen < len(valstr)): getnext = True;
+                        if (mxvlen < len(valstr)):
+                            print("the value was too long!");
+                            getnext = True;
                         else:
                             #checks to see if they are storing the correct data here...
                             #this may be wrong I am not really sure yet how python handles binary
@@ -2795,9 +2837,21 @@ class myvalidator:
                             for c in valstr:
                                 if (c == "0" or c == "1"): pass;
                                 else:
-                                    print(f"invalid value stored on a {(', '.join(tobj['names']))}!");
+                                    print(invalidvalontperrmsg);
                                     getnext = True;
                                     break;
+                    elif ("FLOAT" in tobj["names"] and len(tobj["paramnameswithranges"]) == 1 and
+                          varstr == "MYSQL"):
+                        print("THIS IS FLOAT(p) for MYSQL!");#not in a class, but needs to be handled
+                        
+                        #other than data storage size 1-24 inc is 4 bytes 25 to 53 inc is 8 bytes max
+                        #other than that I do not think p value actually influences the value
+                        #ie kind of like display width
+                        #for the moment, I am going to keep it like this and do nothing.
+
+                        print("NOT SURE IF THE PARAMETER IN THIS CASE ACTUALLY AFFECTS THE VALUE " +
+                              "OTHER THAN IN TERMS OF HOW MANY BYTES CAN BE STORED HERE.");
+                        #raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
                     else:
                         for pnmobj in tobj["paramnameswithranges"]:
                             print(f"pnmobj = {pnmobj}");
