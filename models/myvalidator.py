@@ -1,3 +1,4 @@
+import traceback;
 class myvalidator:
     @classmethod
     def varmustbethetypeandornull(clsnm, val, tpcls, canbenull, varnm="varname"):
@@ -1664,7 +1665,10 @@ class myvalidator:
         try:
             mdyrobj = myvalidator.getMonthDayYearFromDateString(datestr);
         except Exception as ex:
+            #print(dir(ex));
             #print(ex);
+            #traceback.print_exc();
+            #print("the value was not valid!");
             return False;
         return myvalidator.isValidDateFromObj(mdyrobj);
     
@@ -1717,7 +1721,9 @@ class myvalidator:
 
     @classmethod
     def getMonthDayYearFromDateString(cls, datestr):
-        myvalidator.stringMustHaveAtMinNumChars(datestr, 10, "datestr");
+        if (myvalidator.isvaremptyornull(datestr)): return None;
+        if (len(datestr) == 10): pass;
+        else: raise ValueError("datestring must have exactly 10 characters on it, but it did not!");
         dimdyr = myvalidator.getDelimeterIndexesForDateStrings(True);
         diyrmd = myvalidator.getDelimeterIndexesForDateStrings(False);
         if ((datestr[dimdyr[0]] == datestr[dimdyr[1]]) and (datestr[dimdyr[0]] in ["-", "/"])):
@@ -1757,9 +1763,12 @@ class myvalidator:
         if (mhrsobj == None): return cls.genTimeString(0, 0, 0, False, False, False);
         mkys = mhrsobj.keys();
         #if not on the keys list then not included in the resulting string that gets generated
-        inchrnum = ("hoursnum" in mkys);
-        incminnum = ("minutesnum" in mkys);
-        incsecs = ("secondsnum" in mkys);
+        inchrnum = (mhrsobj["hoursnuminstr"] if "hoursnum" in mkys else False);
+        #inchrnum = ("hoursnum" in mkys);
+        incminnum = (mhrsobj["minutesnuminstr"] if "minutesnum" in mkys else False);
+        #incminnum = ("minutesnum" in mkys);
+        incsecs = (mhrsobj["secondsnuminstr"] if "secondsnum" in mkys else False);
+        #incsecs = ("secondsnum" in mkys);
         hrnum = (mhrsobj["hoursnum"] if inchrnum else 0);
         minnum = (mhrsobj["minutesnum"] if incminnum else 0);
         secs = (float(str(mhrsobj["secondsnum"]) + "." + str(mhrsobj["fractionalsecondsnum"]))
@@ -1782,7 +1791,9 @@ class myvalidator:
         mkys = ["hoursnum", "minutesnum", "secondsnum", "fractionalsecondsnum"];
         if (myvalidator.isvaremptyornull(mstr)):
             mdict = {};
-            for n in range(len(mkys)): mdict[mkys[n]] = 0;
+            for n in range(len(mkys)):
+                mdict[mkys[n]] = 0;
+                mdict[mkys[n] + "instr"] = False;
             return mdict;
 
         numclns = 0;
@@ -1805,10 +1816,13 @@ class myvalidator:
                         pdi = i;
                         pfnd = True;
                 else: errstr = "period cannot start the string! ";
+            elif (c == "-"):
+                if (i == 0): pass;
+                else: errstr = "only one minus can start the time string! ";
             elif (c.isdigit()): pass;
             else: errstr = "invalid character found on the string! ";
             if (0 < len(errstr)):
-                raise ValueError(errstr + " invalid string found and used here for the time string!");
+                raise ValueError(errstr + "invalid string found and used here for the time string!");
         #print("mstr is valid!");
         #print(f"clis = {clis}");
         #print(f"pfnd = {pfnd}");
@@ -1830,6 +1844,7 @@ class myvalidator:
             if (usehms or not(inchrs)): marr.append(0);
             
         #print(f"mydelimis = {mydelimis}");
+        #print(f"mkys = {mkys}");
         #print(f"finkys = {finkys}");
         #print(f"marr = {marr}");
 
@@ -1838,9 +1853,162 @@ class myvalidator:
         
         mdict = {};
         for n in range(len(finkys)): mdict[finkys[n]] = int(marr[n]);
-        #print(f"mdict = {mdict}");
+        #print(f"OLD mdict = {mdict}");
+
+        for ky in mkys:
+            if (ky in finkys): mdict[ky + "instr"] = True;
+            else:
+                mdict[ky] = 0;
+                mdict[ky + "instr"] = False;
+        #print(f"FINAL mdict = {mdict}");
 
         return mdict;
+
+    #none is older than not none.
+    #returns 0 if equal, if a is less older than b then -1, else if b is less than a 1
+    @classmethod
+    def compareTwoDateTimeObjs(cls, dateaobj, timeaobj, datebobj, timebobj):
+        #what if the date object is empty?
+        #what if the time object is empty?
+        #what if one is empty but not the other?
+        #then of course what if both are not empty?
+        #time keys: ["hoursnum", "minutesnum", "secondsnum", "fractionalsecondsnum"];
+        #date keys: ["monthnum", "daynum", "yearnum"];#the order determines how to generate the string
+
+        dtkyscompordr = ["yearnum", "monthnum", "daynum"];
+        alessthanb = -1;
+        agtrthanb = 1;
+        if (dateaobj == None or datebobj == None):
+            if (dateaobj == datebobj): pass;#need to check times otherwise return 0
+            else: return (alessthanb if (dateaobj == None) else agtrthanb);#none is before not null
+        else:
+            for dky in dtkyscompordr:
+                if (dateaobj[dky] == datebobj[dky]): pass;
+                else: return (alessthanb if (dateaobj[dky] < datebobj[dky]) else agtrthanb);
+        
+        tkyscompordr = ["hoursnum", "minutesnum", "secondsnum", "fractionalsecondsnum"];
+        if (timeaobj == None or timebobj == None):
+            if (timeaobj == timebobj): pass;#need to check times otherwise return 0
+            else: return (alessthanb if (timeaobj == None) else agtrthanb);#none is before not null
+        else:
+            for tky in tkyscompordr:
+                if (timeaobj[tky] == timebobj[tky]): pass;
+                else: return (alessthanb if (timeaobj[tky] < timebobj[tky]) else agtrthanb);
+        return 0;
+
+    @classmethod
+    def getDateTimeStringType(cls, mstr):
+        myvalidator.varmustbethetypeandornull(mstr, str, True, "mstr");
+        if (myvalidator.isvaremptyornull(mstr)): return "DATE-TIME";
+        myvalidator.stringMustHaveAtMaxNumChars(mstr, 32, "mstr");
+        #need to tell if we have a:
+        #date-time string, just a date string, or just a time string
+        #if the string is longer than 10 characters and has a space at index 10, then date-time
+        #if the string is longer than 10 characters and does not have a space at index 10,
+        # then time only
+        #else: if the character length is less than 10: time only
+        #else if the character length is exactly 10 it could be either date only or time only.
+        #now check to see if the string is a date string...
+        #check the delimeter indexes for either format if it matches, then this is a date string
+        #if not, then time only.
+        #YYYY-MM-DD HHH:MM:SS.NNNNNNNNNNN
+        #MM-DD-YYYY HHH:MM:SS.NNNNNNNNNNN
+        #012345678901234567890123456789012
+        #0         1         2         3
+        if (10 < len(mstr)): return ("DATE-TIME" if (mstr[10] == ' ') else "TIME-ONLY");
+        elif (len(mstr) < 10): return "TIME-ONLY";
+        else:#len(mstr) == 10
+            mdydelimis = myvalidator.getDelimeterIndexesForDateStrings(True);
+            ymddelimis = myvalidator.getDelimeterIndexesForDateStrings(False);
+            if ((mstr[mdydelimis[0]] == mstr[mdydelimis[1]] and mstr[mdydelimis[0]] in ["-", "/"]) or
+                (mstr[ymddelimis[0]] == mstr[ymddelimis[1]] and mstr[ymddelimis[0]] in ["-", "/"])):
+                    return "DATE-ONLY";
+            else: return "TIME-ONLY";
+
+    @classmethod
+    def dateTimeStringIncludesHours(cls, mstr, usehrs):
+        myvalidator.varmustbethetypeandornull(mstr, str, True, "mstr");
+        if (myvalidator.isvaremptyornull(mstr)): return False;
+        tpstra = myvalidator.getDateTimeStringType(mstr);
+        myvalidator.varmustbeboolean(usehrs, "usehrs");
+        inchrsa = False;
+        if (tpstra == "DATE-ONLY"): inchrsa = False;
+        else:
+            clis = [n for n in range(len(mstr)) if mstr[n:].startswith(":")];
+            if (len(clis) == 2): inchrsa = True;
+            elif (len(clis) < 1 or 2 < len(clis)): inchrsa = False;
+            else:
+                pis = [n for n in range(len(mstr)) if mstr[n:].startswith(".")];
+                if (len(pis) == 1): inchrsa = False;
+                elif (1 < len(pis)): inchrsa = False;
+                else: inchrsa = usehrs;
+        return inchrsa;
+
+    @classmethod
+    def getDateAndTimeObjectInfoFromString(cls, mstr, usehrs):
+        myvalidator.varmustbeboolean(usehrs, "usehrs");
+        if (myvalidator.isvaremptyornull(mstr)):
+            return {"datestr": "", "timestr": "", "dateobj": None,
+                    "timeobj": myvalidator.genTimeStringFromObj(None),
+                    "inchours": False, "userhours": usehrs};
+        
+        tpstra = myvalidator.getDateTimeStringType(mstr);
+        #print(f"tpstr = {tpstr}");#DATE-TIME, TIME-ONLY, DATE-ONLY
+
+        datestra = None;
+        timestra = None;
+        if (tpstra == "DATE-TIME"):
+            datestra = mstr[0:10];
+            timestra = mstr[11:];
+        elif (tpstra == "DATE-ONLY"):
+            datestra = "" + mstr;
+            timestra = "";
+        else:
+            timestra = "" + mstr;#TIME-ONLY
+            datestra = "";
+        inchrsa = myvalidator.dateTimeStringIncludesHours(mstr, usehrs);
+        dateaobj = myvalidator.getMonthDayYearFromDateString(datestra);
+        timeaobj = myvalidator.getTimeObject(timestra, inchrsa);
+
+        return {"datestr": datestra, "timestr": timestra, "dateobj": dateaobj, "timeobj": timeaobj,
+                "inchours": inchrsa, "userhours": usehrs};
+
+    #FORMATS SUPPORTED:
+    #YYYY-MM-DD HHH:MM:SS.NNNNNNNNNNN
+    #MM-DD-YYYY HHH:MM:SS.NNNNNNNNNNN
+    #YYYY-MM-DD
+    #MM-DD-YYYY
+    #HHH:MM:SS.NNNNNNNNNNN
+    #HHH:MM
+    #MM:SS.NNNNNNNNNNN
+    #SS.NNNNNNNNNNN
+    #none is older than not none.
+    #returns 0 if equal, if a is less than b then -1, else if b is less than a 1
+    @classmethod
+    def compareTwoDateTimeStrs(cls, mstra, mstrb, usehrsa, usehrsb):
+        #get the date time objects from the strings
+        #print(f"mstra = {mstra}");
+        #print(f"mstrb = {mstrb}");
+        #print(f"usehrsa = {usehrsa}");
+        #print(f"usehrsb = {usehrsb}");
+        
+        myvalidator.varmustbeboolean(usehrsa, "usehrsa");
+        myvalidator.varmustbeboolean(usehrsb, "usehrsb");
+        if (myvalidator.isvaremptyornull(mstra)):
+            return (0 if (myvalidator.isvaremptyornull(mstrb)) else -1);
+        else:
+            if (myvalidator.isvaremptyornull(mstrb)): return 1;
+            else:
+                if (mstra == mstrb): return 0;
+    
+        #get the types of the two strings here now:
+        dtobja = myvalidator.getDateAndTimeObjectInfoFromString(mstra, usehrsa);
+        dtobjb = myvalidator.getDateAndTimeObjectInfoFromString(mstrb, usehrsb);
+        #print(f"dtobja = {dtobja}");
+        #print(f"dtobjb = {dtobjb}");
+
+        return cls.compareTwoDateTimeObjs(dtobja["dateobj"], dtobja["timeobj"],
+                                          dtobjb["dateobj"], dtobjb["timeobj"]);
 
     #end of date time methods section
 
@@ -2545,7 +2713,111 @@ class myvalidator:
                                 #value is not a number but has a range...
                                 print("type is not number, but has a range.");
                                 #DATEs TIMEs stuff like that here...
-                                raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
+                                #
+                                #MYSQL DATE TIME TYPES:
+                                #
+                                #"DATE" min "1000-01-01" max "9999-12-31"
+                                #"DATETIME"(fsp) min "1000-01-01 00:00:00.000000"
+                                # max "9999-12-31 23:59:59.999999"
+                                #"TIMESTAMP"(fsp) min "1970-01-01 00:00:01.000000"
+                                # max "2038-01-09 03:14:07.999999"
+                                #"TIME"(fsp) min "-838:59:59.000000" max "838:59:59.999999"
+                                #"YEAR" min 1901 max 2155;
+                                #
+                                #SQLSERVER DATE TIME TYPES:
+                                #
+                                #"DATETIME" min "1753-01-01 00:00:00.000" max "9999-12-31 23:59:59.999"
+                                #"DATETIME2" min "0001-01-01 00:00:00.0000000"
+                                #max "9999-12-31 23:59:59.9999999"
+                                #"SMALLDATETIME" min "1900-01-01 00:00:00" max "2079-06-06 23:59:59"
+                                #"DATE" min "0001-01-01" max "9999-12-31"
+                                #"TIME" min "00:00:00.0000000" max "23:59:59.9999999"
+                                #"DATETIMEOFFSET" min "0001-01-01 00:00:00.0000000 - 23:59"
+                                # max "9999-12-31 23:59:59.9999999 + 23:59"
+                                #
+                                #comparison method I wrote will work on everything except
+                                #"DATETIMEOFFSET" on SQLSERVER.
+                                
+                                #need to check to see if the value is in the given range.
+                                #the range values include hours.
+                                #we do not know if the value includes hours or not
+                                #if it is a time string
+                                #either we can flag it as not being in the correct format and skip it
+                                #or just always treat it as if the hour string was included.
+                                
+                                minrngval = vrobj["min"];
+                                maxrngval = vrobj["max"];
+                                
+                                #if TIME in the type name, then hours will be included on min and max
+                                #otherwise hours will not be included
+                                inchrsonmnandmx = False;
+                                for tpnm in tobj["names"]:
+                                    if ("TIME" in tpnm):
+                                        inchrsonmnandmx = True;
+                                        break;
+                                incvdtcheck = False;
+                                for tpnm in tobj["names"]:
+                                    if ("DATE" in tpnm):
+                                        incvdtcheck = True;
+                                        break;
+                                #if inchrsonmnandmx is FALSE, then for sure the value will not have it
+                                #if it is TRUE, the value could include it or not.
+                                valusehrs = False;
+                                if (inchrsonmnandmx):
+                                    valusehrs = myvalidator.dateTimeStringIncludesHours(val, True);
+                                print(f"inchrsonmnandmx = {inchrsonmnandmx}");
+                                print(f"incvdtcheck = {incvdtcheck}");
+                                print(f"valusehrs = {valusehrs}");
+                                print(f"minrngval = {minrngval}");
+                                print(f"maxrngval = {maxrngval}");
+                                print(f"val = {val}");
+
+                                compvalmin = -2;
+                                compvalmax = -2;
+                                try:
+                                    compvalmin = myvalidator.compareTwoDateTimeStrs(val, minrngval,
+                                                                                    valusehrs,
+                                                                                    inchrsonmnandmx);
+                                except Exception as ex:
+                                    #print(dir(ex));
+                                    print(ex);
+                                    traceback.print_exc();
+                                    print("the value was not valid!");
+                                    getnext = True;
+                                    break;
+                                try:
+                                    compvalmax = myvalidator.compareTwoDateTimeStrs(val, maxrngval,
+                                                                                    valusehrs,
+                                                                                    inchrsonmnandmx);
+                                except Exception as ex:
+                                    #print(dir(ex));
+                                    print(ex);
+                                    traceback.print_exc();
+                                    print("the value was not valid!");
+                                    getnext = True;
+                                    break;
+                                print(f"compvalmin = {compvalmin}");
+                                print(f"compvalmax = {compvalmax}");
+
+                                if (incvdtcheck):
+                                    dtobja = myvalidator.getDateAndTimeObjectInfoFromString(val,
+                                                                                            valusehrs);
+                                    print(f"dtobja = {dtobja}");
+                                    
+                                    if (myvalidator.isValidDateFromObj(dtobja["dateobj"])): pass;
+                                    else:
+                                        print("the date is not valid!");
+                                        getnext = True;
+                                        break;
+
+                                #val < maxrngval is -1 when a is before b.
+                                #val < maxrngval is 1 when b is before a.
+                                #if (valforcomp < minrngval or maxrngval < valforcomp):
+                                if (compvalmin == -1 or compvalmax == 1):
+                                    #value is invalid
+                                    print("the value is outside of the required range!");
+                                    getnext = True;
+                                    break;
                 
                     elif (vrobj["paramname"] in ["signed", "unsigned"]):
                         #need to know which one we are using signed or unsigned if it matches this

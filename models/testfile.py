@@ -185,6 +185,41 @@ print(myvalidator.genTimeStringFromObj({}));
 print(myvalidator.genTimeStringFromObj(None));
 print(myvalidator.genTimeStringFromObj(myvalidator.getTimeObject("838:59", True)));
 print();
+#"1753-01-01 00:00:00.000"
+dtstrb = myvalidator.genDateString(1, 1, 1, False, True);#usemonthdayyear, usedashes
+dtstra = myvalidator.genDateString(1, 1, 1753, False, True);#usemonthdayyear, usedashes
+tmstra = myvalidator.genTimeString(0, 0, 0, True, True, True);#inchr, incmin, incsec
+tmstrb = myvalidator.genTimeString(838, 59, 59.9999999, True, True, True);#inchr, incmin, incsec
+tmstrc = myvalidator.genTimeString(838, 59, 0, True, True, False);
+tmstrd = myvalidator.genTimeString(0, 59, 59.9999999, False, True, True);
+print(myvalidator.compareTwoDateTimeStrs(dtstra + " " + tmstra, dtstrb + " " + tmstra, True, True));
+#b has numbers all less than a expected value is 1.
+print(myvalidator.compareTwoDateTimeStrs(dtstrb + " " + tmstra, dtstra + " " + tmstra, True, True));
+#a has numbers all less than b expected value is -1.
+print(myvalidator.compareTwoDateTimeStrs(dtstrb + " " + tmstra, dtstrb + " " + tmstra, True, True));
+#a and b are the same expected value is 0.
+print(myvalidator.compareTwoDateTimeStrs(dtstra + " " + tmstrc, dtstrb + " " + tmstrd, True, False));
+#b has numbers all less than a expected value is 1.
+print(myvalidator.compareTwoDateTimeStrs(dtstrb + " " + tmstrd, dtstra + " " + tmstrc, False, True));
+#a has numbers all less than b expected value is -1.
+print(myvalidator.compareTwoDateTimeStrs(dtstrb + " " + tmstra, dtstrb + " " + tmstra, True, True));
+#0 same string
+#two dates only
+print(myvalidator.compareTwoDateTimeStrs(dtstra, dtstrb, False, False));#1 see above
+print(myvalidator.compareTwoDateTimeStrs(dtstrb, dtstra, False, False));#-1 see above
+print(myvalidator.compareTwoDateTimeStrs(dtstrb, dtstrb, False, False));#0 same string
+#two times only
+print(myvalidator.compareTwoDateTimeStrs(tmstra, tmstrb, True, True));#-1
+print(myvalidator.compareTwoDateTimeStrs(tmstrb, tmstra, True, True));#1
+print(myvalidator.compareTwoDateTimeStrs(tmstra, tmstra, True, True));#0 same string
+print(myvalidator.compareTwoDateTimeStrs(tmstrc, tmstrd, True, False));#1
+print(myvalidator.compareTwoDateTimeStrs(tmstrd, tmstrc, False, True));#-1
+print(myvalidator.compareTwoDateTimeStrs(tmstra, tmstra, True, True));#0 same string
+#time string and date string only
+print(myvalidator.compareTwoDateTimeStrs(dtstrb, tmstra, False, True));#1
+#the no date or no time will be first b will be less than a expected value is 1
+print(myvalidator.compareTwoDateTimeStrs(tmstra, dtstrb, True, False));#-1
+#the no date or no time will be first a will be less than b expected value is -1
 print("DONE WITH DATE AND TIME METHODS TESTS:");
 print();
 #raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
@@ -471,8 +506,7 @@ print(myvalidator.isValueValidForDataType("FLOAT(53)", myfltval, "SQLSERVER", Fa
 print(myvalidator.isValueValidForDataType("TIME(0)", "24:59:59.999999", "MYSQL"));#false
 print(myvalidator.isValueValidForDataType("TIME(6)", "24:59:59.999999", "MYSQL"));#true
 
-#tests on string types (ALL OF THESE FAIL DUE TO NEEDING SPECIAL FORMATTING 3-12-2025 1 AM MST)
-#that includes anything similar to it at the moment.
+#tests on string types:
 
 #I need a test where the value in the required range, but it is specifically formated like a date.
 print(myvalidator.isValueValidForDataType("DATE", "2029-02-28", "SQLSERVER"));#true
@@ -485,6 +519,26 @@ print(myvalidator.isValueValidForDataType("DATE", "202afdssa2", "SQLSERVER"));#f
 print(myvalidator.isValueValidForDataType("DATE", "2029302329", "SQLSERVER"));#false not a date.
 #also a test where the value is in the required range, but not actually valid like a date.
 print(myvalidator.isValueValidForDataType("DATE", "2029-02-29", "SQLSERVER"));#false not a valid date.
+
+
+#some date time formats do not allow fractional seconds or minutes to not be an integer, etc.
+#but these formatting constraints are not actually enforced yet (3-25-2025 4:30 AM MST):
+#need to make tests to check for this problem on all of those formats.
+
+
+#"SMALLDATETIME" min "1900-01-01 00:00:00" max "2079-06-06 23:59:59"
+print(myvalidator.isValueValidForDataType("SMALLDATETIME", "2080-02-29 23:59:59", "SQLSERVER"));#false
+#out of range for the type
+print(myvalidator.isValueValidForDataType("SMALLDATETIME", "2076-02-29 23:59:59", "SQLSERVER"));#true
+print(myvalidator.isValueValidForDataType("SMALLDATETIME", "2076-02-29 23:59:59.999999", "SQLSERVER"));
+#false fractionalseconds not allowed to be stored on this format
+
+#"DATETIMEOFFSET" min "0001-01-01 00:00:00.0000000 - 23:59"
+# max "9999-12-31 23:59:59.9999999 + 23:59"
+print(myvalidator.isValueValidForDataType("DATETIMEOFFSET", "0002-01-01 00:00:00.0000000 - 23:59",
+                                          "SQLSERVER"));#true
+print(myvalidator.isValueValidForDataType("DATETIMEOFFSET", "9998-12-31 23:59:59.9999999 + 23:59.99999",
+                                          "SQLSERVER"));#false minutes must be an integer
 print();
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
