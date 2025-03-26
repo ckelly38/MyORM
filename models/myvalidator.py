@@ -316,15 +316,22 @@ class myvalidator:
             
             myvalidator.valueMustBeInRange(cdelimi, 0, len(mystr), True, True, "cdelimi");
             if (n == 0): myresarr = [mystr[0: cdelimi]];
-            else: myresarr.append(mystr[prevdelimi + prevdelimlen: cdelimi]);
+            else:
+                if (cdelimi < prevdelimi + prevdelimlen):
+                    raise ValueError("the delimeter indexes were not in the correct order " +
+                                     "(often cause by an invalid value)!");
+                myresarr.append(mystr[prevdelimi + prevdelimlen: cdelimi]);
             if (n + 1 == len(delimis)): myresarr.append(mystr[cdelimi + cdelimlen:]);
             prevdelimlen = cdelimlen;
             prevdelimi = cdelimi;
+        #print(f"delimis = {delimis}");
+        #print(f"delimlens = {delimlens}");
         #print(f"myresarr = {myresarr}");
 
         if (len(myresarr) == len(delimis) + 1): pass;
         else: raise ValueError("generated split array did not have the correct number of strings!");
         resstr = myvalidator.myjoin("", myresarr);
+        #print(f"mystr = {mystr}");
         #print(f"resstr = {resstr}");
 
         myvalidator.stringMustHaveAtMostNumChars(resstr, len(mystr), "resstr");
@@ -1895,6 +1902,12 @@ class myvalidator:
                 if (timeaobj[tky] == timebobj[tky]): pass;
                 else: return (alessthanb if (timeaobj[tky] < timebobj[tky]) else agtrthanb);
         return 0;
+    @classmethod
+    def compareTwoDateObjsOnly(cls, dateaobj, datebobj):
+        return cls.compareTwoDateTimeObjs(dateaobj, None, datebobj, None);
+    @classmethod
+    def compareTwoTimeObjsOnly(cls, timeaobj, timebobj):
+        return cls.compareTwoDateTimeObjs(None, timeaobj, None, timebobj);
 
     @classmethod
     def getDateTimeStringType(cls, mstr):
@@ -1972,6 +1985,20 @@ class myvalidator:
 
         return {"datestr": datestra, "timestr": timestra, "dateobj": dateaobj, "timeobj": timeaobj,
                 "inchours": inchrsa, "userhours": usehrs};
+
+    #if the string is invalid, it just returns it unchanged
+    #otherwise it removes the space at 1 and ignores the plus entirely
+    @classmethod
+    def convertTimeOffsetStringToTimeString(cls, mstr):
+        if (myvalidator.isvaremptyornull(mstr)): return mstr;
+        if (mstr[0] == '-' or mstr[0] == '+'):
+            if (mstr[1] == ' ' and mstr[2].isdigit()):
+                resstr = "";
+                if (mstr[0] == '-'): resstr += "-";
+                resstr += "" + mstr[2:];
+                return resstr;
+            else: return mstr;#invalid string
+        else: return mstr;#invalid starting character
 
     #FORMATS SUPPORTED:
     #YYYY-MM-DD HHH:MM:SS.NNNNNNNNNNN
@@ -2734,6 +2761,8 @@ class myvalidator:
                                 #"TIME" min "00:00:00.0000000" max "23:59:59.9999999"
                                 #"DATETIMEOFFSET" min "0001-01-01 00:00:00.0000000 - 23:59"
                                 # max "9999-12-31 23:59:59.9999999 + 23:59"
+                                #      012345678901234567890123456789012345
+                                #      0         1         2         3
                                 #
                                 #comparison method I wrote will work on everything except
                                 #"DATETIMEOFFSET" on SQLSERVER.
@@ -2760,47 +2789,146 @@ class myvalidator:
                                     if ("DATE" in tpnm):
                                         incvdtcheck = True;
                                         break;
-                                #if inchrsonmnandmx is FALSE, then for sure the value will not have it
-                                #if it is TRUE, the value could include it or not.
-                                valusehrs = False;
-                                if (inchrsonmnandmx):
-                                    valusehrs = myvalidator.dateTimeStringIncludesHours(val, True);
                                 print(f"inchrsonmnandmx = {inchrsonmnandmx}");
                                 print(f"incvdtcheck = {incvdtcheck}");
-                                print(f"valusehrs = {valusehrs}");
                                 print(f"minrngval = {minrngval}");
                                 print(f"maxrngval = {maxrngval}");
                                 print(f"val = {val}");
 
+                                #handle the "DATETIMEOFFSET" on SQLSERVER here.
+                                #the mins and maxs and vals need to be split into two parts
+                                dtnoval = None;
+                                dtmxval = None;
+                                dtmnval = None;
+                                if ("DATETIMEOFFSET" in tobj["names"]):
+                                    #val = "0001-01-01 00:00:00.0000000";#so can test other case
+                                    valspcis = [n for n in range(len(val)) if val[n:].startswith(" ")];
+                                    minrngvalpts = myvalidator.mysplitWithLen(minrngval, [27], 1, 0);
+                                    maxrngvalpts = myvalidator.mysplitWithLen(maxrngval, [27], 1, 0);
+                                    minrngvalpta = minrngvalpts[0];
+                                    minrngvalptb = minrngvalpts[1];
+                                    maxrngvalpta = maxrngvalpts[0];
+                                    maxrngvalptb = maxrngvalpts[1];
+                                    valdelimi = (valspcis[1] if (1 < len(valspcis)) else len(val));
+                                    valpts = myvalidator.mysplitWithLen(val, [valdelimi], 1, 0);
+                                    valpta = valpts[0];
+                                    valptb = valpts[1];
+                                    dtnoval = "" + valpta;
+                                    dtmxval = "" + maxrngvalpta;
+                                    dtmnval = "" + minrngvalpta;
+                                    print(f"valspcis = {valspcis}");
+                                    print(f"valpts = {valpts}");
+                                    print(f"valdelimi = {valdelimi}");
+                                    print(f"minrngvalpts = {minrngvalpts}");
+                                    print(f"maxrngvalpts = {maxrngvalpts}");
+                                    print(f"minrngvalpta = {minrngvalpta}");
+                                    print(f"minrngvalptb = {minrngvalptb}");
+                                    print(f"maxrngvalpta = {maxrngvalpta}");
+                                    print(f"maxrngvalptb = {maxrngvalptb}");
+                                    print(f"valpta = {valpta}");
+                                    print(f"valptb = {valptb}");
+
+                                    #where do we split the val then?
+                                    #if it is valid, we would maybe split it at 27, but could earlier
+                                    #there is a limit as to how early and what format it would have
+                                    #to be in though
+                                    #assume val is valid and split at the second space index
+                                    #
+                                    #what do we do with all of the part b values?
+                                    #we need to make sure that they are valid too.
+                                    #processing the min and max part b values will be the same
+                                    #it is processing the value that I do not know.
+                                    
+                                    mnptbcnvtstr = myvalidator.convertTimeOffsetStringToTimeString(
+                                        minrngvalptb);
+                                    mxptbcnvtstr = myvalidator.convertTimeOffsetStringToTimeString(
+                                        maxrngvalptb);
+                                    valptbcnvtstr = myvalidator.convertTimeOffsetStringToTimeString(
+                                        valptb);
+                                    mnptbtimeobj = myvalidator.getTimeObject(mnptbcnvtstr, True);
+                                    mxptbtimeobj = myvalidator.getTimeObject(mxptbcnvtstr, True);
+                                    valptbtimeobj = None;
+                                    try:
+                                        valptbtimeobj = myvalidator.getTimeObject(valptbcnvtstr, True);
+                                    except Exception as ex:
+                                        #print(dir(ex));
+                                        print(ex);
+                                        traceback.print_exc();
+                                        print("the value was not valid!");
+                                        getnext = True;
+                                        break;
+                                    print(f"mnptbtimeobj = {mnptbtimeobj}");
+                                    print(f"mxptbtimeobj = {mxptbtimeobj}");
+                                    print(f"valptbtimeobj = {valptbtimeobj}");
+
+                                    compvalptbmin = myvalidator.compareTwoTimeObjsOnly(valptbtimeobj,
+                                                                                       mnptbtimeobj);
+                                    compvalptbmax = myvalidator.compareTwoTimeObjsOnly(valptbtimeobj,
+                                                                                       mxptbtimeobj);
+                                    print(f"compvalptbmin = {compvalptbmin}");
+                                    print(f"compvalptbmax = {compvalptbmax}");
+                                    #0 same, -1 means a is less than b, 1 means a is greater than b.
+                                    #val < maxrngval is -1 when a is before b.
+                                    #val < maxrngval is 1 when b is before a.
+                                    #if (valforcomp < minrngval or maxrngval < valforcomp):
+                                    if (compvalptbmin == -1 or compvalptbmax == 1):
+                                        #value is invalid
+                                        print("the value is outside of the required range!");
+                                        getnext = True;
+                                        break;
+                                else:
+                                    dtnoval = "" + val;
+                                    dtmxval = "" + maxrngval;
+                                    dtmnval = "" + minrngval;
+                                print(f"dtnoval = {dtnoval}");
+                                print(f"dtmnval = {dtmnval}");
+                                print(f"dtmxval = {dtmxval}");
+
+                                #if inchrsonmnandmx is FALSE, then for sure the value will not have it
+                                #if it is TRUE, the value could include it or not.
+                                valusehrs = False;
+                                if (inchrsonmnandmx):
+                                    try:
+                                        valusehrs = myvalidator.dateTimeStringIncludesHours(dtnoval,
+                                                                                            True);
+                                    except Exception as ex:
+                                        #print(dir(ex));
+                                        print(ex);
+                                        traceback.print_exc();
+                                        print("the value was not valid!");
+                                        getnext = True;
+                                        break;
+                                print(f"valusehrs = {valusehrs}");
+
                                 compvalmin = -2;
                                 compvalmax = -2;
                                 try:
-                                    compvalmin = myvalidator.compareTwoDateTimeStrs(val, minrngval,
+                                    compvalmin = myvalidator.compareTwoDateTimeStrs(dtnoval, dtmnval,
                                                                                     valusehrs,
                                                                                     inchrsonmnandmx);
                                 except Exception as ex:
                                     #print(dir(ex));
                                     print(ex);
                                     traceback.print_exc();
-                                    print("the value was not valid!");
+                                    print("the value was not valid (compminfail)!");
                                     getnext = True;
                                     break;
                                 try:
-                                    compvalmax = myvalidator.compareTwoDateTimeStrs(val, maxrngval,
+                                    compvalmax = myvalidator.compareTwoDateTimeStrs(dtnoval, dtmxval,
                                                                                     valusehrs,
                                                                                     inchrsonmnandmx);
                                 except Exception as ex:
                                     #print(dir(ex));
                                     print(ex);
                                     traceback.print_exc();
-                                    print("the value was not valid!");
+                                    print("the value was not valid (compmaxfail)!");
                                     getnext = True;
                                     break;
                                 print(f"compvalmin = {compvalmin}");
                                 print(f"compvalmax = {compvalmax}");
 
                                 if (incvdtcheck):
-                                    dtobja = myvalidator.getDateAndTimeObjectInfoFromString(val,
+                                    dtobja = myvalidator.getDateAndTimeObjectInfoFromString(dtnoval,
                                                                                             valusehrs);
                                     print(f"dtobja = {dtobja}");
                                     

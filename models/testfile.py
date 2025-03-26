@@ -504,6 +504,7 @@ print(myvalidator.isValueValidForDataType("FLOAT(53)", myfltval, "SQLSERVER", Fa
 
 #MYSQL TIME RANGE IS: "-838:59:59.000000", "838:59:59.999999"
 print(myvalidator.isValueValidForDataType("TIME(0)", "24:59:59.999999", "MYSQL"));#false
+print(myvalidator.isValueValidForDataType("TIME(0)", "24:59.999999:59", "MYSQL"));#false minutes invalid
 print(myvalidator.isValueValidForDataType("TIME(6)", "24:59:59.999999", "MYSQL"));#true
 
 #tests on string types:
@@ -525,6 +526,17 @@ print(myvalidator.isValueValidForDataType("DATE", "2029-02-29", "SQLSERVER"));#f
 #but these formatting constraints are not actually enforced yet (3-25-2025 4:30 AM MST):
 #need to make tests to check for this problem on all of those formats.
 
+#SQLSERVER:
+#
+#DATETIME YYYY-MM-DD HH:MM:SS[.NNN] from 1753-01-01 to 9999-12-31
+# with an accuracy of 3.33 miliseconds.
+#DATETIME2 YYYY-MM-DD HH:MM:SS[.NNNNNNN] from 0001-01-01 to 9999-12-31
+# with an accuracy of 100 nanoseconds.
+#SMALLDATETIME YYYY-MM-DD HH:MM:SS from 1900-01-01 to 2079-06-06 with an accuracy of 1 minute.
+#DATE YYYY-MM-DD 0001-01-01 to 9999-12-31.
+#TIME HH:MM:SS[.NNNNNNN] store a time only with an accuracy of 100 nanoseconds.
+#DATETIMEOFFSET YYYY-MM-DD HH:MM:SS[.NNNNNNN] [+|-] HH:MM (in UTC)
+
 
 #"SMALLDATETIME" min "1900-01-01 00:00:00" max "2079-06-06 23:59:59"
 print(myvalidator.isValueValidForDataType("SMALLDATETIME", "2080-02-29 23:59:59", "SQLSERVER"));#false
@@ -532,11 +544,16 @@ print(myvalidator.isValueValidForDataType("SMALLDATETIME", "2080-02-29 23:59:59"
 print(myvalidator.isValueValidForDataType("SMALLDATETIME", "2076-02-29 23:59:59", "SQLSERVER"));#true
 print(myvalidator.isValueValidForDataType("SMALLDATETIME", "2076-02-29 23:59:59.999999", "SQLSERVER"));
 #false fractionalseconds not allowed to be stored on this format
+raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 #"DATETIMEOFFSET" min "0001-01-01 00:00:00.0000000 - 23:59"
 # max "9999-12-31 23:59:59.9999999 + 23:59"
 print(myvalidator.isValueValidForDataType("DATETIMEOFFSET", "0002-01-01 00:00:00.0000000 - 23:59",
                                           "SQLSERVER"));#true
+print(myvalidator.isValueValidForDataType("DATETIMEOFFSET", "9998-12-31 23:59.99999:59.9 + 23:59",
+                                          "SQLSERVER"));#false minutes must be an integer
+print(myvalidator.isValueValidForDataType("DATETIMEOFFSET", "9998-12-31 23:59.99999:59.9999999 + 23:59",
+                                          "SQLSERVER"));#false minutes must be an integer
 print(myvalidator.isValueValidForDataType("DATETIMEOFFSET", "9998-12-31 23:59:59.9999999 + 23:59.99999",
                                           "SQLSERVER"));#false minutes must be an integer
 print();
