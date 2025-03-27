@@ -207,13 +207,12 @@ class myvalidator:
                             str(mxormnlen) + " characters on it, but it had more!");
         else:
             if (0 < mxormnlen):
+                mnerrmsgbase = "the string " + varnm + " must have at minimum " + str(mxormnlen);
+                mnerrmsgbase += " characters on it, but it ";
                 if (myvalidator.isvaremptyornull(mstr)):
-                    raise ValueError("the string " + varnm + " must have at minimum " + str(mxormnlen) +
-                        " characters on it, but it was empty or null!");
+                    raise ValueError(mnerrmsgbase + "was empty or null!");
                 else:
-                    if (len(mstr) < mxormnlen):
-                        raise ValueError("the string " + varnm + " must have at minimum " +
-                            str(mxormnlen) + " characters on it, but it had less than that!");
+                    if (len(mstr) < mxormnlen): raise ValueError(mnerrmsgbase + "had less than that!");
         return True;
     @classmethod
     def stringMustHaveAtMostNumChars(cls, mstr, mxormnlen, varnm="varnm"):
@@ -751,6 +750,34 @@ class myvalidator:
     def genSQLSwitchCaseNoName(cls, condsarr, resarr, defres=None):
         return cls.genSQLSwitchCase(condsarr, resarr, defres, None);
 
+    @classmethod
+    def getCompleteSetListFromList(cls, mlist):
+        #print(f"mlist = {mlist}");
+        if (mlist == None): return None;
+        elif (len(mlist) < 1): return [];
+        elif (len(mlist) == 1): return [mlist[0]];
+        elif (len(mlist) == 2):
+            #a, b
+            #a,b, b,a
+            return [mlist[0], mlist[1], mlist[0] + "," + mlist[1], mlist[1] + "," + mlist[0]];
+        else:
+            #keep all items initially on the list
+            #then take a and add 1 of them only
+            #then take a and add 2 of them only
+            #then take a and add 3 of them only
+            #... until all are done for item a
+            #then repeat for the other items
+            #example: a, b, c, d, e, f
+            #a,b, a,c, a,d, a,e, a,f
+            #a,b,c, a,b,d, a,b,e, a,b,f, a,c,d, a,c,e, a,c,f, 
+            retlist = [mitem for mitem in mlist];
+            for mitem in mlist:
+                tmplist = cls.getCompleteSetListFromList([item for item in mlist
+                                                          if not(item == mitem)]);
+                #print(f"tmplist = {tmplist}");
+                for item in tmplist: retlist.append(mitem + "," + item);
+            return retlist;
+
 
     #https://www.w3schools.com/sql/sql_datatypes.asp
     #https://www.w3resource.com/sqlite/sqlite-data-types.php
@@ -1152,12 +1179,8 @@ class myvalidator:
                 if (valsp):
                     for rngobj in valsranges:
                         if (rngobj["paramname"] == "values" or rngobj["paramname"] == "range"):
-                            if (rngobj["min"] < 0):
-                                useunsigneddefault = False;
-                                signedhasadefault = True;
-                            else:
-                                useunsigneddefault = True;
-                                signedhasadefault = True;
+                            useunsigneddefault = (not(rngobj["min"] < 0));
+                            signedhasadefault = True;
                             break;
                 else:
                     raise ValueError(f"the range object was built wrong for type with names: {names}!");
@@ -1489,6 +1512,21 @@ class myvalidator:
             #        "TIME", "DATETIMEOFFSET", "TIMESTAMP", "SQL_VARIANT", "UNIQUEIDENTIFIER", "XML",
             #        "CURSOR", "TABLE"];
         else: return [];
+
+    @classmethod
+    def getDefaultValueForDataTypeObjWithName(cls, tpobj, nm="values", isparam=False):
+        myvalidator.varmustbeboolean(isparam, "isparam");
+        myvalidator.varmustnotbenull(tpobj, "tpobj");
+        myvalidator.stringMustHaveAtMinNumChars(nm, 1, "nm");
+        mlist = tpobj[("paramnameswithranges" if (isparam) else "valuesranges")];
+        vrlist = ["values", "range"];
+        for mobj in mlist:
+            ismatch = ((mobj["paramname"] in vrlist) if (nm in vrlist) else (mobj["paramname"] == nm));
+            if (ismatch):
+                if (mobj["hasadefault"]): return mobj["defaultval"];
+                else: break;
+        raise ValueError("data type object with name (" + nm + ") and isparam (" + str(isparam) +
+                         ") type not found or has no default value!");
 
     #this method identifies all of the type names by variant that has
     #total number of digits and the number of digits after the decimal point
@@ -2368,6 +2406,9 @@ class myvalidator:
             valbgnm = (val[0:valfpi] if valnmhasps else "" + val);
             #print(f"valbgnm = {valbgnm}");
 
+            pmtchmsg = "only perfect matchs in the form tpnm(max) are allowed with parentheis, ";
+            pmtchmsg += "perfect matchs that only have alphabetic characters A-Z and a-z only ";
+            pmtchmsg += "are allowed! The last character can be a number!";
             for mtp in mvtpslist:
                 nmhasps = ("(" in mtp and ")" in mtp);
                 #print(f"mtp = {mtp}");
@@ -2395,9 +2436,7 @@ class myvalidator:
                             #or with tpnm(max) only
                             if (val == mtp):
                                 #print("found our perfect match!");
-                                #print("only perfect matchs in the form tpnm(max) are allowed with " +
-                                #      "parentheis, perfect matchs that only have alphabetic " +
-                                #      "characters A-Z and a-z only are allowed!");
+                                #print(pmtchmsg);
                                 return ((valbgnm + "(max)" == val) and (bgnm + "(max)" == mtp));
                             else:
                                 #need to know if unsigned...
@@ -2572,10 +2611,13 @@ class myvalidator:
                         #to be valid.
                         if (val == mtp):
                             #print("found our perfect match!");
-                            #print("only perfect matchs in the form tpnm(max) are allowed with " +
-                            #        "parentheis, perfect matchs that only have alphabetic " +
-                            #        "characters A-Z and a-z only are allowed!");
-                            return val.isalpha();
+                            #print(pmtchmsg);
+                            if (val.isalpha()): return True;
+                            else:
+                                if (1 < len(val)):
+                                    return (val[0:len(val) - 1].isalpha() and
+                                            val[len(val) - 1].isalnum()); 
+                                else: return val.isalpha();
             #print("data type is not valid!");
             return False;
 
@@ -2587,35 +2629,54 @@ class myvalidator:
         myvalidator.objvarmusthavethesekeysonit(tobj, rkys, "tobj");
         return (myvalidator.isListAInListB(tobj[rkys[0]], tpnmslist) and len(tobj[rkys[1]]) == numps);
 
-    #BELOW METHODS ARE NOT DONE YET 3-12-2025 1:08 AM MST
+    @classmethod
+    def getDataTypesObjsFromTypeName(cls, fulltpnm, varnm):
+        #or the ones that match that name...
+        #if the full type name has (max) on it, then use the full name
+        #else use the beginning name
+        myvalidator.varmustnotbeempty(fulltpnm, "fulltpnm");
+        myvalidator.varmustnotbeempty(varnm, "varnm");
+        nmhaspsonit = ("(" in fulltpnm and ")" in fulltpnm);
+        bgnm = (fulltpnm[0: fulltpnm.index("(")] if (nmhaspsonit) else "" + fulltpnm);
+        mynm = ("" + fulltpnm if ("(max)" in fulltpnm) else bgnm);
+        psonval = ([] if ("(max)" in fulltpnm) else cls.getParmsFromValType(fulltpnm));
+        numpsonval = (0 if ("(max)" in fulltpnm) else len(psonval));
+        datatypesinfolist = cls.getSQLDataTypesInfo(varnm);
+        return cls.getDataTypesObjsWithNameFromList(datatypesinfolist, mynm);
 
     @classmethod
-    def getCompleteSetListFromList(cls, mlist):
-        #print(f"mlist = {mlist}");
-        if (mlist == None): return None;
-        elif (len(mlist) < 1): return [];
-        elif (len(mlist) == 1): return [mlist[0]];
-        elif (len(mlist) == 2):
-            #a, b
-            #a,b, b,a
-            return [mlist[0], mlist[1], mlist[0] + "," + mlist[1], mlist[1] + "," + mlist[0]];
-        else:
-            #keep all items initially on the list
-            #then take a and add 1 of them only
-            #then take a and add 2 of them only
-            #then take a and add 3 of them only
-            #... until all are done for item a
-            #then repeat for the other items
-            #example: a, b, c, d, e, f
-            #a,b, a,c, a,d, a,e, a,f
-            #a,b,c, a,b,d, a,b,e, a,b,f, a,c,d, a,c,e, a,c,f, 
-            retlist = [mitem for mitem in mlist];
-            for mitem in mlist:
-                tmplist = cls.getCompleteSetListFromList([item for item in mlist
-                                                          if not(item == mitem)]);
-                #print(f"tmplist = {tmplist}");
-                for item in tmplist: retlist.append(mitem + "," + item);
-            return retlist;
+    def getDataTypeObjectWithNameOnVariant(cls, fulltpnm, varnm):
+        #get the list of objects for the variant
+        #or the ones that match that name...
+        #if the full type name has (max) on it, then use the full name
+        #else use the beginning name
+        myvalidator.varmustnotbeempty(fulltpnm, "fulltpnm");
+        myvalidator.varmustnotbeempty(varnm, "varnm");
+        nmhaspsonit = ("(" in fulltpnm and ")" in fulltpnm);
+        bgnm = (fulltpnm[0: fulltpnm.index("(")] if (nmhaspsonit) else "" + fulltpnm);
+        mynm = ("" + fulltpnm if ("(max)" in fulltpnm) else bgnm);
+        psonval = ([] if ("(max)" in fulltpnm) else cls.getParmsFromValType(fulltpnm));
+        numpsonval = (0 if ("(max)" in fulltpnm) else len(psonval));
+        datatypesinfolist = cls.getSQLDataTypesInfo(varnm);
+        tpobjslist = cls.getDataTypesObjsWithNameFromList(datatypesinfolist, mynm);
+        #print(f"mynm = {mynm}");
+        #print(f"psonval = {psonval}");
+        #print(f"numpsonval = {numpsonval}");
+        #print(f"tpobjslist = {tpobjslist}");
+
+        if (myvalidator.isvaremptyornull(tpobjslist)):
+            raise ValueError("no data type object found on that variant (" + varnm + ") with name: " +
+                             str(fulltpnm) + "!");
+
+        for tpobj in tpobjslist:
+            #print(f"tpobj = {tpobj}");
+
+            if (len(tpobj["paramnameswithranges"]) == numpsonval): return tpobj;
+        
+        #no exact matches and the type was valid so there must be a match
+        #print("no exact matches found!");
+        return tpobjslist[0];
+
 
     #tpnm is the SQL Data Type name for the specific variant specified by varstr
     #val is the value we are inserting into the column of that type...
@@ -2646,52 +2707,52 @@ class myvalidator:
         nmhasps = ("(" in tpnm and ")" in tpnm);
         bgnm = (tpnm[0:tpnm.index("(")] if (nmhasps) else "" + tpnm);
         mynm = ("" + tpnm if ("(max)" in tpnm) else bgnm);
-        print(f"tpnm = {tpnm}");
-        print(f"varstr = {varstr}");
-        print(f"val = {val}");
-        print(f"nmhasps = {nmhasps}");
-        print(f"bgnm = {bgnm}");
-        print(f"mynm = {mynm}");
-        print(f"isnonnull = {isnonnull}");
-        print(f"useunsigned = {useunsigned}");
+        #print(f"tpnm = {tpnm}");
+        #print(f"varstr = {varstr}");
+        #print(f"val = {val}");
+        #print(f"nmhasps = {nmhasps}");
+        #print(f"bgnm = {bgnm}");
+        #print(f"mynm = {mynm}");
+        #print(f"isnonnull = {isnonnull}");
+        #print(f"useunsigned = {useunsigned}");
         
         
         # or not(nmhasps)
         psonval = ([] if ("(max)" in tpnm) else cls.getParmsFromValType(tpnm));
         numpsonval = (0 if ("(max)" in tpnm or not(nmhasps)) else len(psonval));
-        print(f"psonval = {psonval}");
-        print(f"numpsonval = {numpsonval}");
+        #print(f"psonval = {psonval}");
+        #print(f"numpsonval = {numpsonval}");
         
         tpobjslist = cls.getDataTypesObjsWithNameFromList(datatypesinfolist, mynm);
-        print(f"tpobjslist = {tpobjslist}");
-        print();
+        #print(f"tpobjslist = {tpobjslist}");
+        #print();
 
         if (myvalidator.isvaremptyornull(tpobjslist)): return True;
 
         tpnmswithfdptdgts = myvalidator.getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint(
             varstr);
-        print(f"tpnmswithfdptdgts = {tpnmswithfdptdgts}");
+        #print(f"tpnmswithfdptdgts = {tpnmswithfdptdgts}");
         dgtsadptonly = myvalidator.getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly(
             varstr);
-        print(f"dgtsadptonly = {dgtsadptonly}");
+        #print(f"dgtsadptonly = {dgtsadptonly}");
         tpswithlistp = myvalidator.getAllDataTypesWithAListAsTheParameter(varstr);
-        print(f"tpswithlistp = {tpswithlistp}");
+        #print(f"tpswithlistp = {tpswithlistp}");
         tpswdispwp = myvalidator.getTypesThatHaveADisplayWidthParam(varstr);
-        print(f"tpswdispwp = {tpswdispwp}");
+        #print(f"tpswdispwp = {tpswdispwp}");
         tpslenasp = myvalidator.getTypesThatHaveLengthAsTheParam(varstr);
-        print(f"tpslenasp = {tpslenasp}");
+        #print(f"tpslenasp = {tpslenasp}");
         tpsrellenasp = myvalidator.getTypesThatHaveAByteRelatedLengthAsTheParam(varstr);
-        print(f"tpsrellenasp = {tpsrellenasp}");
+        #print(f"tpsrellenasp = {tpsrellenasp}");
         alltpsrelen = myvalidator.getAllTypesThatHaveAByteRelatedLength(varstr);
-        print(f"alltpsrelen = {alltpsrelen}");
-        print();
+        #print(f"alltpsrelen = {alltpsrelen}");
+        #print();
 
         dtpinfoobjerrmsg = "the data type info object was built wrong for (" + mynm;
         dtpinfoobjerrmsg += ") for the variant (" + varstr + ")!";
 
         for tobj in tpobjslist:
-            print(f"tobj = {tobj}");
-            print();
+            #print(f"tobj = {tobj}");
+            #print();
 
             if (myvalidator.isvaremptyornull(tobj["valuesranges"])):
                 if (tobj["isvalue"]): return (val in tobj["names"]);
@@ -2702,15 +2763,15 @@ class myvalidator:
                 minrngval = 0;
                 invalidvalontperrmsg = "invalid value stored on a " + (', '.join(tobj['names'])) + "!";
                 for vrobj in tobj["valuesranges"]:
-                    print(f"vrobj = {vrobj}");
-                    print();
+                    #print(f"vrobj = {vrobj}");
+                    #print();
 
                     isnumcomp = False;
                     valforcomp = val;
                     if (vrobj["paramname"] in ["length", "size"]):
                         #enforce the length restriction here...
                         #this may also come in as a required parameter
-                        print("vr has length or size as a required parameter!");
+                        #print("vr has length or size as a required parameter!");
                         
                         if (vrobj["canspecifyrange"]):
                             isnumcomp = True;
@@ -2723,7 +2784,7 @@ class myvalidator:
                             if (val == vrobj["defaultval"]):
                                 if (val == "NULL"):
                                     if (isnonnull):
-                                        print("non-null required, but NULL found!");
+                                        #print("non-null required, but NULL found!");
                                         getnext = True;
                                         break;
                                     else: return True;
@@ -2738,7 +2799,6 @@ class myvalidator:
                                 #valforcomp = val;
                             else:
                                 #value is not a number but has a range...
-                                print("type is not number, but has a range.");
                                 #DATEs TIMEs stuff like that here...
                                 #
                                 #MYSQL DATE TIME TYPES:
@@ -2774,6 +2834,8 @@ class myvalidator:
                                 #either we can flag it as not being in the correct format and skip it
                                 #or just always treat it as if the hour string was included.
                                 
+                                #print("type is not number, but has a range.\n");
+                                
                                 minrngval = vrobj["min"];
                                 maxrngval = vrobj["max"];
                                 
@@ -2789,11 +2851,11 @@ class myvalidator:
                                     if ("DATE" in tpnm):
                                         incvdtcheck = True;
                                         break;
-                                print(f"inchrsonmnandmx = {inchrsonmnandmx}");
-                                print(f"incvdtcheck = {incvdtcheck}");
-                                print(f"minrngval = {minrngval}");
-                                print(f"maxrngval = {maxrngval}");
-                                print(f"val = {val}");
+                                #print(f"inchrsonmnandmx = {inchrsonmnandmx}");
+                                #print(f"incvdtcheck = {incvdtcheck}");
+                                #print(f"minrngval = {minrngval}");
+                                #print(f"maxrngval = {maxrngval}");
+                                #print(f"val = {val}");
 
                                 #handle the "DATETIMEOFFSET" on SQLSERVER here.
                                 #the mins and maxs and vals need to be split into two parts
@@ -2816,17 +2878,17 @@ class myvalidator:
                                     dtnoval = "" + valpta;
                                     dtmxval = "" + maxrngvalpta;
                                     dtmnval = "" + minrngvalpta;
-                                    print(f"valspcis = {valspcis}");
-                                    print(f"valpts = {valpts}");
-                                    print(f"valdelimi = {valdelimi}");
-                                    print(f"minrngvalpts = {minrngvalpts}");
-                                    print(f"maxrngvalpts = {maxrngvalpts}");
-                                    print(f"minrngvalpta = {minrngvalpta}");
-                                    print(f"minrngvalptb = {minrngvalptb}");
-                                    print(f"maxrngvalpta = {maxrngvalpta}");
-                                    print(f"maxrngvalptb = {maxrngvalptb}");
-                                    print(f"valpta = {valpta}");
-                                    print(f"valptb = {valptb}");
+                                    #print(f"valspcis = {valspcis}");
+                                    #print(f"valpts = {valpts}");
+                                    #print(f"valdelimi = {valdelimi}");
+                                    #print(f"minrngvalpts = {minrngvalpts}");
+                                    #print(f"maxrngvalpts = {maxrngvalpts}");
+                                    #print(f"minrngvalpta = {minrngvalpta}");
+                                    #print(f"minrngvalptb = {minrngvalptb}");
+                                    #print(f"maxrngvalpta = {maxrngvalpta}");
+                                    #print(f"maxrngvalptb = {maxrngvalptb}");
+                                    #print(f"valpta = {valpta}");
+                                    #print(f"valptb = {valptb}");
 
                                     #where do we split the val then?
                                     #if it is valid, we would maybe split it at 27, but could earlier
@@ -2852,37 +2914,37 @@ class myvalidator:
                                         valptbtimeobj = myvalidator.getTimeObject(valptbcnvtstr, True);
                                     except Exception as ex:
                                         #print(dir(ex));
-                                        print(ex);
-                                        traceback.print_exc();
-                                        print("the value was not valid!");
+                                        #print(ex);
+                                        #traceback.print_exc();
+                                        #print("the value was not valid!");
                                         getnext = True;
                                         break;
-                                    print(f"mnptbtimeobj = {mnptbtimeobj}");
-                                    print(f"mxptbtimeobj = {mxptbtimeobj}");
-                                    print(f"valptbtimeobj = {valptbtimeobj}");
+                                    #print(f"mnptbtimeobj = {mnptbtimeobj}");
+                                    #print(f"mxptbtimeobj = {mxptbtimeobj}");
+                                    #print(f"valptbtimeobj = {valptbtimeobj}");
 
                                     compvalptbmin = myvalidator.compareTwoTimeObjsOnly(valptbtimeobj,
                                                                                        mnptbtimeobj);
                                     compvalptbmax = myvalidator.compareTwoTimeObjsOnly(valptbtimeobj,
                                                                                        mxptbtimeobj);
-                                    print(f"compvalptbmin = {compvalptbmin}");
-                                    print(f"compvalptbmax = {compvalptbmax}");
+                                    #print(f"compvalptbmin = {compvalptbmin}");
+                                    #print(f"compvalptbmax = {compvalptbmax}");
                                     #0 same, -1 means a is less than b, 1 means a is greater than b.
                                     #val < maxrngval is -1 when a is before b.
                                     #val < maxrngval is 1 when b is before a.
                                     #if (valforcomp < minrngval or maxrngval < valforcomp):
                                     if (compvalptbmin == -1 or compvalptbmax == 1):
                                         #value is invalid
-                                        print("the value is outside of the required range!");
+                                        #print("the value is outside of the required range!");
                                         getnext = True;
                                         break;
                                 else:
                                     dtnoval = "" + val;
                                     dtmxval = "" + maxrngval;
                                     dtmnval = "" + minrngval;
-                                print(f"dtnoval = {dtnoval}");
-                                print(f"dtmnval = {dtmnval}");
-                                print(f"dtmxval = {dtmxval}");
+                                #print(f"dtnoval = {dtnoval}");
+                                #print(f"dtmnval = {dtmnval}");
+                                #print(f"dtmxval = {dtmxval}");
 
                                 #if inchrsonmnandmx is FALSE, then for sure the value will not have it
                                 #if it is TRUE, the value could include it or not.
@@ -2893,12 +2955,12 @@ class myvalidator:
                                                                                             True);
                                     except Exception as ex:
                                         #print(dir(ex));
-                                        print(ex);
-                                        traceback.print_exc();
-                                        print("the value was not valid!");
+                                        #print(ex);
+                                        #traceback.print_exc();
+                                        #print("the value was not valid!");
                                         getnext = True;
                                         break;
-                                print(f"valusehrs = {valusehrs}");
+                                #print(f"valusehrs = {valusehrs}");
 
                                 compvalmin = -2;
                                 compvalmax = -2;
@@ -2908,9 +2970,9 @@ class myvalidator:
                                                                                     inchrsonmnandmx);
                                 except Exception as ex:
                                     #print(dir(ex));
-                                    print(ex);
-                                    traceback.print_exc();
-                                    print("the value was not valid (compminfail)!");
+                                    #print(ex);
+                                    #traceback.print_exc();
+                                    #print("the value was not valid (compminfail)!");
                                     getnext = True;
                                     break;
                                 try:
@@ -2919,22 +2981,88 @@ class myvalidator:
                                                                                     inchrsonmnandmx);
                                 except Exception as ex:
                                     #print(dir(ex));
-                                    print(ex);
-                                    traceback.print_exc();
-                                    print("the value was not valid (compmaxfail)!");
+                                    #print(ex);
+                                    #traceback.print_exc();
+                                    #print("the value was not valid (compmaxfail)!");
                                     getnext = True;
                                     break;
-                                print(f"compvalmin = {compvalmin}");
-                                print(f"compvalmax = {compvalmax}");
-
-                                if (incvdtcheck):
-                                    dtobja = myvalidator.getDateAndTimeObjectInfoFromString(dtnoval,
+                                #print(f"compvalmin = {compvalmin}");
+                                #print(f"compvalmax = {compvalmax}");
+                                
+                                dtobja = myvalidator.getDateAndTimeObjectInfoFromString(dtnoval,
                                                                                             valusehrs);
-                                    print(f"dtobja = {dtobja}");
-                                    
+                                #print(f"dtobja = {dtobja}");
+                                
+                                if (incvdtcheck):
                                     if (myvalidator.isValidDateFromObj(dtobja["dateobj"])): pass;
                                     else:
-                                        print("the date is not valid!");
+                                        #print("the date is not valid!");
+                                        getnext = True;
+                                        break;
+                                
+                                if (inchrsonmnandmx and varstr == "SQLSERVER"):
+                                    fscsnum = dtobja["timeobj"]["fractionalsecondsnum"];
+                                    fscsnuminstr = dtobja["timeobj"]["fractionalsecondsnuminstr"];
+                                    fscsnumstr = str(fscsnum);
+                                    #print(f"fscsnum = {fscsnum}");
+                                    #print(f"fscsnuminstr = {fscsnuminstr}");
+
+                                    #extract the maximum number of digits from the max value
+                                    #go to the last index of the decimal point if it exists
+                                    #then extract it...
+                                    #it will be after the last colon index
+                                    
+                                    mxlci = dtmxval.rindex(":");
+                                    #print(f"mxlci = {mxlci}");
+                                    #print(f"dtmxval = {dtmxval}");
+                                    #print(f"len(dtmxval) = {len(dtmxval)}");
+                                    
+                                    mxlpi = -1;
+                                    mxlpifnd = False;
+                                    for i in range(mxlci + 1, len(dtmxval)):
+                                        if (dtmxval[i] == '.'):
+                                            mxlpi = i;
+                                            mxlpifnd = True;
+                                            break;
+                                    #print(f"mxlpi = {mxlpi}");
+                                    #print(f"mxlpifnd = {mxlpifnd}");
+
+                                    vallci = -1;
+                                    valclifnd = False;
+                                    lpi = -1;
+                                    lpifnd = False;
+                                    for i in range(len(dtnoval)):
+                                        if (dtnoval[i] == ':'):
+                                            valclifnd = True;
+                                            vallci = i;
+                                        elif (dtnoval[i] == '.'):
+                                            lpi = i;
+                                            lpifnd = True;
+                                    #print(f"vallci = {vallci}");
+                                    #print(f"valclifnd = {valclifnd}");
+                                    #print(f"lpi = {lpi}");
+                                    #print(f"NEW lpifnd = {lpifnd}");
+
+                                    #assume that the value is right even if there is no colon
+                                    #this may not be correct.
+                                    #but we only care about the decimal point anyways
+                                    if (lpi < vallci): lpifnd = False;
+                                    #print(f"FINAL lpifnd = {lpifnd}");
+                                    
+                                    compfscnumval = (len(fscsnumstr) if (fscsnuminstr and lpifnd)
+                                                     else 0);
+                                    #print(f"compfscnumval = {compfscnumval}");
+
+                                    mxnumdgts = 0;
+                                    if (mxlci < mxlpi and mxlpi < len(dtmxval)):
+                                        #valid
+                                        #print("the last period index was valid!");
+                                        mxnumdgts = len(dtmxval) - mxlpi - 1;
+                                    #print(f"mxnumdgts = {mxnumdgts}");
+                                    
+                                    if (mxnumdgts < compfscnumval):
+                                        #print("the number of digits after the decimal point on the " +
+                                        #      "seconds num is not valid!");
                                         getnext = True;
                                         break;
 
@@ -2943,7 +3071,7 @@ class myvalidator:
                                 #if (valforcomp < minrngval or maxrngval < valforcomp):
                                 if (compvalmin == -1 or compvalmax == 1):
                                     #value is invalid
-                                    print("the value is outside of the required range!");
+                                    #print("the value is outside of the required range!");
                                     getnext = True;
                                     break;
                 
@@ -2951,7 +3079,7 @@ class myvalidator:
                         #need to know which one we are using signed or unsigned if it matches this
                         #then this will be the range we use else skip it.
                         #need to know if unsigned...
-                        print(f"useunsigned = {useunsigned}");
+                        #print(f"useunsigned = {useunsigned}");
                         
                         if ((useunsigned and (vrobj["paramname"] == "unsigned")) or
                             (not(useunsigned) and (vrobj["paramname"] == "signed"))):
@@ -2962,18 +3090,20 @@ class myvalidator:
                     else:
                         #this is the this should not make it here case
                         #paramname is really specific to type and variant
+                        print(f"tobj = {tobj}");
+                        print(f"vrobj = {vrobj}");
                         print(f"vrobj['paramname'] = {vrobj['paramname']}");
                         print("this param name is really specific to the type and the range!");
                         raise ValueError("the parameters need to be handled, but have not been!");
                     
-                    print(f"isnumcomp = {isnumcomp}");
-                    print(f"valforcomp = {valforcomp}");
+                    #print(f"isnumcomp = {isnumcomp}");
+                    #print(f"valforcomp = {valforcomp}");
                     
                     if (isnumcomp):
                         #these are numerical comparisons
                         if (myvalidator.isvaranumber(valforcomp)): pass;
                         else:
-                            print("value is not not a number on a numerical comparison!");
+                            #print("value is not not a number on a numerical comparison!");
                             getnext = True;
                             break;
                         
@@ -2987,28 +3117,28 @@ class myvalidator:
                         if (valforcomp < minrngval or maxrngval < valforcomp):
                             #invalid, but the next one in the type object might be
                             #need to exit vrloop and need to move on to the next type object
-                            print("value is not in the range, not the default, and not valid!");
+                            #print("value is not in the range, not the default, and not valid!");
                             getnext = True;
                             break;
                         else:
-                            print("value is in the range!");
+                            #print("value is in the range!");
 
                             if (dobooldatacheck):
                                 valstr = str(val);
                                 for c in valstr:
                                     if (c == "0" or c == "1"): pass;
                                     else:
-                                        print(invalidvalontperrmsg);
+                                        #print(invalidvalontperrmsg);
                                         getnext = True;
                                         break;
 
                 if (getnext): pass;
                 else:
                     if (tobj["canbesignedornot"]):
-                        print(f"twodiffranges = {twodiffranges}");
-                        print(f"isnonnull = {isnonnull}");
-                        print(f"useunsigned = {useunsigned}");
-                        print(f"minrngval = {minrngval}");
+                        #print(f"twodiffranges = {twodiffranges}");
+                        #print(f"isnonnull = {isnonnull}");
+                        #print(f"useunsigned = {useunsigned}");
+                        #print(f"minrngval = {minrngval}");
                         #if not a number, then useunsigned must be true.
                         #if some kind of number:
                         #-if two different ranges is true, then we can for sure use unsigned
@@ -3020,20 +3150,20 @@ class myvalidator:
                             else:
                                 if (minrngval < 0):
                                     if (useunsigned):
-                                        print("using unsigned, but the min range value is signed!");
+                                        #print("using unsigned, but the min range value is signed!");
                                         getnext = True;
                                 else:
                                     if (useunsigned): pass;
                                     else:
-                                        print("using signed, but the min range value is unsigned!");
+                                        #print("using signed, but the min range value is unsigned!");
                                         getnext = True;
                         else:
-                            print("this is a number, therefore not null, but null required!");
+                            #print("this is a number, therefore not null, but null required!");
                             getnext = True;
                     else:
                         if (useunsigned): pass;
                         else:
-                            print("this is not a number, but required to be signed!");
+                            #print("this is not a number, but required to be signed!");
                             getnext = True;
 
                 finpsonval = None;
@@ -3061,14 +3191,14 @@ class myvalidator:
                                 if ("." in pval):
                                     #the parameters are not valid
                                     #return False;
-                                    print("the parameters must be an integer number only!");
+                                    #print("the parameters must be an integer number only!");
                                     getnext = True;
                                     break;
                                 finpsonval.append(int(pval));
                             else:
                                 #the parameters are not valid
                                 #return False;
-                                print("the parameters must be an integer number only!");
+                                #print("the parameters must be an integer number only!");
                                 getnext = True;
                                 break;
                         if (getnext): continue;
@@ -3085,26 +3215,26 @@ class myvalidator:
                     #otherwise, ours is valid so now return True.
                     if (myvalidator.isvaremptyornull(tobj["paramnameswithranges"])): return True;
                     
-                    print();
-                    print("now we need to check the type parameters!");
-                    print();
-                    print(f"val = {val}");
-                    print(f"mynm = {mynm}");
-                    print(f"tpnm = {tpnm}");
-                    print(f"finpsonval = {finpsonval}");
+                    #print();
+                    #print("now we need to check the type parameters!");
+                    #print();
+                    #print(f"val = {val}");
+                    #print(f"mynm = {mynm}");
+                    #print(f"tpnm = {tpnm}");
+                    #print(f"finpsonval = {finpsonval}");
 
                     if (myvalidator.isDataTypeOnList(tobj, tpnmswithfdptdgts, 2)):
-                        print("need to handle the total number of digits and the num digits " +
-                            "after the decimal point here!");#class 1
+                        #print("need to handle the total number of digits and the num digits " +
+                        #    "after the decimal point here!");#class 1
                         
                         mdict = {};
                         for n in range(len(tobj["paramnameswithranges"])):
                             pnmobj = tobj["paramnameswithranges"][n];
-                            print(f"pnmobj = {pnmobj}");
-                            print();
+                            #print(f"pnmobj = {pnmobj}");
+                            #print();
                             
                             mdict[pnmobj["paramname"]] = finpsonval[n];
-                        print(f"mdict = {mdict}");
+                        #print(f"mdict = {mdict}");
 
                         #now do the length check against the value here...
                         usedkys = ["size"];
@@ -3118,93 +3248,94 @@ class myvalidator:
                         nmdsz = 0;
                         if ("." in valstr): nmdsz = len(valstr[valstr.index(".") + 1:]);
                         numdvld = (nmdsz == mdict[okys[0]]);
-                        print(f"szvld = {szvld}");
-                        print(f"numdvld = {numdvld}");
+                        #print(f"szvld = {szvld}");
+                        #print(f"numdvld = {numdvld}");
 
                         if (szvld and numdvld): pass;#valid
                         else:
-                            print("either the size or the number itself is out of range!");
+                            #print("either the size or the number itself is out of range!");
                             getnext = True;
                     elif (myvalidator.isDataTypeOnList(tobj, dgtsadptonly, 1)):
-                        print("this has a set digits after the decimal point only!");#class 2
+                        #print("this has a set digits after the decimal point only!");#class 2
 
                         pval = finpsonval[0];
                         numdgts = -1;
                         if (varstr == "SQLSERVER" and ("FLOAT" in tobj["names"])):
                             numdgts = (7 if (pval < 25) else 15);
                         else: numdgts = pval;
-                        print(f"pval = {pval}");
-                        print(f"numdgts = {numdgts}");
+                        #print(f"pval = {pval}");
+                        #print(f"numdgts = {numdgts}");
 
                         valstr = str(val);
                         valstradpt = valstr[valstr.index(".") + 1:];
                         numdgtsadptonval = len(valstradpt);
-                        print(f"valstradpt = {valstradpt}");
-                        print(f"numdgtsadptonval = {numdgtsadptonval}");
+                        #print(f"valstradpt = {valstradpt}");
+                        #print(f"numdgtsadptonval = {numdgtsadptonval}");
 
                         if (numdgts < numdgtsadptonval):
-                            print("the number of digits on the val must be at most the " +
-                                  "required amount, but was not!");
+                            #print("the number of digits on the val must be at most the " +
+                            #      "required amount, but was not!");
                             getnext = True;#invalid
                     elif (myvalidator.isDataTypeOnList(tobj, tpswithlistp, 1)):
-                        print("these types have a list as the parameter!");#class 3
+                        #print("these types have a list as the parameter!");#class 3
 
                         #now for these types we need to strip the quotes off of each string first
                         nwfinpsontp = [mstr[1:len(mstr) - 1] for mstr in finpsonval
                                        if myvalidator.stringMustStartAndEndWith(mstr, "'", "mstr")];
                         nwval = val[1:len(val) - 1];
-                        print(f"nwfinpsontp = {nwfinpsontp}");
+                        #print(f"nwfinpsontp = {nwfinpsontp}");
                         
                         #regardless of the type if the value is on the list it is a match
                         isvalid = (nwval in nwfinpsontp);
-                        print(f"isvalid = {isvalid}");
+                        #print(f"isvalid = {isvalid}");
 
                         #the sets have an additional check
                         if (isvalid): pass;
                         else:
                             if ("SET" in tobj["names"]):
-                                print("THIS IS A SET!");
+                                #print("THIS IS A SET!");
                                 if (nwval in myvalidator.getCompleteSetListFromList(nwfinpsontp)):
                                     #print("found it on the full list!");
                                     pass;
                                 else:
-                                    print("the value must be present on the set or on the " +
-                                          "combo list that can be generated from the elements " +
-                                          "on the set, but was not!");
+                                    #print("the value must be present on the set or on the " +
+                                    #      "combo list that can be generated from the elements " +
+                                    #      "on the set, but was not!");
                                     getnext = True;
                             else:
-                                print("the value was not present on the enum and must be!");
+                                #print("the value was not present on the enum and must be!");
                                 getnext = True;
-                            print(f"NEW getnext = {getnext}");
+                            #print(f"NEW getnext = {getnext}");
                 
                     elif (myvalidator.isDataTypeOnList(tobj, tpswdispwp, 1)):
-                        print("these types have a display width as the parameter!");#class 4
+                        #print("these types have a display width as the parameter!");#class 4
                         
                         #note the display width does not effect what value can be stored
                         #that is the range, we can however enforce it here,
                         #but that would piss off the users.
-                        print("the display width will be depricated soon!");
-                        print("this however is not really enforced anyways!");
-                        print("however for the time being these types need it!");
+                        #print("the display width will be depricated soon!");
+                        #print("this however is not really enforced anyways!");
+                        #print("however for the time being these types need it!");
                         
                         pval = finpsonval[0];
                         valstr = str(val);
                         if (pval < len(valstr)):
-                            print("you are storing a value (" + valstr + ") longer than the " +
-                                    "display width (" + str(pval) + ")!");
-                            print("but this is not actually enforced!");
+                            #print("you are storing a value (" + valstr + ") longer than the " +
+                            #        "display width (" + str(pval) + ")!");
+                            #print("but this is not actually enforced!");
+                            pass;
 
-                        print("moving on!");
+                        #print("moving on!");
                     elif (myvalidator.isDataTypeOnList(tobj, tpslenasp, 1)):
-                        print("these data types have the length as the parameter!");#class 5
+                        #print("these data types have the length as the parameter!");#class 5
                         
                         pval = finpsonval[0];
                         valstr = str(val);
-                        print(f"pval = {pval}");
-                        print(f"len(valstr) = {len(valstr)}");
+                        #print(f"pval = {pval}");
+                        #print(f"len(valstr) = {len(valstr)}");
 
                         if (pval < len(valstr)):
-                            print("the value was too long!");
+                            #print("the value was too long!");
                             getnext = True;
                         else:
                             #here make sure the BIT type is storing the correct data here...
@@ -3214,21 +3345,21 @@ class myvalidator:
                                 for c in valstr:
                                     if (c == "0" or c == "1"): pass;
                                     else:
-                                        print(invalidvalontperrmsg);
+                                        #print(invalidvalontperrmsg);
                                         getnext = True;
                                         break;
                     elif (myvalidator.isDataTypeOnList(tobj, tpsrellenasp, 1)):
-                        print("these types are byte length relative!");#class 6
+                        #print("these types are byte length relative!");#class 6
                         
                         pval = finpsonval[0];
                         valstr = str(val);
                         mxvlen = pval * 8;
-                        print(f"pval = {pval}");
-                        print(f"mxvlen = {mxvlen}");
-                        print(f"len(valstr) = {len(valstr)}");
+                        #print(f"pval = {pval}");
+                        #print(f"mxvlen = {mxvlen}");
+                        #print(f"len(valstr) = {len(valstr)}");
 
                         if (mxvlen < len(valstr)):
-                            print("the value was too long!");
+                            #print("the value was too long!");
                             getnext = True;
                         else:
                             #checks to see if they are storing the correct data here...
@@ -3237,22 +3368,26 @@ class myvalidator:
                             for c in valstr:
                                 if (c == "0" or c == "1"): pass;
                                 else:
-                                    print(invalidvalontperrmsg);
+                                    #print(invalidvalontperrmsg);
                                     getnext = True;
                                     break;
                     elif ("FLOAT" in tobj["names"] and len(tobj["paramnameswithranges"]) == 1 and
                           varstr == "MYSQL"):
-                        print("THIS IS FLOAT(p) for MYSQL!");#not in a class, but needs to be handled
+                        #print("THIS IS FLOAT(p) for MYSQL!");#not in a class, but needs to be handled
                         
                         #other than data storage size 1-24 inc is 4 bytes 25 to 53 inc is 8 bytes max
                         #other than that I do not think p value actually influences the value
                         #ie kind of like display width
                         #for the moment, I am going to keep it like this and do nothing.
 
-                        print("NOT SURE IF THE PARAMETER IN THIS CASE ACTUALLY AFFECTS THE VALUE " +
-                              "OTHER THAN IN TERMS OF HOW MANY BYTES CAN BE STORED HERE.");
+                        #print("NOT SURE IF THE PARAMETER IN THIS CASE ACTUALLY AFFECTS THE VALUE " +
+                        #      "OTHER THAN IN TERMS OF HOW MANY BYTES CAN BE STORED HERE.");
                         #raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
+                        pass;
                     else:
+                        print(f"tobj = {tobj}");
+                        print(f"vrobj = {vrobj}");
+
                         for pnmobj in tobj["paramnameswithranges"]:
                             print(f"pnmobj = {pnmobj}");
                             print();
@@ -3267,11 +3402,11 @@ class myvalidator:
 
                             print("NOT DONE YET NEED TO DO SOMETHING HERE...!");
                         
-                        raise ValueError("NOT DONE YET 3-11-2025 5:22 PM MST!");
+                        raise ValueError("NOT SURE HOW TO HANDLE THESE PARAMETERS YET!");
                 
                     if (getnext): pass;
                     else: return True;
 
         #do something here...
-        print("outside of the type objects loop!");
+        #print("outside of the type objects loop!");
         return False;

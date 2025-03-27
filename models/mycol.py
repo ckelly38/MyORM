@@ -117,16 +117,42 @@ class mycol:
 
     def getDataType(self): return self._datatype;
 
+    #the problem with these two setters are they depend on the SQL variant
+    #they need some way inside this class to get the variant by calling a getter.
+    #the variant may need to be passed in to the col
+    #but the calling class should provide a way to get it?
+    #
+    #there is also another piece of missing data for the default value.
+
     #def setDataType(self, val):
         #get data types for the specific variant
         #if the list is empty or null, then assumed valid
         #if on the list, valid
         #if not on the list and list is not empty, then not valid.
-    #    mvtpslist = myvalidator.getValidSQLDataTypes(varstr);
     #    if (myvalidator.isvaremptyornull(mvtpslist)): self._datatype = val;
     #    else:
-    #
-    #    pass;
+    #       if (myvalidator.isValidDataType(val, varstr)): self._datatype = val;
+    #       else:
+    #           raise ValueError("invalid data type (" + val +
+    #               ") found and used here for the variant (" + varstr + ")!");
+
+    #datatype = property(getDataType, setDataType);
+
+    def getDefaultValue(self): return self._defaultvalue;
+
+    #def setDefaultValue(self, val):
+        #if we get the type object from the validator, there is a chance the type will provide a default
+        #if however the type is signed, and has two different ranges, then we will need to
+        #pull the parameter value from the user.
+        #myvalidator.isValueValidForDataType(tpnm, val, varstr, useunsigned, isnonnull);
+        #if (myvalidator.isValueValidForDataType(self.getDataType(), val, varstr, useunsigned,
+        #   self.getIsNonNull())):
+        #       self._defaultvalue = val;
+        #else:
+        #   raise ValueError("invalid default value (" + val + ") for data type (" + self.getDataType() +
+        #               ") found and used here for the variant (" + varstr + ")!");
+    
+    #defaultvalue = property(getDefaultValue, setDefaultValue);
 
     def getColName(self): return self._colname;
 

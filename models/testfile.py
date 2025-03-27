@@ -70,6 +70,8 @@ tstobjc = MyModelWithCompPrimaryKey();
 tstobjd = MyModelWithCompForeignKey();
 
 print();
+#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
 print("IS VALUE IN RANGE OR STRING HAS AT MOST OR AT MIN AMOUNT OF CHARS TESTS:");
 print();
 print("mystr has at max 0 characters: " + str(myvalidator.stringHasAtMaxNumChars("mystr", 0)));#false
@@ -358,6 +360,13 @@ print(myvalidator.getLevelsForValStr(enmbasestr + "'mychar\'s poses)sive', " + e
 print(myvalidator.getLevelsForValStr(finenmstr + ")"));
 print(myvalidator.getParmsFromValType(finenmstr + ")"));
 print();
+print(myvalidator.getDataTypeObjectWithNameOnVariant(finenmstr + ")", "MYSQL"));
+print(myvalidator.getDataTypeObjectWithNameOnVariant("NUMERIC(1)", "SQLSERVER"));
+print(myvalidator.getDataTypeObjectWithNameOnVariant("DATETIME2", "SQLSERVER"));
+print(myvalidator.getDataTypeObjectWithNameOnVariant("NUMERIC(1, 38)", "SQLSERVER"));
+print();
+print(myvalidator.getDataTypesObjsFromTypeName("FLOAT", "MYSQL"));
+print();
 #print(myvalidator.isValidDataType(finenmstr, "MYSQL"));#false
 print(myvalidator.isValidDataType(finenmstr + ")", "MYSQL"));#true
 print(myvalidator.isValidDataType("ENUM('vala', 'vala', 'valb', 'my val')", "MYSQL"));
@@ -374,7 +383,10 @@ print(myvalidator.isValidDataType("NUMERIC(1, 39)", "SQLSERVER"));#false#38 or l
 print(myvalidator.isValidDataType("NUMERIC(39)", "SQLSERVER"));#false#38 or less for both
 print(myvalidator.isValidDataType("NUMERIC(1)", "SQLSERVER"));#true
 print(myvalidator.isValidDataType("VARCHAR(max)", "SQLSERVER"));#true
+print(myvalidator.isValidDataType("DATETIME2", "SQLSERVER"));#true
 print();
+raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
 print(myvalidator.isValueValidForDataType("TINYINT", "a", "SQLSERVER", True, True));#false not a number
 print(myvalidator.isValueValidForDataType("TINYINT", "adsfsad203e4", "SQLSERVER", True, True));
 #false not a number
@@ -544,7 +556,22 @@ print(myvalidator.isValueValidForDataType("SMALLDATETIME", "2080-02-29 23:59:59"
 print(myvalidator.isValueValidForDataType("SMALLDATETIME", "2076-02-29 23:59:59", "SQLSERVER"));#true
 print(myvalidator.isValueValidForDataType("SMALLDATETIME", "2076-02-29 23:59:59.999999", "SQLSERVER"));
 #false fractionalseconds not allowed to be stored on this format
-raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
+print(myvalidator.isValueValidForDataType("DATETIME", "2076-02-29 23:59:59.999999", "SQLSERVER"));
+#false too many decimal place digits for the format only 3 allowed max
+
+print(myvalidator.isValueValidForDataType("DATETIME2", "2076-02-29 23:59:59.9999999", "SQLSERVER"));
+#true
+
+print(myvalidator.isValueValidForDataType("DATETIME2", "2076-02-29 23:59:59.99999999", "SQLSERVER"));
+#false too many decimal place digits for the format only 7 allowed max
+
+print(myvalidator.isValueValidForDataType("TIME", "23:59:59.99999999", "SQLSERVER"));
+#false too many decimal place digits for the format only 7 allowed max
+
+print(myvalidator.isValueValidForDataType("DATETIMEOFFSET", "9998-12-31 23:59:59.99999999 + 23:59",
+                                          "SQLSERVER"));
+#false too many decimal place digits for the format only 7 allowed max
 
 #"DATETIMEOFFSET" min "0001-01-01 00:00:00.0000000 - 23:59"
 # max "9999-12-31 23:59:59.9999999 + 23:59"
@@ -644,7 +671,7 @@ print(myvalidator.genSQLSum("price", False));
 
 #each database has its own way to do custom procedures, so this program will not provide a generic way.
 #
-#WHAT I STILL NEED TO DO: 2-25-2025
+#WHAT I STILL NEED TO DO: 3-27-2025
 #-CREATE TABLE, INSERT INTO, UPDATE, DELETE, SELECT INTO, INSERT INTO SELECT
 #-LEFT JOIN, RIGHT JOIN, INNER JOIN, FULL JOIN, NATURAL JOIN, UNIONS
 #--note: some of these are different from LITE to normal SQL.
@@ -653,7 +680,6 @@ print(myvalidator.genSQLSum("price", False));
 #-figure out a way to tell the program if using sqllite or sql and
 #--if the commands are different from sql to sqllite (JOINS ARE) how they change in the generator
 #-figure out where to put the sql generator methods
-#-figure out how to enforce the correct data types and the values that can be stored in them (#1)
 #-ways to save data, ways to add new data, ways to remove data, ways to update the data, (#2)
 #-and ways to remove tables (#3)
 #-ways to print out objects via serialization (#4)

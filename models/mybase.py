@@ -5,12 +5,14 @@ class mybase:
     #mymulticolargs = None;
     disableconstraintswarning = False;
 
-    def __init__(self):
+    def __init__(self, colnames=None, colvalues=None):
         print("INSIDE BASE CLASS CONSTRUCTOR!");
         print(f"self = {self}");
         print(f"mytablename = {self.getTableName()}");
         print(f"multicolconstraints = {self.getMultiColumnConstraints()}");
         print(f"tableargs = {self.getAllTableConstraints()}");
+        print(f"colnames = {colnames}");
+        print(f"colvalues = {colvalues}");
         
         mytempcols = self.getMyCols();
         mycolnames = self.getMyColNames(mytempcols);
@@ -33,6 +35,45 @@ class mybase:
         for mc in mytempcols:
             mc.primaryKeyInformationMustBeValid(type(self));
             mc.foreignKeyInformationMustBeValid(self);
+
+        #for each column need to make sure that there is a value if not use the default value
+        #how to know which value is for what col?
+        #base constructor will take in two parameters, one col names, and one values
+        #for n in range(len(colnames)):
+            #clnm = colnames[n];
+            #valcl = colvalues[n];
+            #if (clnm in mycolnames): setattr(self, clnm + "_value", valcl);
+        
+        #do the same for the colnames not in that list
+        #ocolnms = [mclnm for mclnm in mycolnames if mclnm not in colnames];
+        #for clnm in ocolnms:
+            #the value is the default value for the type for the varaint
+            #get the type object for that type for the variant
+            #mycolobj = mytempcols[mycolnames.index(clnm)];
+            #fldtnm = mycolobj.getDataType();
+            #tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(fldtnm, varnm);
+            
+            #values works if the type is not signed
+            #if the type is signed, you need to choose signed or unsigned instead
+            #mykynm = None;
+            #if (tpobj["canbesignedornot"]):
+            #    if (tpobj["signedhasadefault"]):
+                    #may need to use values here, but may still need to use either
+                    #this means that the ranges agreed on the minimum and if it was less than 0 or not
+                    #there may still be signed and unsigned here or just values
+            #        mynms = [vrobj["paramname"] for vrobj in tpobj["valuesranges"]];
+            #        if ("signed" in mynms):
+            #            mykynm = ("signed" if (mycolobj.getIsSigned()) else "unsigned");
+            #        else: mykynm = "values";
+            #    else:
+                    #now need to pick from signed or unsigned
+                    #let this come in from the col object
+            #        mykynm = ("signed" if (mycolobj.getIsSigned()) else "unsigned");
+            #else: mykynm = "values";
+            #print(f"mykynm = {mykynm}");
+
+            #valcl = myvalidator.getDefaultValueForDataTypeObjWithName(tpobj, mykynm, False);
+            #setattr(self, clnm + "_value", valcl);
 
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!");
