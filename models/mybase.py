@@ -1,5 +1,6 @@
 from mycol import mycol;
 from mycol import myvalidator;
+from init import SQLVARIANT;
 class mybase:
     #mytablename = "basetablename";
     #mymulticolargs = None;
@@ -19,6 +20,7 @@ class mybase:
         mycolattrnames = self.getMyColAttributeNames();
         print(f"mycolnames = {mycolnames}");
         print(f"mycolattrnames = {mycolattrnames}");
+        print(f"SQLVARIANT = {SQLVARIANT}");
 
         myvalidator.listMustContainUniqueValuesOnly(mycolnames, "mycolnames");
         myvalidator.listMustContainUniqueValuesOnly(mycolattrnames, "mycolattrnames");
@@ -45,7 +47,8 @@ class mybase:
             #if (clnm in mycolnames): setattr(self, clnm + "_value", valcl);
         
         #do the same for the colnames not in that list
-        #ocolnms = [mclnm for mclnm in mycolnames if mclnm not in colnames];
+        #ocolnms = [mclnm for mclnm in mycolnames
+        #           if myvalidator.isvaremptyornull(colnames) or mclnm not in colnames];
         #for clnm in ocolnms:
             #the value is the default value for the type for the varaint
             #get the type object for that type for the variant
