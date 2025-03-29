@@ -1,10 +1,12 @@
 from init import CURSOR, CONN;
 from models import mycol;
 from mycol import myvalidator;
+#from myvalidator import myvalidator;
 from models import MyTestColsClass;
 from models import MyOtherTestClass;
 from models import MyModelWithCompPrimaryKey;
 from models import MyModelWithCompForeignKey;
+#these imports are no longer needed
 #import sys;
 #import inspect;
 
@@ -18,12 +20,19 @@ from models import MyModelWithCompForeignKey;
 mycol.getMyClassRefsMain(True);#will force the fetch of the new list if it has changed by now
 
 #print(mynewcol);
-tstobj = MyTestColsClass();#values of the cols must get past into the constructor...
+#tstobj = MyTestColsClass(colnames=["mynewcol"], colvalues=[1]);
+#values of the cols must get past into the constructor...
+tstobj = MyTestColsClass(["mynewcol"], [1]);
 print(tstobj.getMyCols());
 print(tstobj.getTableName());
+for mc in tstobj.getMyColNames(tstobj.getMyCols()):
+      print(f"val for colname {mc} is: {tstobj.getValueForColName(mc)}");
+print(f"tstobj.mynewcol_value = {tstobj.mynewcol_value}");
+print(f"tstobj.myfkeyid_value = {tstobj.myfkeyid_value}");
 #print(tstobj.mynewcol.value);#error for the moment on this line not done with type enforcement...
 #print(myvalidator.listMustContainUniqueValuesOnly(
-#    ["colnamea", "colnameb", "colnamea"], "nonucolnames"));
+#    ["colnamea", "colnameb", "colnamea"], "nonucolnames"));#also errors out
+#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 tstobjb = MyOtherTestClass();
 print(tstobjb.getMyCols());
@@ -49,6 +58,9 @@ print(tstobjb.getTableName());
 #SOME CHANGES MAY FORCE A BACKUP OF THE ENTIRE DATABASE,
 #SUBSEQUENT DELETION, SOME RESTORATION, AND THEN ADDITION OF NEW DATA.
 
+#foreign key bug found on 3-29-2025 3:26 AM:
+#the data type for a composite foreign key is probably not just one type.
+
 
 #we can have more than one database open at the same time
 #but if the base class has a static list of all of them, then
@@ -70,7 +82,7 @@ tstobjc = MyModelWithCompPrimaryKey();
 tstobjd = MyModelWithCompForeignKey();
 
 print();
-#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 print("IS VALUE IN RANGE OR STRING HAS AT MOST OR AT MIN AMOUNT OF CHARS TESTS:");
 print();
@@ -344,7 +356,7 @@ print(rempsonsqlsrvr);
 print();
 print("DONE WITH TYPES WITH PARAMETERS CLASSIFICATIONS TESTS!");
 print();
-#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 myreslist = myvalidator.getCompleteSetListFromList(["a", "b", "c", "d", "e", "f"]);
 print(myreslist);
@@ -358,7 +370,7 @@ enmodptstr = "'something else, other', 'last'";
 finenmstr = enmbasestr + "'mychar\\\'s poses)sive', " + enmodptstr;
 print(myvalidator.getLevelsForValStr(enmbasestr + "'mychar\'s poses)sive', " + enmodptstr + ")"));
 print(myvalidator.getLevelsForValStr(finenmstr + ")"));
-print(myvalidator.getParmsFromValType(finenmstr + ")"));
+print(myvalidator.getParamsFromValType(finenmstr + ")"));
 print();
 print(myvalidator.getDataTypeObjectWithNameOnVariant(finenmstr + ")", "MYSQL"));
 print(myvalidator.getDataTypeObjectWithNameOnVariant("NUMERIC(1)", "SQLSERVER"));

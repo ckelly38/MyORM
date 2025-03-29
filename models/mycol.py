@@ -101,7 +101,10 @@ class mycol:
         #table level only, but in that case you do not want the isunique to be true on the
         #single column if it is not guranteed to be unique
 
+        self.setDataType(datatype);
+        self.setIsSigned(issigned);
         self.setIsNonNull(isnonnull);
+        
         self.setIsUnique(isunique);
         self.setAutoIncrements(autoincrements);
         self.setIsPrimaryKey(isprimarykey);
@@ -109,12 +112,13 @@ class mycol:
         self.setForeignColNames(foreignColNames);
         self.setIsForeignKey(isforeignkey);
         self.setColName(colname);
+
         self.setMyClassRefs(None);
         
         #self._value = value;
-        self.setDataType(datatype);
         self.setDefaultValue(defaultvalue);
         self.constraints = constraints;
+        print("DONE WITH MYCOL CONSTRUCTOR!");
 
     def getDataType(self): return self._datatype;
 
@@ -146,6 +150,52 @@ class mycol:
 
     datatype = property(getDataType, setDataType);
 
+    def getIsSigned(self): return self._issigned;
+
+    #both setIsSigned and setIsNonNull depend on getDataTypeObjectWithNameOnVariant(tp, varstr)
+    #this method may at times be unreliable as noted, which may effect these often not the case.
+    #types with the same name, tend to have the same nullification defaults and signed defaults.
+    #their ranges may differ however, so the issigned may be more likely to be wrong if it varies.
+
+    #if signed is set to None, the default is used or error if no default.
+    #if the type can be signed or not, then we take the user's value into account
+    #otherwise, we will error out if it does not match the required value
+    #somehow get the tpobj from the type.
+    def setIsSigned(self, val):
+        varstr = SQLVARIANT;
+        tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(self.getDataType(), varstr);
+        if (tpobj["signedhasadefault"]):
+            if (val == None): self._issigned = not(tpobj["useunsigneddefault"]);
+            else:
+                if (val == (not(tpobj["useunsigneddefault"]))): self._issigned = val;
+                else:
+                    raise ValueError("invalid value set for signed the type has a default and it is " +
+                                     "the opposite of this!");
+        else:
+            myvalidator.varmustbethetypeandornull(val, bool, True, "val"); 
+            self._issigned = val;
+
+    issigned = property(getIsSigned, setIsSigned);
+
+    def getIsNonNull(self): return self._isnonnull;
+
+    #if isnonnull is set to None, then the default for the type will be used
+    #else it must be true if the nonnull default is true, otherwise it can be either true or false
+    def setIsNonNull(self, val):
+        varstr = SQLVARIANT;
+        tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(self.getDataType(), varstr);
+        if (val == None): self._isnonnull = tpobj["isnonnulldefault"];
+        else:
+            myvalidator.varmustbethetypeandornull(val, bool, True, "val");
+            if (tpobj["isnonnulldefault"]):
+                if (val): self._isnonnull = val;
+                else:
+                    raise ValueError("invalid value set for nonnull the type has a default and it is " +
+                                     "the opposite of this!");
+            else: self._isnonnull = val;
+
+    isnonnull = property(getIsNonNull, setIsNonNull);
+
     def getDefaultValue(self): return self._defaultvalue;
 
     def setDefaultValue(self, val):
@@ -154,12 +204,20 @@ class mycol:
         #pull the parameter value from the user.
         #myvalidator.isValueValidForDataType(tpnm, val, varstr, useunsigned, isnonnull);
         varstr = SQLVARIANT;
-        if (myvalidator.isValueValidForDataType(self.getDataType(), val, varstr, useunsigned,
-           self.getIsNonNull())):
-               self._defaultvalue = val;
+        if (val == None):
+            tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(self.getDataType(), varstr);
+            mykynm = myvalidator.getDefaultValueKeyNameForDataTypeObj(tpobj, self);
+            #print(f"mykynm = {mykynm}");
+
+            self._defaultvalue = myvalidator.getDefaultValueForDataTypeObjWithName(tpobj, mykynm, False);
         else:
-           raise ValueError("invalid default value (" + val + ") for data type (" + self.getDataType() +
-                            ") found and used here for the variant (" + varstr + ")!");
+            if (myvalidator.isValueValidForDataType(self.getDataType(), val, varstr,
+                                                    not(self.getIsSigned()), self.getIsNonNull())):
+                self._defaultvalue = val;
+            else:
+                raise ValueError("invalid default value (" + val + ") for data type (" +
+                                 self.getDataType() + ") found and used here for the variant (" +
+                                 varstr + ")!");
     
     defaultvalue = property(getDefaultValue, setDefaultValue);
 
@@ -181,14 +239,6 @@ class mycol:
         self._autoincrements = val;
 
     autoincrements = property(getAutoIncrements, setAutoIncrements);
-
-    def getIsNonNull(self): return self._isnonnull;
-
-    def setIsNonNull(self, val):
-        myvalidator.varmustbethetypeandornull(val, bool, True, "val");
-        self._isnonnull = val;
-
-    isnonnull = property(getIsNonNull, setIsNonNull);
 
     def getIsUnique(self): return self._isunique;
 

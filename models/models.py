@@ -2,11 +2,11 @@ from mybase import mybase;
 from mybase import mycol;
 from mycol import myvalidator;
 class MyTestColsClass(mybase):
-    def __init__(self):
-        print("INSIDE OF CONSTRUCTOR ON TEST CLASS A!");
+    #def __init__(self):
+        #print("INSIDE OF CONSTRUCTOR ON TEST CLASS A!");
         #self.mynewcol.newForeignKey(MyOtherTestClass, ["mynewcol"]);#, self
         #self.mynewcol.newForeignKey(MyOtherTestClass, ["mynewcol"]);#, self
-        super().__init__();
+        #super().__init__();
 
     mynewcol = mycol(colname="mynewcol", datatype="Integer",
                     defaultvalue=None, isprimarykey=True, isnonnull=True,
@@ -23,12 +23,12 @@ class MyTestColsClass(mybase):
     mytablename = "testtable";
 
 class MyOtherTestClass(mybase):
-    def __init__(self):
-        print("INSIDE OF CONSTRUCTOR ON TEST CLASS B!");
+    #def __init__(self):
+        #print("INSIDE OF CONSTRUCTOR ON TEST CLASS B!");
         #self.mynewcol.newForeignKey(MyTestColsClass, ["mynewcol"]);#, self
         #self.mynewcol.newForeignKey(MyTestColsClass, ["mynewcol"]);#, self
         #self.mynewcol.setMyForeignKeyClassRef(MyTestColsClass);
-        super().__init__();
+        #super().__init__();
 
     mynewcol = mycol(colname="mynewcol", datatype="Integer",
                     defaultvalue=None, isprimarykey=True, isnonnull=True,

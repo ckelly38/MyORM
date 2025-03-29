@@ -18,9 +18,10 @@ class mybase:
         mytempcols = self.getMyCols();
         mycolnames = self.getMyColNames(mytempcols);
         mycolattrnames = self.getMyColAttributeNames();
+        varstr = "" + SQLVARIANT;
         print(f"mycolnames = {mycolnames}");
         print(f"mycolattrnames = {mycolattrnames}");
-        print(f"SQLVARIANT = {SQLVARIANT}");
+        print(f"varstr = SQLVARIANT = {varstr}");
 
         myvalidator.listMustContainUniqueValuesOnly(mycolnames, "mycolnames");
         myvalidator.listMustContainUniqueValuesOnly(mycolattrnames, "mycolattrnames");
@@ -41,45 +42,61 @@ class mybase:
         #for each column need to make sure that there is a value if not use the default value
         #how to know which value is for what col?
         #base constructor will take in two parameters, one col names, and one values
-        #for n in range(len(colnames)):
-            #clnm = colnames[n];
-            #valcl = colvalues[n];
-            #if (clnm in mycolnames): setattr(self, clnm + "_value", valcl);
+        if myvalidator.isvaremptyornull(colnames): pass;
+        else:
+            for n in range(len(colnames)):
+                clnm = colnames[n];
+                valcl = colvalues[n];
+                print(f"clnm = {clnm}");
+                print(f"valcl = {valcl}");
+
+                if (clnm in mycolnames):
+                    mycolobj = mytempcols[mycolnames.index(clnm)];
+                    print(f"mycolobj = {mycolobj}");
+
+                    self.setValueForColName(clnm, valcl, mycolobj);
         
         #do the same for the colnames not in that list
-        #ocolnms = [mclnm for mclnm in mycolnames
-        #           if myvalidator.isvaremptyornull(colnames) or mclnm not in colnames];
-        #for clnm in ocolnms:
+        ocolnms = [mclnm for mclnm in mycolnames
+                   if myvalidator.isvaremptyornull(colnames) or mclnm not in colnames];
+        print(f"ocolnms = {ocolnms}");
+        
+        for clnm in ocolnms:
             #the value is the default value for the type for the varaint
             #get the type object for that type for the variant
-            #mycolobj = mytempcols[mycolnames.index(clnm)];
-            #fldtnm = mycolobj.getDataType();
-            #tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(fldtnm, varnm);
+            mycolobj = mytempcols[mycolnames.index(clnm)];
+            fldtnm = mycolobj.getDataType();
+            tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(fldtnm, varstr);
+            print(f"tpobj = {tpobj}");
+            print(f"fldtnm = {fldtnm}");
             
-            #values works if the type is not signed
-            #if the type is signed, you need to choose signed or unsigned instead
-            #mykynm = None;
-            #if (tpobj["canbesignedornot"]):
-            #    if (tpobj["signedhasadefault"]):
-                    #may need to use values here, but may still need to use either
-                    #this means that the ranges agreed on the minimum and if it was less than 0 or not
-                    #there may still be signed and unsigned here or just values
-            #        mynms = [vrobj["paramname"] for vrobj in tpobj["valuesranges"]];
-            #        if ("signed" in mynms):
-            #            mykynm = ("signed" if (mycolobj.getIsSigned()) else "unsigned");
-            #        else: mykynm = "values";
-            #    else:
-                    #now need to pick from signed or unsigned
-                    #let this come in from the col object
-            #        mykynm = ("signed" if (mycolobj.getIsSigned()) else "unsigned");
-            #else: mykynm = "values";
-            #print(f"mykynm = {mykynm}");
+            mykynm = myvalidator.getDefaultValueKeyNameForDataTypeObj(tpobj, mycolobj);
+            print(f"mykynm = {mykynm}");
 
-            #valcl = myvalidator.getDefaultValueForDataTypeObjWithName(tpobj, mykynm, False);
-            #setattr(self, clnm + "_value", valcl);
+            valcl = myvalidator.getDefaultValueForDataTypeObjWithName(tpobj, mykynm, False);
+            print(f"clnm = {clnm}");
+            print(f"valcl = {valcl}");
+
+            self.setValueForColName(clnm, valcl, mycolobj);
 
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!");
+    
+    def getValueForColName(self, clnm):
+        myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
+        return getattr(self, clnm + "_value");
+
+    def setValueForColName(self, clnm, valcl, mycolobj):
+        varstr = "" + SQLVARIANT;
+        myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
+        myvalidator.varmustnotbenull(mycolobj, "mycolobj");
+        if (myvalidator.isValueValidForDataType(mycolobj.getDataType(), valcl, varstr,
+                                                not(mycolobj.getIsSigned()), mycolobj.getIsNonNull())):
+             print("setting the column to the value here!");
+             setattr(self, clnm + "_value", valcl);
+        else:
+            raise ValueError("invalid value (" + str(valcl) + ") used here for the data type (" +
+                             mycolobj.getDataType() + ") for the variant (" + varstr + ")!");
 
     @classmethod
     def getMyColsOrMyColAttributeNames(cls, usemycols):

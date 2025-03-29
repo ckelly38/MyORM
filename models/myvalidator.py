@@ -1514,11 +1514,37 @@ class myvalidator:
         else: return [];
 
     @classmethod
+    def getDefaultValueKeyNameForDataTypeObj(cls, tpobj, mycolobj):
+        #values works if the type is not signed
+        #if the type is signed, you need to choose signed or unsigned instead
+        rkys = ["canbesignedornot", "signedhasadefault", "valuesranges"];
+        myvalidator.objvarmusthavethesekeysonit(tpobj, rkys, "tpobj");
+        myvalidator.varmustnotbenull(mycolobj, "mycolobj");
+        mykynm = None;
+        if (tpobj["canbesignedornot"]):
+            if (tpobj["signedhasadefault"]):
+                #may need to use values here, but may still need to use either
+                #this means that the ranges agreed on the minimum and if it was less than 0 or not
+                #there may still be signed and unsigned here or just values
+                mynms = [vrobj["paramname"] for vrobj in tpobj["valuesranges"]];
+                if ("signed" in mynms):
+                    mykynm = ("signed" if (mycolobj.getIsSigned()) else "unsigned");
+                else: mykynm = "values";
+            else:
+                #now need to pick from signed or unsigned
+                #let this come in from the col object
+                mykynm = ("signed" if (mycolobj.getIsSigned()) else "unsigned");
+        else: mykynm = "values";
+        #print(f"mykynm = {mykynm}");
+
+        return mykynm;
+
+    @classmethod
     def getDefaultValueForDataTypeObjWithName(cls, tpobj, nm="values", isparam=False):
         myvalidator.varmustbeboolean(isparam, "isparam");
         myvalidator.varmustnotbenull(tpobj, "tpobj");
         myvalidator.stringMustHaveAtMinNumChars(nm, 1, "nm");
-        mlist = tpobj[("paramnameswithranges" if (isparam) else "valuesranges")];
+        mlist = tpobj[("paramnameswith" if (isparam) else "values") + "ranges"];
         vrlist = ["values", "range"];
         for mobj in mlist:
             ismatch = ((mobj["paramname"] in vrlist) if (nm in vrlist) else (mobj["paramname"] == nm));
@@ -2173,7 +2199,7 @@ class myvalidator:
                         #see if the number of parameters match
                         #if the number of parameters match then this is our match else not
                         #if it is a match add this on our exclusion list and exit this loop
-                        valsps = myvalidator.getParmsFromValType(itemnm);
+                        valsps = myvalidator.getParamsFromValType(itemnm);
                         #print(f"valsps = {valsps}");
 
                         if (len(valsps) == numpsoneach):
@@ -2291,7 +2317,7 @@ class myvalidator:
         return {"finlvs": lvls, "origlvs": lvls, "val": val, "errmsg": errmsg};
 
     @classmethod
-    def getParmsFromValType(cls, val):
+    def getParamsFromValType(cls, val):
         #params are everything after the first ( and the last )
         #everything else is ignored.
         #if value is not valid, then return empty or null
@@ -2459,7 +2485,7 @@ class myvalidator:
                                 #-if the range does not match, move on there might be another.
                                 
                                 mynm = ("" + val if ("(max)" in val) else bgnm);
-                                psonval = ([] if ("(max)" in val) else cls.getParmsFromValType(val));
+                                psonval = ([] if ("(max)" in val) else cls.getParamsFromValType(val));
                                 numpsonval = (0 if ("(max)" in val) else len(psonval));
                                 tpobjslist = cls.getDataTypesObjsWithNameFromList(datatypesinfolist,
                                                                                   mynm);
@@ -2639,11 +2665,20 @@ class myvalidator:
         nmhaspsonit = ("(" in fulltpnm and ")" in fulltpnm);
         bgnm = (fulltpnm[0: fulltpnm.index("(")] if (nmhaspsonit) else "" + fulltpnm);
         mynm = ("" + fulltpnm if ("(max)" in fulltpnm) else bgnm);
-        psonval = ([] if ("(max)" in fulltpnm) else cls.getParmsFromValType(fulltpnm));
+        psonval = ([] if ("(max)" in fulltpnm) else cls.getParamsFromValType(fulltpnm));
         numpsonval = (0 if ("(max)" in fulltpnm) else len(psonval));
         datatypesinfolist = cls.getSQLDataTypesInfo(varnm);
         return cls.getDataTypesObjsWithNameFromList(datatypesinfolist, mynm);
 
+    #results for this method cannot always be assumed to be correct.
+    #if the type has multiple parameters and multiple options for these and there are multiple types
+    #for example: FLOAT(side, d) and FLOAT(p) are two different types on the same variant.
+    #if that is the case, then if you want the one with 1 parameter, it may still match the other.
+    #
+    #this method will notice that if there is a type name that matches and the number of parameters
+    #are an exact match, then it will return this option.
+    #otherwise it will return the first one found on the list. That list may have multiple.
+    #in that case, the results of this method may be wrong.
     @classmethod
     def getDataTypeObjectWithNameOnVariant(cls, fulltpnm, varnm):
         #get the list of objects for the variant
@@ -2655,7 +2690,7 @@ class myvalidator:
         nmhaspsonit = ("(" in fulltpnm and ")" in fulltpnm);
         bgnm = (fulltpnm[0: fulltpnm.index("(")] if (nmhaspsonit) else "" + fulltpnm);
         mynm = ("" + fulltpnm if ("(max)" in fulltpnm) else bgnm);
-        psonval = ([] if ("(max)" in fulltpnm) else cls.getParmsFromValType(fulltpnm));
+        psonval = ([] if ("(max)" in fulltpnm) else cls.getParamsFromValType(fulltpnm));
         numpsonval = (0 if ("(max)" in fulltpnm) else len(psonval));
         datatypesinfolist = cls.getSQLDataTypesInfo(varnm);
         tpobjslist = cls.getDataTypesObjsWithNameFromList(datatypesinfolist, mynm);
@@ -2718,7 +2753,7 @@ class myvalidator:
         
         
         # or not(nmhasps)
-        psonval = ([] if ("(max)" in tpnm) else cls.getParmsFromValType(tpnm));
+        psonval = ([] if ("(max)" in tpnm) else cls.getParamsFromValType(tpnm));
         numpsonval = (0 if ("(max)" in tpnm or not(nmhasps)) else len(psonval));
         #print(f"psonval = {psonval}");
         #print(f"numpsonval = {numpsonval}");
