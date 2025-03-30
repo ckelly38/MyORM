@@ -101,6 +101,10 @@ class mycol:
         #table level only, but in that case you do not want the isunique to be true on the
         #single column if it is not guranteed to be unique
 
+        self.setForeignClass(foreignClass);
+        self.setForeignColNames(foreignColNames);
+        self.setIsForeignKey(isforeignkey);
+        
         self.setDataType(datatype);
         self.setIsSigned(issigned);
         self.setIsNonNull(isnonnull);
@@ -108,9 +112,6 @@ class mycol:
         self.setIsUnique(isunique);
         self.setAutoIncrements(autoincrements);
         self.setIsPrimaryKey(isprimarykey);
-        self.setForeignClass(foreignClass);
-        self.setForeignColNames(foreignColNames);
-        self.setIsForeignKey(isforeignkey);
         self.setColName(colname);
 
         self.setMyClassRefs(None);
@@ -119,6 +120,9 @@ class mycol:
         self.setDefaultValue(defaultvalue);
         self.constraints = constraints;
         print("DONE WITH MYCOL CONSTRUCTOR!");
+    
+    def getDefaultValueKeyNameForDataTypeObj(self, tpobj):
+        return myvalidator.getDefaultValueKeyNameForDataTypeObj(tpobj, self);
 
     def getDataType(self): return self._datatype;
 
@@ -130,23 +134,38 @@ class mycol:
     #
     #there is also another piece of missing data for the default value.
 
+    #the type of val can be a string or a list
     def setDataType(self, val):
         #get data types for the specific variant
         #if the list is empty or null, then assumed valid
         #if on the list, valid
         #if not on the list and list is not empty, then not valid.
-        myvalidator.varmustbethetypeonly(val, str, "val");
-        myvalidator.varmustnotbeempty(val, "val");
         varstr = SQLVARIANT;
         mvtpslist = myvalidator.getSQLDataTypesInfo(varstr);
-        valhasps = ("(" in val and ")" in val);
-        mval = (val[0: val.index("(")].upper() + val[val.index("("):] if (valhasps) else val.upper());
+        mval = None;
+        if (type(val) == list):
+            valhaspslist = [("(" in item and ")" in item) for item in val];
+            mval = [(val[i][0: val[i].index("(")].upper() + val[i][val[i].index("("):]
+                    if (valhaspslist[i]) else val[i].upper()) for i in range(len(val))
+                    if (myvalidator.stringMustHaveAtMinNumChars(val[i], 1, "val[" + str(i) + "]"))];
+        elif (type(val) == str):
+            myvalidator.stringMustHaveAtMinNumChars(val, 1, "val");
+            valhasps = ("(" in val and ")" in val);
+            mval = (val[0: val.index("(")].upper() + val[val.index("("):]
+                    if (valhasps) else val.upper());
+        else: raise TypeError("the data type of data type must be either a string or a list!");
         if (myvalidator.isvaremptyornull(mvtpslist)): self._datatype = mval;
         else:
-            if (myvalidator.isValidDataType(mval, varstr)): self._datatype = mval;
-            else:
-                raise ValueError("invalid data type (" + mval +
-                                 ") found and used here for the variant (" + varstr + ")!");
+            errmsgptone = "invalid data type (";
+            errmsgpttwo = ") found and used here for the variant (" + varstr + ")!";
+            if (type(val) == str):
+                if (myvalidator.isValidDataType(mval, varstr)): self._datatype = mval;
+                else: raise ValueError(errmsgptone + mval + errmsgpttwo);
+            else:#this is a list
+                for item in mval:
+                    if (myvalidator.isValidDataType(item, varstr)): pass;
+                    else: raise ValueError(errmsgptone + item + errmsgpttwo);
+                self._datatype = mval;
 
     datatype = property(getDataType, setDataType);
 
@@ -163,17 +182,23 @@ class mycol:
     #somehow get the tpobj from the type.
     def setIsSigned(self, val):
         varstr = SQLVARIANT;
-        tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(self.getDataType(), varstr);
-        if (tpobj["signedhasadefault"]):
-            if (val == None): self._issigned = not(tpobj["useunsigneddefault"]);
+        errmsg = "invalid value set for signed the type has a default and it is the opposite of this!";
+        if (type(self.getDataType()) == list):
+            if (val == None): self._issigned = False;
             else:
-                if (val == (not(tpobj["useunsigneddefault"]))): self._issigned = val;
-                else:
-                    raise ValueError("invalid value set for signed the type has a default and it is " +
-                                     "the opposite of this!");
+                myvalidator.varmustbethetypeandornull(val, bool, True, "val"); 
+                if (val): raise ValueError(errmsg);
+                else: self._issigned = val;
         else:
-            myvalidator.varmustbethetypeandornull(val, bool, True, "val"); 
-            self._issigned = val;
+            tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(self.getDataType(), varstr);
+            if (tpobj["signedhasadefault"]):
+                if (val == None): self._issigned = not(tpobj["useunsigneddefault"]);
+                else:
+                    if (val == (not(tpobj["useunsigneddefault"]))): self._issigned = val;
+                    else: raise ValueError(errmsg);
+            else:
+                myvalidator.varmustbethetypeandornull(val, bool, True, "val"); 
+                self._issigned = val;
 
     issigned = property(getIsSigned, setIsSigned);
 
@@ -183,16 +208,22 @@ class mycol:
     #else it must be true if the nonnull default is true, otherwise it can be either true or false
     def setIsNonNull(self, val):
         varstr = SQLVARIANT;
-        tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(self.getDataType(), varstr);
-        if (val == None): self._isnonnull = tpobj["isnonnulldefault"];
-        else:
-            myvalidator.varmustbethetypeandornull(val, bool, True, "val");
-            if (tpobj["isnonnulldefault"]):
+        errmsg = "invalid value set for nonnull the type has a default and it is the opposite of this!";
+        if (type(self.getDataType()) == list):
+            if (val == None): self._isnonnull = True;
+            else:
+                myvalidator.varmustbethetypeandornull(val, bool, True, "val"); 
                 if (val): self._isnonnull = val;
-                else:
-                    raise ValueError("invalid value set for nonnull the type has a default and it is " +
-                                     "the opposite of this!");
-            else: self._isnonnull = val;
+                else: raise ValueError(errmsg);
+        else:
+            tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(self.getDataType(), varstr);
+            if (val == None): self._isnonnull = tpobj["isnonnulldefault"];
+            else:
+                myvalidator.varmustbethetypeandornull(val, bool, True, "val");
+                if (tpobj["isnonnulldefault"]):
+                    if (val): self._isnonnull = val;
+                    else: raise ValueError(errmsg);
+                else: self._isnonnull = val;
 
     isnonnull = property(getIsNonNull, setIsNonNull);
 
@@ -205,11 +236,14 @@ class mycol:
         #myvalidator.isValueValidForDataType(tpnm, val, varstr, useunsigned, isnonnull);
         varstr = SQLVARIANT;
         if (val == None):
-            tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(self.getDataType(), varstr);
-            mykynm = myvalidator.getDefaultValueKeyNameForDataTypeObj(tpobj, self);
-            #print(f"mykynm = {mykynm}");
+            if (type(self.getDataType()) == list): self._defaultvalue = None;
+            else:
+                tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(self.getDataType(), varstr);
+                mykynm = self.getDefaultValueKeyNameForDataTypeObj(tpobj);
+                #print(f"mykynm = {mykynm}");
 
-            self._defaultvalue = myvalidator.getDefaultValueForDataTypeObjWithName(tpobj, mykynm, False);
+                self._defaultvalue = myvalidator.getDefaultValueForDataTypeObjWithName(tpobj,
+                                                                                       mykynm, False);
         else:
             if (myvalidator.isValueValidForDataType(self.getDataType(), val, varstr,
                                                     not(self.getIsSigned()), self.getIsNonNull())):
@@ -420,6 +454,7 @@ class mycol:
 
     isforeignkey = property(getIsForeignKey, setIsForeignKey);
 
+    #NOT DONE YET ENFORCING FOREIGN KEY DATA TYPES bug found 3-29-2025 3:26 AM
     
     def foreignKeyInformationMustBeValid(self, fcobj):
         #this method takes in the calling class's object and the current column object
@@ -472,6 +507,7 @@ class mycol:
                 #now get that column object and check to see if the isunique is set to true?
                 #OR is primary key and the only primary key on that table?
                 mcolobjs = [myfcols[mycoli] for mycoli in mycolis];
+                myfcdtps = [mc.getDataType() for mc in mcolobjs];
                 for mc in mcolobjs:
                     print(f"mc = {mc}");
                     print(f"mc.isunique = {mc.isunique}");
@@ -480,6 +516,45 @@ class mycol:
                 pkycols = myclsref.getMyPrimaryKeyCols(myfcols);
                 print(f"len(pkycols) = {len(pkycols)}");
 
+                #if is a multi-column foreign key, then multi-values and multiple types...
+                #we need to make sure that the foreign key column data types match here
+                #the data type value might be an array for multi-column data types
+                #the data type might be a string for single types or an array.
+                
+                print(f"self.datatype = {self.datatype}");
+                print(f"myfcdtps = {myfcdtps}");
+                print(type(myfcdtps));
+                print(type(self.datatype));
+
+                if (1 < len(self.foreignColNames)):
+                    myvalidator.varmustbethetypeonly(self.datatype, list, "self.datatype");
+
+                    for mc in mcolobjs:
+                        fndmatch = False;
+                        for i in range(len(self.foreignColNames)):
+                            nm = self.foreignColNames[i];
+                            dtp = self.datatype[i];
+                            print(f"nm = {nm}");
+                            print(f"dtp = {dtp}");
+                            print(f"mc.getColName() = {mc.getColName()}");
+                            print(f"mc.getDataType() = {mc.getDataType()}");
+
+                            if (nm == mc.getColName()):
+                                if (dtp == mc.getDataType()):
+                                    fndmatch = True;
+                                    break;
+                                else:
+                                    raise ValueError("the column names were the same, but the " +
+                                                     "data types did not match for the foreign key!");
+                        if (fndmatch): pass;
+                        else:
+                            raise ValueError("one of the column names were not found for the " +
+                                             "foreign key!");
+                else:
+                    if (self.datatype == myfcdtps[0]): pass;
+                    else: raise ValueError("the foreign key col data types must match!");
+
+                
                 if (len(pkycols) < 1):
                     raise ValueError("each table must have at least one primary key, but the class(" +
                                      myclsref.__name__ + ") did not!");
@@ -557,11 +632,11 @@ class mycol:
         self.setForeignColNames(fkycolnm);#, fcobj
         self.setIsForeignKey(True);
 
-    #def __repr__(self):
-    #    mystr = f"<MyCol {self.colname} type: {self._datatype} value: {self._value}";
-    #    mystr += f" default: {self._defaultvalue} isprimarykey: {self.isprimarykey}";
-    #    mystr += f" isnonnull: {self.isnonnull} isunique: {self.isunique}";
-    #    mystr += f" autoincrements: {self.autoincrements} isforeignkey: {self.isforeignkey}";
-    #    mystr += f" foreignClass: {self.foreignClass} foreignColName: {self.foreignColName}";
-    #    mystr += f" constraints: {self._constraints} /MyCol>";
-    #    return mystr;
+    def __repr__(self):
+        mystr = f"<MyCol {self.colname} type: {self._datatype}";#" value: {self._value}"
+        mystr += f" default: {self._defaultvalue} isprimarykey: {self.isprimarykey}";
+        mystr += f" isnonnull: {self.isnonnull} isunique: {self.isunique} issigned: {self.issigned}";
+        mystr += f" autoincrements: {self.autoincrements} isforeignkey: {self.isforeignkey}";
+        mystr += f" foreignClass: {self.foreignClass} foreignColNames: {self.foreignColNames}";
+        mystr += f" constraints: {self.constraints} /MyCol>";
+        return mystr;

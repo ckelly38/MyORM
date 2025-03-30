@@ -2687,6 +2687,8 @@ class myvalidator:
         #else use the beginning name
         myvalidator.varmustnotbeempty(fulltpnm, "fulltpnm");
         myvalidator.varmustnotbeempty(varnm, "varnm");
+        myvalidator.varmustbethetypeonly(fulltpnm, str, "fulltpnm");
+        myvalidator.varmustbethetypeonly(varnm, str, "varnm");
         nmhaspsonit = ("(" in fulltpnm and ")" in fulltpnm);
         bgnm = (fulltpnm[0: fulltpnm.index("(")] if (nmhaspsonit) else "" + fulltpnm);
         mynm = ("" + fulltpnm if ("(max)" in fulltpnm) else bgnm);

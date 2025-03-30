@@ -80,7 +80,7 @@ class mybase:
             self.setValueForColName(clnm, valcl, mycolobj);
 
         #do something here...
-        print("DONE WITH THE BASE CONSTRUCTOR!");
+        print("DONE WITH THE BASE CONSTRUCTOR!\n");
     
     def getValueForColName(self, clnm):
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
@@ -97,6 +97,11 @@ class mybase:
         else:
             raise ValueError("invalid value (" + str(valcl) + ") used here for the data type (" +
                              mycolobj.getDataType() + ") for the variant (" + varstr + ")!");
+
+    def printValuesForAllCols(self, mycols=None):
+        fincols = type(self).getMyColsFromClassOrParam(mycols);
+        for mc in self.getMyColNames(fincols):
+            print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
 
     @classmethod
     def getMyColsOrMyColAttributeNames(cls, usemycols):

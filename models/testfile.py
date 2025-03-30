@@ -23,20 +23,26 @@ mycol.getMyClassRefsMain(True);#will force the fetch of the new list if it has c
 #tstobj = MyTestColsClass(colnames=["mynewcol"], colvalues=[1]);
 #values of the cols must get past into the constructor...
 tstobj = MyTestColsClass(["mynewcol"], [1]);
-print(tstobj.getMyCols());
+tstobjcols = tstobj.getMyCols();
+print(tstobjcols);
 print(tstobj.getTableName());
-for mc in tstobj.getMyColNames(tstobj.getMyCols()):
-      print(f"val for colname {mc} is: {tstobj.getValueForColName(mc)}");
+print("values for tstobj: via key name subscripted almost via getattr:");
+tstobj.printValuesForAllCols(tstobjcols);
+print("some values for tstobj printed out via property:");
 print(f"tstobj.mynewcol_value = {tstobj.mynewcol_value}");
 print(f"tstobj.myfkeyid_value = {tstobj.myfkeyid_value}");
 #print(tstobj.mynewcol.value);#error for the moment on this line not done with type enforcement...
 #print(myvalidator.listMustContainUniqueValuesOnly(
 #    ["colnamea", "colnameb", "colnamea"], "nonucolnames"));#also errors out
+print();
 #raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 tstobjb = MyOtherTestClass();
 print(tstobjb.getMyCols());
 print(tstobjb.getTableName());
+print("values for tstobjb:");
+tstobjb.printValuesForAllCols();
+print();
 
 #the question is how can we get it so the user does not have to create an init?
 #if we assign the foreign key col name in the col constructor,
@@ -58,8 +64,23 @@ print(tstobjb.getTableName());
 #SOME CHANGES MAY FORCE A BACKUP OF THE ENTIRE DATABASE,
 #SUBSEQUENT DELETION, SOME RESTORATION, AND THEN ADDITION OF NEW DATA.
 
-#foreign key bug found on 3-29-2025 3:26 AM:
-#the data type for a composite foreign key is probably not just one type.
+#foreign keys values match data problem bug 3-30-2025 4 AM
+
+#if we can, we need to make sure the values for the foreign keys match too.
+#or at least are valid. This might be a timing issue though.
+#That is assuming we can get the values here.
+#we have access to the calling class object here the class that has the
+#foreign key on it
+#however depending on the timing, the value may not be set yet...
+#so we have access to one side of the values, what about the other side?
+#we would need to know all objects created of the type.
+#then we could see if one of them have it where the column values match.
+#but the method that checks to see if the foreign key data types are valid
+#runs in the base class constructor. So this is not necessarily guaranteed
+#that all of the objects needed have been created even yet.
+#So maybe this part needs to be separate.
+#but even then this depends on the order the objects are created in.
+#either that or the order the objects are saved in.
 
 
 #we can have more than one database open at the same time
@@ -79,7 +100,15 @@ print(tstobjb.getTableName());
 #print(mybnewcol);# value=1, 
 
 tstobjc = MyModelWithCompPrimaryKey();
+print("values for tstobjc:");
+tstobjc.printValuesForAllCols();
+print();
+
 tstobjd = MyModelWithCompForeignKey();
+print("values for tstobjc:");
+tstobjc.printValuesForAllCols();
+print("values for tstobjd:");
+tstobjd.printValuesForAllCols();
 
 print();
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");

@@ -9,7 +9,7 @@ class MyTestColsClass(mybase):
         #super().__init__();
 
     mynewcol = mycol(colname="mynewcol", datatype="Integer",
-                    defaultvalue=None, isprimarykey=True, isnonnull=True,
+                    defaultvalue=1, isprimarykey=True, isnonnull=True,
                     isunique=True, autoincrements=True, constraints=None);# value=None,
     #from testfile import MyOtherTestClass;
     myfkeyid = mycol(colname="myfkeyid", datatype="Integer",
@@ -31,7 +31,7 @@ class MyOtherTestClass(mybase):
         #super().__init__();
 
     mynewcol = mycol(colname="mynewcol", datatype="Integer",
-                    defaultvalue=None, isprimarykey=True, isnonnull=True,
+                    defaultvalue=1, isprimarykey=True, isnonnull=True,
                     isunique=True, autoincrements=True, constraints=None);# value=None,
     myfkeyid = mycol(colname="myfkeyid", datatype="Integer",
                     defaultvalue=None, isprimarykey=False, isnonnull=True,
@@ -57,13 +57,13 @@ class MyModelWithCompPrimaryKey(mybase):
     #has all of these "class attributes" run inside of the init().
     myuvalpkytst = False;
     mynewcola = mycol(colname="mynewcola", datatype="Integer",
-                    defaultvalue=None, isprimarykey=True, isnonnull=True,
+                    defaultvalue=1, isprimarykey=True, isnonnull=True,
                     isunique=myuvalpkytst, autoincrements=True, constraints=None);#, value=None
     mynewcolb = mycol(colname="mynewcolb", datatype="Integer",
-                    defaultvalue=None, isprimarykey=True, isnonnull=True,
+                    defaultvalue=1, isprimarykey=True, isnonnull=True,
                     isunique=myuvalpkytst, autoincrements=False, constraints=None);#value=None,
     mynewcolc = mycol(colname="mynewcolc", datatype="Integer",
-                    defaultvalue=None, isprimarykey=False, isnonnull=True,
+                    defaultvalue=1, isprimarykey=False, isnonnull=True,
                     isunique=False, autoincrements=False, constraints=None);#value=None,
     mymulticolargs = [myvalidator.genUniqueConstraint("mytableuniquecolsconstraint",
                                                       ["mynewcola", "mynewcolb"])];#, "mynewcolc"
@@ -71,10 +71,15 @@ class MyModelWithCompPrimaryKey(mybase):
     mytablename = "comppkeytable";
 
 class MyModelWithCompForeignKey(mybase):
+    #foreign key bug found on 3-29-2025 3:26 AM:
+    #the data type for a composite foreign key is probably not just one type.
+
+    #also a primary key does not just assign the value...
+    #it may increment if auto-increment on an integer is true
     mynewcol = mycol(colname="mynewcol", datatype="Integer",
-                    defaultvalue=None, isprimarykey=True, isnonnull=True,
+                    defaultvalue=1, isprimarykey=True, isnonnull=True,
                     isunique=True, autoincrements=True, constraints=None);#value=None,
-    mycompfkcolval = mycol(colname="mycompfkcolval", datatype="Integer",
+    mycompfkcolval = mycol(colname="mycompfkcolval", datatype=["Integer", "Integer"],
                     defaultvalue=None, isprimarykey=False, isnonnull=True,
                     isunique=True, autoincrements=False,
                     isforeignkey=True, foreignClass="MyModelWithCompPrimaryKey",
