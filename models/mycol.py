@@ -455,7 +455,149 @@ class mycol:
     isforeignkey = property(getIsForeignKey, setIsForeignKey);
 
     #NOT DONE YET ENFORCING FOREIGN KEY DATA TYPES bug found 3-29-2025 3:26 AM
+
+    def genForeignKeyDataObjectInfo(self, fcobj):
+        print("GET FOREIGN KEY DATA OBJECT METHOD NOW:");
+        print(f"self.isforeignkey = {self.isforeignkey}");
+        print(f"self.foreignColNames = {self.foreignColNames}");
+        print(f"self.foreignClass = {self.foreignClass}");
+
+        if (self.isforeignkey):
+            if (self.foreignClass == None or myvalidator.isvaremptyornull(self.foreignColNames)):
+                raise ValueError("the foreign key needs a reference class and a column name!");
+            else:
+                print("self is the column object.");
+                print("the calling object is fcobj which is the class instance that has the column!");
+                print(f"fcobj = {fcobj}");
+
+                #check to see if the foreign key values on the column exist on the foreign key class
+                
+                #self is the column object
+                #fcobj is the calling object that contains that column (so this is the real self).
+                #foreign class is the string name of the foreign class.
+                myvalidator.varmustnotbenull(fcobj, "fcobj");
+                myclsref = mycol.getMyClassRefFromString(self.foreignClass);
+                print(f"myclsref = {myclsref}");
+
+                myfcols = myclsref.getMyCols();
+                myfccolnames = myclsref.getMyColNames(myfcols);
+                myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
+                #names referenced by the foreign key
+                print(f"self.foreignColNames = {self.foreignColNames}");
+                print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
+                
+                myvalidator.listMustContainUniqueValuesOnly(self.foreignColNames,
+                                                            "self.foreignColNames");
+
+                mycolis = [myfccolnames.index(mclnm) for mclnm in self.foreignColNames];
+                print(f"mycolis = {mycolis}");
+
+                #now get that column object and check to see if the isunique is set to true?
+                #OR is primary key and the only primary key on that table?
+                mcolobjs = [myfcols[mycoli] for mycoli in mycolis];
+                print(f"mcolobjs = {mcolobjs}");
+                
+                return {"initcolobj": self, "initclassobj": fcobj, "fclassref": myclsref,
+                        "myfcols": myfcols, "myfccolnames": myfccolnames, "mycolis": mycolis,
+                        "mcolobjs": mcolobjs};
+        raise ValueError("the col must be a foreign key, but it was not!");
+
     
+    #this checks to see if the values for the foreign key column (self) on the containing object (fcobj)
+    #is on the foreign key reference class list of objects for that class.
+    #
+    #note: if the database and the class lists of objects have not synced up the item might be on the
+    #database, but not on the list of objects for that class.
+    #
+    #for validation purposes the foreign key object with data must be found on the
+    #foreign class list of objects. However, if the object has not been created before this is run,
+    #then it also will not be on that list.
+    #
+    #this method is really sensitive as to when it is run.
+    def doesOrGetObjectThatHasTheForeignKeyValues(self, fcobj, useget):
+        myvalidator.varmustbeboolean(useget, "useget");
+
+        print("BEGIN FOREIGN KEY DATA VALIDATION METHOD NOW:");
+        print(f"self.isforeignkey = {self.isforeignkey}");
+        print(f"self.foreignColNames = {self.foreignColNames}");
+        print(f"self.foreignClass = {self.foreignClass}");
+        print(f"self.getColName() = {self.getColName()}");
+
+        if (self.isforeignkey):
+            if (self.foreignClass == None or myvalidator.isvaremptyornull(self.foreignColNames)):
+                raise ValueError("the foreign key needs a reference class and a column name!");
+            else:
+                print("self is the column object.");
+                print("the calling object is fcobj which is the class instance that has the column!");
+                print(f"fcobj = {fcobj}");
+
+                #check to see if the foreign key values on the column exist on the foreign key class
+                
+                #self is the column object
+                #fcobj is the calling object that contains that column (so this is the real self).
+                #foreign class is the string name of the foreign class.
+                myfcoldatainfoobj = self.genForeignKeyDataObjectInfo(fcobj);
+                print();
+                print(f"myfcoldatainfoobj = {myfcoldatainfoobj}");
+                print();
+
+                myclsref = myfcoldatainfoobj["fclassref"];
+                myfcols = myfcoldatainfoobj["myfcols"];
+                myfccolnames = myfcoldatainfoobj["myfccolnames"];
+                mycolis = myfcoldatainfoobj["mycolis"];
+                mcolobjs = myfcoldatainfoobj["mcolobjs"];
+                myvalidator.varmustnotbenull(fcobj, "fcobj");
+                myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
+                #names referenced by the foreign key
+                print(f"self.foreignColNames = {self.foreignColNames}");
+                print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
+                
+                myvalidator.listMustContainUniqueValuesOnly(self.foreignColNames,
+                                                            "self.foreignColNames");
+
+                print(f"mycolis = {mycolis}");
+
+                #now get that column object and check to see if the isunique is set to true?
+                #OR is primary key and the only primary key on that table?
+                print(f"mcolobjs = {mcolobjs}");
+
+                #need to get the values of each column from an object from
+                #the list of objects for that class
+                #
+                #the comparison values will come from the fcobj
+                #we want the values for the foreign key columns specifically the ones pointing
+                #to this foreign class.
+                #
+                valfcrefcol = fcobj.getValueForColName(self.getColName());
+                print(f"valfcrefcol = {valfcrefcol}");
+                
+                for mobj in myclsref.all:
+                    print(f"mobj = {mobj}");
+
+                    clvals = [mobj.getValueForColName(mc.getColName()) for mc in mcolobjs];
+                    ismatch = True;
+                    for n in range(len(mcolobjs)):
+                        mc = mcolobjs[n];
+                        print(f"colnm = {mc.getColName()}");
+                        print(f"clval = {clvals[n]}");
+
+                        if (mc.getColName() == self.foreignColNames[n]): pass;
+                        else: raise ValueError("the column names must match, but they did not!");
+
+                        if (valfcrefcol[n] == clvals[n]): pass;
+                        else:
+                            print("not a match!");
+                            ismatch = False;
+                            break;
+                    print(f"ismatch = {ismatch}");
+                    
+                    if (ismatch): return (mobj if (useget) else True);
+        return (None if (useget) else False);
+    def getObjectThatHasTheForeignKeyValues(self, fcobj):
+        return self.doesOrGetObjectThatHasTheForeignKeyValues(fcobj, True);
+    def doesForeignKeyValuesExistOnObjectsList(self, fcobj):
+        return self.doesOrGetObjectThatHasTheForeignKeyValues(fcobj, False);
+
     def foreignKeyInformationMustBeValid(self, fcobj):
         #this method takes in the calling class's object and the current column object
         #the goal of this method is to make sure that the foreign key information is valid
@@ -487,12 +629,17 @@ class mycol:
                 print("the calling object is fcobj which is the class instance that has the column!");
                 print(f"fcobj = {fcobj}");
                 
-                myvalidator.varmustnotbenull(fcobj, "fcobj");
-                myclsref = mycol.getMyClassRefFromString(self.foreignClass);
-                print(f"myclsref = {myclsref}");
+                myfcoldatainfoobj = self.genForeignKeyDataObjectInfo(fcobj);
+                print();
+                print(f"myfcoldatainfoobj = {myfcoldatainfoobj}");
+                print();
 
-                myfcols = myclsref.getMyCols();
-                myfccolnames = myclsref.getMyColNames(myfcols);
+                myclsref = myfcoldatainfoobj["fclassref"];
+                myfcols = myfcoldatainfoobj["myfcols"];
+                myfccolnames = myfcoldatainfoobj["myfccolnames"];
+                mycolis = myfcoldatainfoobj["mycolis"];
+                mcolobjs = myfcoldatainfoobj["mcolobjs"];
+                myvalidator.varmustnotbenull(fcobj, "fcobj");
                 myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
                 #names referenced by the foreign key
                 print(f"self.foreignColNames = {self.foreignColNames}");
@@ -501,12 +648,12 @@ class mycol:
                 myvalidator.listMustContainUniqueValuesOnly(self.foreignColNames,
                                                             "self.foreignColNames");
 
-                mycolis = [myfccolnames.index(mclnm) for mclnm in self.foreignColNames];
                 print(f"mycolis = {mycolis}");
 
                 #now get that column object and check to see if the isunique is set to true?
                 #OR is primary key and the only primary key on that table?
-                mcolobjs = [myfcols[mycoli] for mycoli in mycolis];
+                print(f"mcolobjs = {mcolobjs}");
+
                 myfcdtps = [mc.getDataType() for mc in mcolobjs];
                 for mc in mcolobjs:
                     print(f"mc = {mc}");

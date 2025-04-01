@@ -81,6 +81,14 @@ print();
 #So maybe this part needs to be separate.
 #but even then this depends on the order the objects are created in.
 #either that or the order the objects are saved in.
+#this also depends on if the object lists have been synced up with the database or not.
+
+#needs to be called on a column and needs the calling class object
+#for mfcl in tstobjd.getMyForeignKeyCols():
+#      print(mfcl.doesOrGetObjectThatHasTheForeignKeyValues(tstobjd, useget));
+#      print(mfcl.doesForeignKeyValuesExistOnObjectsList(tstobjd));
+#      print(mfcl.getObjectThatHasTheForeignKeyValues(tstobjd));
+
 
 
 #we can have more than one database open at the same time
@@ -99,16 +107,30 @@ print();
 #                 autoincrements=True, foreignClass=None, foreignColName=None, constraints=None);
 #print(mybnewcol);# value=1, 
 
-tstobjc = MyModelWithCompPrimaryKey();
+#tstobjc = MyModelWithCompPrimaryKey();
+tstobjc = MyModelWithCompPrimaryKey.newBase([1, 1, 1]);
 print("values for tstobjc:");
 tstobjc.printValuesForAllCols();
 print();
 
-tstobjd = MyModelWithCompForeignKey();
+#tstobjd = MyModelWithCompForeignKey(["mynewcol", "mycompfkcolval"], [1, [1, 1]]);
+tstobjd = MyModelWithCompForeignKey.newBase([[1, 1], 1]);#uses alphabetic order
+#tstobjd = MyModelWithCompForeignKey.newBaseFromObjsList([{"mynewcol": 1}, {"mycompfkcolval": [1, 1]}]);
+#tstobjd = MyModelWithCompForeignKey.newBaseFromListOfLists([["mynewcol", 1],
+#                                                             ["mycompfkcolval", [1, 1]]]);
+#tstobjd = MyModelWithCompForeignKey.newBaseFromListOfLists([("mynewcol", 1),
+#                                                             ("mycompfkcolval", [1, 1])]);
+#tstobjd = MyModelWithCompForeignKey.newBaseFromDataObj({"mynewcol": 1, "mycompfkcolval": [1, 1]});
 print("values for tstobjc:");
 tstobjc.printValuesForAllCols();
 print("values for tstobjd:");
 tstobjd.printValuesForAllCols();
+print();
+
+#needs to be called on a column and needs the calling class object
+for mfcl in tstobjd.getMyForeignKeyCols():
+      print(mfcl.doesForeignKeyValuesExistOnObjectsList(tstobjd));
+      print(mfcl.getObjectThatHasTheForeignKeyValues(tstobjd));
 
 print();
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");

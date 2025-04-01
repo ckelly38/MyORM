@@ -59,6 +59,8 @@ class mybase:
         #do the same for the colnames not in that list
         ocolnms = [mclnm for mclnm in mycolnames
                    if myvalidator.isvaremptyornull(colnames) or mclnm not in colnames];
+        print(f"mycolnames = {mycolnames}");
+        print(f"colnames = {colnames}");
         print(f"ocolnms = {ocolnms}");
         
         for clnm in ocolnms:
@@ -78,30 +80,142 @@ class mybase:
             print(f"valcl = {valcl}");
 
             self.setValueForColName(clnm, valcl, mycolobj);
+        
+        if (hasattr(type(self), "all")):
+            if (type(self).all == None): type(self).all = [self];
+            else: type(self).all.append(self);
+        else: setattr(type(self), "all", [self]);
 
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!\n");
     
+    #uses alphabetic order for colnames
+    @classmethod
+    def newBase(cls, myvals):
+        myvalidator.varmustnotbeempty(myvals, "myvals");
+        return cls(cls.getMyColNames(cls.getMyCols()), myvals);
+    
+    @classmethod
+    def newBaseFromObjsOrListOfLists(cls, mlistofobjsorlists, useobjs):
+        myvalidator.varmustbeboolean(useobjs, "useobjs");
+        myvalidator.varmustnotbeempty(mlistofobjsorlists, "mlistofobjsorlists");
+        #although we could use a list comprehension here, this is more efficient.
+        clnms = [];
+        clvls = [];
+        for mobjorlist in mlistofobjsorlists:
+            if (useobjs):
+                clnms.append(list(mobjorlist.keys())[0]);
+                clvls.append(list(mobjorlist.values())[0]);
+            else:
+                clnms.append(mobjorlist[0]);
+                clvls.append(mobjorlist[1]);
+        return cls(clnms, clvls);
+    @classmethod
+    def newBaseFromObjsList(cls, myobjslist):
+        return cls.newBaseFromObjsOrListOfLists(myobjslist, True);
+    #note can also pass in a list of tuples in here without a problem
+    @classmethod
+    def newBaseFromListOfLists(cls, mytupslist):
+        return cls.newBaseFromObjsOrListOfLists(mytupslist, False);
+
+    @classmethod
+    def newBaseFromDataObj(cls, mydataobj):
+        myvalidator.varmustnotbenull(mydataobj, "mydataobj");
+        return cls(list(mydataobj.keys()), list(mydataobj.values()));
+    
+    #constructor methods above up to and including __init__
+
+
+    #individual object class methods below here
+
     def getValueForColName(self, clnm):
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
         return getattr(self, clnm + "_value");
 
     def setValueForColName(self, clnm, valcl, mycolobj):
-        varstr = "" + SQLVARIANT;
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
         myvalidator.varmustnotbenull(mycolobj, "mycolobj");
-        if (myvalidator.isValueValidForDataType(mycolobj.getDataType(), valcl, varstr,
-                                                not(mycolobj.getIsSigned()), mycolobj.getIsNonNull())):
-             print("setting the column to the value here!");
-             setattr(self, clnm + "_value", valcl);
+        varstr = "" + SQLVARIANT;
+        errmsgpta = "invalid value (";
+        errmsgptb = ") used here for the data type (";
+        mvaldtp = mycolobj.getDataType();
+        errptbwithdata = errmsgptb + (mvaldtp if (type(mvaldtp) == str) else str(mvaldtp));
+        errmsgptc = ") for the variant (" + varstr + ")!";
+        print(f"clnm = {clnm}");
+        print(f"valcl = {valcl}");
+        print(f"mycolobj = {mycolobj}");
+
+        if (type(valcl) == list):
+            if (mycolobj.isforeignkey):
+                if (1 < len(valcl)):
+                    #get the foreign col object now
+                    
+                    #in order for this method below to work it requires that the:
+                    #self is the column object
+                    #fcobj is the calling object that contains that column (so this is the real self).
+                    #foreign class is the string name of the foreign class.
+                    myfcoldatainfoobj = mycolobj.genForeignKeyDataObjectInfo(self);
+                    print();
+                    print(f"myfcoldatainfoobj = {myfcoldatainfoobj}");
+                    print();
+
+                    myclsref = myfcoldatainfoobj["fclassref"];
+                    myfcols = myfcoldatainfoobj["myfcols"];
+                    myfccolnames = myfcoldatainfoobj["myfccolnames"];
+                    mycolis = myfcoldatainfoobj["mycolis"];
+                    mcolobjs = myfcoldatainfoobj["mcolobjs"];
+                    myvalidator.varmustnotbenull(self, "self");
+                    myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
+                    #names referenced by the foreign key
+                    print(f"mycolobj.foreignColNames = {mycolobj.foreignColNames}");
+                    print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
+                    
+                    myvalidator.listMustContainUniqueValuesOnly(mycolobj.foreignColNames,
+                                                                "mycolobj.foreignColNames");
+
+                    print(f"mycolis = {mycolis}");
+
+                    #now get that column object and check to see if the isunique is set to true?
+                    #OR is primary key and the only primary key on that table?
+                    print(f"mcolobjs = {mcolobjs}");
+
+                    for n in range(len(valcl)):
+                        itemval = valcl[n];
+                        dtpval = mvaldtp[n];
+                        print(f"itemval = {itemval}");
+                        print(f"dtpval = {dtpval}");
+                        print(f"mcolobjs[{n}].getColName() = {mcolobjs[n].getColName()}");
+                        print(f"mycolobj.foreignColNames[{n}] = {mycolobj.foreignColNames[n]}");
+                        print(f"issigned = {mcolobjs[n].getIsSigned()}");
+                        print(f"isnonnull = {mcolobjs[n].getIsNonNull()}");
+
+                        if (mcolobjs[n].getColName() == mycolobj.foreignColNames[n]): pass;
+                        else: raise ValueError("the col names must match, but they did not!");
+
+                        if (myvalidator.isValueValidForDataType(dtpval, itemval, varstr,
+                                                                not(mcolobjs[n].getIsSigned()),
+                                                                mcolobjs[n].getIsNonNull())):
+                            pass;
+                        else: raise ValueError(errmsgpta + str(valcl) + errptbwithdata + errmsgptc);
+                    
+                    print("setting the column to the value here!");
+                    setattr(self, clnm + "_value", valcl);
+                else: return self.setValueForColName(clnm, valcl[0], mycolobj);
+            else: raise ValueError(errmsgpta + str(valcl) + errptbwithdata + errmsgptc);
         else:
-            raise ValueError("invalid value (" + str(valcl) + ") used here for the data type (" +
-                             mycolobj.getDataType() + ") for the variant (" + varstr + ")!");
+            if (myvalidator.isValueValidForDataType(mvaldtp, valcl, varstr, not(mycolobj.getIsSigned()),
+                                                    mycolobj.getIsNonNull())):
+                print("setting the column to the value here!");
+                setattr(self, clnm + "_value", valcl);
+            else: raise ValueError(errmsgpta + str(valcl) + errptbwithdata + errmsgptc);
 
     def printValuesForAllCols(self, mycols=None):
         fincols = type(self).getMyColsFromClassOrParam(mycols);
         for mc in self.getMyColNames(fincols):
             print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
+
+
+    #class methods of the base class, but not constructors.
 
     @classmethod
     def getMyColsOrMyColAttributeNames(cls, usemycols):
@@ -132,8 +246,14 @@ class mybase:
         return True;
 
     @classmethod
-    def getMyPrimaryKeyCols(cls, mycols=None):
-        return [mclobj for mclobj in cls.getMyColsFromClassOrParam(mycols) if mclobj.isprimarykey];
+    def getMyPrimaryOrForeignKeyCols(cls, usepkys, mycols=None):
+        myvalidator.varmustbeboolean(usepkys, "usepkys");
+        return [mclobj for mclobj in cls.getMyColsFromClassOrParam(mycols)
+                if (mclobj.isprimarykey if (usepkys) else mclobj.isforeignkey)];
+    @classmethod
+    def getMyPrimaryKeyCols(cls, mycols=None): return cls.getMyPrimaryOrForeignKeyCols(True, mycols);
+    @classmethod
+    def getMyForeignKeyCols(cls, mycols=None): return cls.getMyPrimaryOrForeignKeyCols(False, mycols);
     
     @classmethod
     def getIndividualColumnConstraints(cls, mycols=None):
