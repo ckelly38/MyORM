@@ -70,6 +70,13 @@ class MyModelWithCompPrimaryKey(mybase):
     tableargs = None;
     mytablename = "comppkeytable";
 
+    def getKnownAttributeNamesForSerialization(self):
+        reslist = ["myuvalpkytst"];
+        mlist = super().getKnownAttributeNamesForSerialization();
+        for item in mlist: reslist.append(item);
+        return reslist;
+
+
 class MyModelWithCompForeignKey(mybase):
     #foreign key bug found on 3-29-2025 3:26 AM:
     #the data type for a composite foreign key is probably not just one type.

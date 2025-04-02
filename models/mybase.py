@@ -8,7 +8,7 @@ class mybase:
 
     def __init__(self, colnames=None, colvalues=None):
         print("INSIDE BASE CLASS CONSTRUCTOR!");
-        print(f"self = {self}");
+        print(f"type(self) = {type(self)}");
         print(f"mytablename = {self.getTableName()}");
         print(f"multicolconstraints = {self.getMultiColumnConstraints()}");
         print(f"tableargs = {self.getAllTableConstraints()}");
@@ -34,6 +34,11 @@ class mybase:
         #colname is already set we need to validate it.
         #we also need the class reference for validation purposes.
         #USING GLOBALS DOES NOT WORK IN THIS CASE SO CANNOT DO STRING TO REF CONVERSION.
+
+        if (hasattr(type(self), "all")):
+            if (type(self).all == None): type(self).all = [self];
+            else: type(self).all.append(self);
+        else: setattr(type(self), "all", [self]);
 
         for mc in mytempcols:
             mc.primaryKeyInformationMustBeValid(type(self));
@@ -81,11 +86,6 @@ class mybase:
 
             self.setValueForColName(clnm, valcl, mycolobj);
         
-        if (hasattr(type(self), "all")):
-            if (type(self).all == None): type(self).all = [self];
-            else: type(self).all.append(self);
-        else: setattr(type(self), "all", [self]);
-
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!\n");
     
@@ -95,6 +95,7 @@ class mybase:
         myvalidator.varmustnotbeempty(myvals, "myvals");
         return cls(cls.getMyColNames(cls.getMyCols()), myvals);
     
+    #note can also pass in a list of tuples in here without a problem
     @classmethod
     def newBaseFromObjsOrListOfLists(cls, mlistofobjsorlists, useobjs):
         myvalidator.varmustbeboolean(useobjs, "useobjs");
@@ -113,7 +114,6 @@ class mybase:
     @classmethod
     def newBaseFromObjsList(cls, myobjslist):
         return cls.newBaseFromObjsOrListOfLists(myobjslist, True);
-    #note can also pass in a list of tuples in here without a problem
     @classmethod
     def newBaseFromListOfLists(cls, mytupslist):
         return cls.newBaseFromObjsOrListOfLists(mytupslist, False);
@@ -155,9 +155,9 @@ class mybase:
                     #fcobj is the calling object that contains that column (so this is the real self).
                     #foreign class is the string name of the foreign class.
                     myfcoldatainfoobj = mycolobj.genForeignKeyDataObjectInfo(self);
-                    print();
-                    print(f"myfcoldatainfoobj = {myfcoldatainfoobj}");
-                    print();
+                    #print();
+                    #print(f"myfcoldatainfoobj = {myfcoldatainfoobj}");
+                    #print();
 
                     myclsref = myfcoldatainfoobj["fclassref"];
                     myfcols = myfcoldatainfoobj["myfcols"];
@@ -214,6 +214,30 @@ class mybase:
         for mc in self.getMyColNames(fincols):
             print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
 
+    def getKnownAttributeNamesForSerialization(self):
+        cls = type(self);
+        mlist = [nm for nm in cls.getKnownAttributeNamesOnTheClass()];
+        mlist.append("all");
+        return mlist;
+
+    def __repr__(self):
+        mstr = "<" + self.__class__.__name__ + " ";
+        nmscls = self.getKnownAttributeNamesForSerialization();
+        print(nmscls);
+        
+        for n in range(len(nmscls)):
+            attr = nmscls[n];
+            mstr += attr + ": " + str(getattr(self, attr));
+            if (n + 1 < len(nmscls)): mstr += ", ";
+        mstr += " /" + self.__class__.__name__ + ">";
+        #print(dir(type(self)));
+        #mlist = [{"key": attr, "value": getattr(self, attr)} for attr in dir(type(self))
+        #         if not callable(getattr(self, attr) and attr not in
+        #                         ["all", "__dict__", "__doc__", "__module__", "__weakref__"])];
+        #print(mlist);
+        #print(mstr);
+        #raise ValueError("NOT DONE YET!");
+        return mstr;
 
     #class methods of the base class, but not constructors.
 
@@ -304,8 +328,7 @@ class mybase:
         else: mylist = ilist;
         for attr in dir(cls):
             for pnm in mylist:
-                if (pnm in attr):
-                    return {"value": getattr(cls, attr), "name": attr};
+                if (pnm in attr): return {"value": getattr(cls, attr), "name": attr};
         return None;
     @classmethod
     def getValObjectIfPresentMain(cls, varnm="varnm"): return cls.getValObjectIfPresent(None, varnm);
@@ -356,6 +379,14 @@ class mybase:
         return cls.getValueOfVarIfPresentOnTableMain("multi_column_constraints_list");
 
     @classmethod
+    def getKnownAttributeNamesOnTheClass(cls):
+        mlist = [nm for nm in cls.getMyColAttributeNames()];
+        mlist.append(cls.getNameOfVarIfPresentOnTableMain("tablename"));
+        mlist.append(cls.getNameOfVarIfPresentOnTableMain("multi_column_constraints_list"));
+        mlist.append(cls.getNameOfVarIfPresentOnTableMain("allconstraints_list"));
+        return mlist;
+
+    @classmethod
     def getAllTableConstraints(cls):
         #will have all of the multi-column constraints args list on it
         #plus all of the individual col arguments or constraints on it
@@ -382,4 +413,5 @@ class mybase:
         print(f"myiclconstraints = {myiclconstraints}");
         print(f"nwlist = {nwlist}");
 
+        setattr(cls, "tableargs", ([] if (nwlist == None) else nwlist));
         return nwlist;
