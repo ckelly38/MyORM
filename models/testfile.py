@@ -34,6 +34,7 @@ print(f"tstobj.myfkeyid_value = {tstobj.myfkeyid_value}");
 #print(tstobj.mynewcol.value);#error for the moment on this line not done with type enforcement...
 #print(myvalidator.listMustContainUniqueValuesOnly(
 #    ["colnamea", "colnameb", "colnamea"], "nonucolnames"));#also errors out
+print(tstobj);
 print();
 #raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
@@ -42,6 +43,7 @@ print(tstobjb.getMyCols());
 print(tstobjb.getTableName());
 print("values for tstobjb:");
 tstobjb.printValuesForAllCols();
+print(tstobjb);
 print();
 
 #the question is how can we get it so the user does not have to create an init?
@@ -121,8 +123,10 @@ tstobjd = MyModelWithCompForeignKey.newBase([[1, 1], 1]);#uses alphabetic order
 #tstobjd = MyModelWithCompForeignKey.newBaseFromListOfLists([("mynewcol", 1),
 #                                                             ("mycompfkcolval", [1, 1])]);
 #tstobjd = MyModelWithCompForeignKey.newBaseFromDataObj({"mynewcol": 1, "mycompfkcolval": [1, 1]});
+print(tstobjc);
 print("values for tstobjc:");
 tstobjc.printValuesForAllCols();
+print(tstobjd);
 print("values for tstobjd:");
 tstobjd.printValuesForAllCols();
 print();

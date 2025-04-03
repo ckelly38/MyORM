@@ -415,7 +415,7 @@ class myvalidator:
         if (myvalidator.isvaremptyornull(colnames) or len(colnames) < 2): return None;
         else:
             for mcnm in colnames:
-                cls.stringMustContainOnlyAlnumCharsIncludingUnderscores(mcnm, "the colname");   
+                cls.stringMustContainOnlyAlnumCharsIncludingUnderscores(mcnm, "the colname");
             return "CONSTRAINT " + consnm + " UNIQUE(" + (", ".join(colnames)) + ")";
 
     @classmethod

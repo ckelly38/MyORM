@@ -11,7 +11,11 @@ class mybase:
         print(f"type(self) = {type(self)}");
         print(f"mytablename = {self.getTableName()}");
         print(f"multicolconstraints = {self.getMultiColumnConstraints()}");
-        print(f"tableargs = {self.getAllTableConstraints()}");
+        
+        mtargs = self.getAllTableConstraints();
+        if (type(self).isVarPresentOnTableMain("allconstraints_list")): pass;
+        else: setattr(type(self), "tableargs", ([] if (mtargs == None) else mtargs));
+        print(f"tableargs = {mtargs}");
         print(f"colnames = {colnames}");
         print(f"colvalues = {colvalues}");
         
@@ -215,20 +219,22 @@ class mybase:
             print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
 
     def getKnownAttributeNamesForSerialization(self):
-        cls = type(self);
-        mlist = [nm for nm in cls.getKnownAttributeNamesOnTheClass()];
-        mlist.append("all");
-        return mlist;
+        return [nm for nm in type(self).getKnownAttributeNamesOnTheClass()];
 
     def __repr__(self):
         mstr = "<" + self.__class__.__name__ + " ";
         nmscls = self.getKnownAttributeNamesForSerialization();
-        print(nmscls);
+        #print(nmscls);
         
+        handleallsame = False;
         for n in range(len(nmscls)):
             attr = nmscls[n];
-            mstr += attr + ": " + str(getattr(self, attr));
-            if (n + 1 < len(nmscls)): mstr += ", ";
+            if (hasattr(self, attr)):
+                if (attr == "all"):
+                    if (handleallsame): mstr += attr + ": " + str(getattr(self, attr));
+                    else: mstr += "all: [list of all instances of the class]";
+                else: mstr += attr + ": " + str(getattr(self, attr));
+                if (n + 1 < len(nmscls)): mstr += ", ";
         mstr += " /" + self.__class__.__name__ + ">";
         #print(dir(type(self)));
         #mlist = [{"key": attr, "value": getattr(self, attr)} for attr in dir(type(self))
@@ -379,11 +385,26 @@ class mybase:
         return cls.getValueOfVarIfPresentOnTableMain("multi_column_constraints_list");
 
     @classmethod
+    def getOtherKnownSafeAttributesOnTheClass(cls):
+        return [attr for attr in dir(cls)
+                if (type(getattr(cls, attr)) in [int, float, str, list, tuple] and
+                    attr not in ["__module__", "all"])];
+        #mycol could be on the list of stuff to serialize,
+        #but there is already a method specifically for that
+
+    @classmethod
     def getKnownAttributeNamesOnTheClass(cls):
-        mlist = [nm for nm in cls.getMyColAttributeNames()];
-        mlist.append(cls.getNameOfVarIfPresentOnTableMain("tablename"));
-        mlist.append(cls.getNameOfVarIfPresentOnTableMain("multi_column_constraints_list"));
-        mlist.append(cls.getNameOfVarIfPresentOnTableMain("allconstraints_list"));
+        mlist = [item for item in cls.getOtherKnownSafeAttributesOnTheClass()];
+        for nm in cls.getMyColAttributeNames():
+            mlist.append(nm);
+            mlist.append(nm + "_value");
+        tnmattrnm = cls.getNameOfVarIfPresentOnTableMain("tablename");
+        mcsattrnm = cls.getNameOfVarIfPresentOnTableMain("multi_column_constraints_list");
+        acsattrnm = cls.getNameOfVarIfPresentOnTableMain("allconstraints_list");
+        if (tnmattrnm not in mlist): mlist.append(tnmattrnm);
+        if (mcsattrnm not in mlist): mlist.append(mcsattrnm);
+        if (acsattrnm not in mlist): mlist.append(acsattrnm);
+        if ("all" not in mlist): mlist.append("all");
         return mlist;
 
     @classmethod
@@ -413,5 +434,5 @@ class mybase:
         print(f"myiclconstraints = {myiclconstraints}");
         print(f"nwlist = {nwlist}");
 
-        setattr(cls, "tableargs", ([] if (nwlist == None) else nwlist));
+        #setattr(cls, "tableargs", ([] if (nwlist == None) else nwlist));
         return nwlist;
