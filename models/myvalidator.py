@@ -41,6 +41,29 @@ class myvalidator:
         else: return True;
 
     @classmethod
+    def twoBoolVarsMustBeDifferentOrEqual(cls, vala, valb, usediff,
+                                          varnma="boolvara", varnmb="boolvarb"):
+        myvalidator.varmustbeboolean(vala, varnma);
+        myvalidator.varmustbeboolean(valb, varnmb);
+        myvalidator.varmustbeboolean(usediff, usediff);
+        if (myvalidator.isvaremptyornull(varnma)):
+            return cls.twoBoolVarsMustBeDifferentOrEqual(vala, valb, usediff, "boolvara", varnmb);
+        if (myvalidator.isvaremptyornull(varnmb)):
+            return cls.twoBoolVarsMustBeDifferentOrEqual(vala, valb, usediff, varnma, "boolvarb");
+        if (usediff):
+            if (vala == valb): raise ValueError(varnma + " and " + varnmb + " both cannot be true!");
+        else:
+            if (vala == valb): pass;
+            else: raise ValueError(varnma + " and " + varnmb + " must be the same, but they were not!");
+        return True;
+    @classmethod
+    def twoBoolVarsMustBeDifferent(cls, vala, valb, varnma="boolvara", varnmb="boolvarb"):
+        return cls.twoBoolVarsMustBeDifferentOrEqual(vala, valb, True, varnma, varnmb);
+    @classmethod
+    def twoBoolVarsMustBeEqual(cls, vala, valb, varnma="boolvara", varnmb="boolvarb"):
+        return cls.twoBoolVarsMustBeDifferentOrEqual(vala, valb, False, varnma, varnmb);
+
+    @classmethod
     def isstranumber(cls, mstr):
         if (myvalidator.isvaremptyornull(mstr)): return False;
         if (myvalidator.isvaranumber(mstr)): return True;
@@ -148,6 +171,11 @@ class myvalidator:
             if (itema in listb): pass;
             else: return False;
         return True;
+
+    @classmethod
+    def doTwoListsContainTheSameData(cls, lista, listb):
+        return (myvalidator.areTwoArraysTheSameSize(lista, listb) and
+                myvalidator.isListAInListB(lista, listb));
 
     @classmethod
     def stringContainsOnlyAlnumCharsIncludingUnderscores(cls, mstr):
@@ -271,10 +299,14 @@ class myvalidator:
 
     @classmethod
     def myjoin(cls, sepstr, mlist):
-        if (myvalidator.isvaremptyornull(sepstr)):
+        if (myvalidator.isvaremptyornull(mlist)): return "";
+        nosep = myvalidator.isvaremptyornull(sepstr);
+        if (nosep or not (type(mlist[0]) == str)):
             mystr = "";
-            for val in mlist:
-                mystr += str(val);
+            for n in range(len(mlist)):
+                mystr += str(mlist[n]);
+                if (nosep): pass;
+                elif (n + 1 < len(mlist)): mystr += "" + sepstr;
             return mystr;
         else: return sepstr.join(mlist);
 
@@ -358,6 +390,47 @@ class myvalidator:
             mystr += str(n % modval);
         return mystr;
 
+    @classmethod
+    def getAllValidators(cls):
+        from mycol import mycol;
+        return mycol.getAllValidators();
+
+    @classmethod
+    def getMyValidators(cls, mcnm):
+        from mycol import mycol;
+        return mycol.getMyValidators(mcnm);
+
+    @classmethod
+    def getMyIndividualOrMultiColumnValidators(cls, mcnm, useindiv):
+        from mycol import mycol;
+        return mycol.getMyIndividualOrMultiColumnValidators(mcnm, useindiv);
+    @classmethod
+    def getMyIndividualColumnValidators(cls, mcnm):
+        return cls.getMyIndividualOrMultiColumnValidators(mcnm, True);
+    @classmethod
+    def getMyMultiColumnValidators(cls, mcnm):
+        return cls.getMyIndividualOrMultiColumnValidators(mcnm, False);
+
+    @classmethod
+    def setAllValidators(cls, vlist):
+        from mycol import mycol;
+        return mycol.setAllValidators(vlist);
+
+    @classmethod
+    def addValidator(cls, classname, methodref, keys):
+        from mycol import mycol;
+        return mycol.addValidator(classname, methodref, keys);
+
+    @classmethod
+    def removeValidator(cls, classname, keys):
+        from mycol import mycol;
+        return mycol.removeValidator(classname, keys);
+
+    @classmethod
+    def runAllValidatorsForClass(cls, mcnm, mobj):
+        from mycol import mycol;
+        return mycol.runAllValidatorsForClass(mcnm, mobj);
+
     #pretty much all of these need the table name
     #it is my responsibility as the programmer to make sure that the columns are on the table
     #passing in the class refs instead will be a lot bigger, but will make the validation possible
@@ -397,43 +470,51 @@ class myvalidator:
             return mystr;
         else: raise ValueError("the column names must be the same length as the table names!");
 
+    
     #SQL methods might get removed from the validator class
 
     @classmethod
-    def genUniqueConstraint(cls, consnm, colnames):
-        #for multi-columns only
-        #colnames are assumed to be on the table, because if they are not,
-        #then SQL ERROR RESULTS IMMEDIATELY,
-        #but this method may not take into account the correct table class as the caller
-        #so cannot verify
-        #
-        #may be a problem if the calling class is not the table class...
-        #may need to take the tablename in as a parameter
+    def genUniqueOrCheckConstraint(cls, consnm, useunc, val):
+        myvalidator.varmustbeboolean(useunc, "useunc");
         if (myvalidator.isvaremptyornull(consnm)):
-            return cls.genUniqueConstraint("unkmulcols" + cls.getTableName(), colnames);
+            from mycol import mycol;#may need to change or get removed
+            pnm = ("un" if (useunc) else "ch") + "mulcols_";
+            fnm = pnm + str(mycol.incrementAndGetUniqueOrCheckConstraintCounterBy(useunc, 1));
+            return cls.genUniqueOrCheckConstraint(fnm, useunc, val);
         else: cls.stringMustContainOnlyAlnumCharsIncludingUnderscores(consnm, "the constraint name");
-        if (myvalidator.isvaremptyornull(colnames) or len(colnames) < 2): return None;
-        else:
-            for mcnm in colnames:
-                cls.stringMustContainOnlyAlnumCharsIncludingUnderscores(mcnm, "the colname");
-            return "CONSTRAINT " + consnm + " UNIQUE(" + (", ".join(colnames)) + ")";
-
+        finval = "";
+        if (useunc):
+            #for multi-columns only
+            #colnames are assumed to be on the table, because if they are not,
+            #then SQL ERROR RESULTS IMMEDIATELY,
+            #but this method may not take into account the correct table class as the caller
+            #so cannot verify
+            myvalidator.varmustbethetypeandornull(val, list, True, "val");
+            if (myvalidator.isvaremptyornull(val) or len(val) < 2): return None;
+            else:
+                for mcnm in val:
+                    myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mcnm,
+                                                                                    "the colname");
+                finval = (", ".join(val));
+        else: finval = "" + val;
+        return "CONSTRAINT " + consnm + " " + ("UNIQUE" if (useunc) else "CHECK") + "(" + finval + ")";
+    @classmethod
+    def genUniqueConstraint(cls, consnm, colnames):
+        return cls.genUniqueOrCheckConstraint(consnm, True, colnames);
+    @classmethod
+    def genSQLUnique(cls, consnm, colnames): return cls.genUniqueConstraint(consnm, colnames);
     @classmethod
     def genCheckConstraint(cls, consnm, val):
-        #may be a problem if the calling class is not the table class...
-        #may need to take the tablename in as a parameter
-        if (myvalidator.isvaremptyornull(consnm)):
-            return cls.genUniqueConstraint("chkmulcols" + cls.getTableName(), val);
-        else: cls.stringMustContainOnlyAlnumCharsIncludingUnderscores(consnm, "the constraint name");
-        return "CONSTRAINT " + consnm + " CHECK(" + val + ")";
-
+        return cls.genUniqueOrCheckConstraint(consnm, False, val);
     @classmethod
-    def genSQLimit(cls, num, offset=0):
-        if (num == None or offset == None): raise ValueError("illegal number or offset used!");
-        elif (type(num) == int and type(offset) == int): pass;
-        else: raise ValueError("illegal number or offset used!");
-        if (num < 1 or offset < 0): raise ValueError("illegal number or offset used!");
-        return (f"LIMIT {num}" if (offset == 0) else f"LIMIT {num} OFFSET {offset}");
+    def genSQLCheck(cls, consnm, val): return cls.genCheckConstraint(consnm, val);
+
+    #DOES NOT VALIDATE THE TABLE NAME, DOES NOT DEPEND ON IT, BUT THE OTHER LENGTH METHODS DO.
+    @classmethod
+    def genSQLLength(cls, colname):
+        myvalidator.stringHasAtMinNumChars(colname, 1);
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(colname, "colname");
+        return "LENGTH(" + colname + ")";
 
     @classmethod
     def genLengthCol(cls, colname, mtablename):
@@ -442,21 +523,45 @@ class myvalidator:
         myclstablenameref = mycol.getClassFromTableName(mtablename);
         myvalidator.varmustnotbenull(myclstablenameref, "myclstablenameref");
         if (myclstablenameref.areGivenColNamesOnTable([colname], None)):
-            return "LENGTH(" + colname + ")";
+            return cls.genSQLLength(colname);
         else: raise ValueError("the colname must be on the table!");
 
+
+    #it is expected that ORDER BY and MIN or MAX appear after a SELECT statement in SQL
+    #therefore, since SELECTs only run after the class has been initialized
+    #we can assume the table name is defined already for these:
+
+    #DOES NOT VALIDATE THE TABLE NAME, DOES NOT DEPEND ON IT, BUT THE OTHER MIN OR MAXS DO.
     @classmethod
-    def genGroupBy(cls, val):
-        #GROUP BY(tablenamea.colnamea, tablenameb.colnameb ...);#GROUP BY(COUNT(CustomerID))
-        myvalidator.varmustnotbeempty(val, "val");
-        return "GROUP BY(" + val + ")";
+    def genSQLMinOrMax(cls, usemin, valorvals):
+        myvalidator.varmustbeboolean(usemin, "usemin");
+        myvalidator.varmustnotbeempty(valorvals, "valorvals");
+        finval = None;
+        if (type(valorvals) == str): finval = "" + valorvals;
+        elif (type(valorvals) in [list, tuple]): finval = myvalidator.myjoin(", ", valorvals);
+        else: raise ValueError("valorvals must be either a string or a list!");
+        return "M" + ("IN" if usemin else "AX") + "(" + finval + ")";
 
     @classmethod
-    def genBetween(cls, vala, valb):
-        myvalidator.varmustnotbenull("vala", "vala");
-        myvalidator.varmustnotbenull("valb", "valb");
-        return f"BETWEEN {vala} AND {valb}";
-
+    def genSQLMinOrMaxFromTable(cls, colname, tablename, singleinctname, usemin):
+        myvalidator.varmustbeboolean(usemin, "usemin");
+        myvalidator.varmustbeboolean(singleinctname, "singleinctname");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(colname, "colname");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tablename, "tablename");
+        
+        from mycol import mycol;#may need to change or get removed
+        myclstablenameref = mycol.getClassFromTableName(tablename);
+        myvalidator.varmustnotbenull(myclstablenameref, "myclstablenameref");
+        if (myclstablenameref.areGivenColNamesOnTable([colname], None)): pass;
+        else: raise ValueError("the colname must be on the table!");
+        return cls.genSQLMinOrMax(usemin, "" + (tablename + "." if singleinctname else "") + colname);
+    @classmethod
+    def genSQLMinFromTable(cls, colname, tablename, singleinctname):
+        return cls.genSQLMinOrMaxFromTable(colname, tablename, singleinctname, True);
+    @classmethod
+    def genSQLMaxFromTable(cls, colname, tablename, singleinctname):
+        return cls.genSQLMinOrMaxFromTable(colname, tablename, singleinctname, False);
+    
     @classmethod
     def genOrderBy(cls, colnames, tablenames, singleinctname, sorder=None):
         #if sorder.length is less than colnames.length:
@@ -501,42 +606,6 @@ class myvalidator:
     @classmethod
     def genSortOrderByAscVal(cls, numcols, boolval): return [boolval for n in range(numcols)];
 
-    @classmethod
-    def genSQLMinOrMax(cls, colname, tablename, singleinctname, usemin):
-        myvalidator.varmustbeboolean(usemin, "usemin");
-        myvalidator.varmustbeboolean(singleinctname, "singleinctname");
-        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(colname, "colname");
-        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tablename, "tablename");
-        
-        from mycol import mycol;#may need to change or get removed
-        myclstablenameref = mycol.getClassFromTableName(tablename);
-        myvalidator.varmustnotbenull(myclstablenameref, "myclstablenameref");
-        if (myclstablenameref.areGivenColNamesOnTable([colname], None)): pass;
-        else: raise ValueError("the colname must be on the table!");
-        mystr = "M" + ("IN" if usemin else "AX") + "(" + (tablename + "." if singleinctname else "");
-        mystr += "" + colname + ")";
-        return mystr;
-    @classmethod
-    def genSQLMin(cls, colname, tablename, singleinctname):
-        return cls.genSQLMinOrMax(colname, tablename, singleinctname, True);
-    @classmethod
-    def genSQLMax(cls, colname, tablename, singleinctname):
-        return cls.genSQLMinOrMax(colname, tablename, singleinctname, False);
-    
-    @classmethod
-    def genSQLSumOrAvg(cls, val, usedistinct, usesum):
-        myvalidator.varmustbeboolean(usesum, "usesum");
-        myvalidator.varmustbeboolean(usedistinct, "usedistinct");
-        myvalidator.varmustbethetypeonly(val, str, "val");
-        myvalidator.varmustnotbeempty(val, "val");
-        return ("SUM" if usesum else "AVG") + "(" + ("DISTINCT " if usedistinct else "") + val + ")";
-    @classmethod
-    def genSQLSumOrAverage(cls, val, usedistinct, usesum):
-        return cls.genSQLSumOrAvg(val, usedistinct, usesum);
-    @classmethod
-    def genSQLSum(cls, val, usedistinct): return cls.genSQLSumOrAvg(val, usedistinct, True);
-    @classmethod
-    def genSQLAvg(cls, val, usedistinct): return cls.genSQLSumOrAvg(val, usedistinct, False);
 
     #SELECT whatval/tablenames.colnames/* FROM whereval/tablenames
     #SELECT DISTINCT whatval/table.colnames/* FROM whereval/tablenames
@@ -557,6 +626,7 @@ class myvalidator:
     #BUT FOR SOME REASON, YOU CANNOT HAVE:
     #SELECT DISTINCT COUNT(DISTINCT *) FROM whereval/tablenames
 
+    #DOES NOT VALIDATE THE TABLE NAME, DOES NOT DEPEND ON IT, BUT THE OTHER SELECTS DO.
     @classmethod
     def genCustomSelect(cls, wtval, wrval, usedistinct=False):
         myvalidator.varmustbeboolean(usedistinct, "usedistinct");
@@ -564,9 +634,8 @@ class myvalidator:
         myvalidator.varmustbethetypeonly(wrval, str, "wrval");
         myvalidator.varmustnotbeempty(wtval, "wtval");
         myvalidator.varmustnotbeempty(wrval, "wrval");
-        if ("COUNT(DISTINCT *)" in wtval):
-            raise ValueError("INVALID SQL QUERY: \"SELECT DISTINCT *, " +
-                                             "COUNT(DISTINCT *)\" IS NOT ALLOWED!");
+        errmsg = "INVALID SQL QUERY: \"SELECT DISTINCT *, COUNT(DISTINCT *)\" IS NOT ALLOWED!";
+        if ("COUNT(DISTINCT *)" in wtval): raise ValueError(errmsg);
         return "SELECT " + ("DISTINCT " if usedistinct else "") + wtval + " FROM " + wrval;
     
     @classmethod
@@ -593,6 +662,8 @@ class myvalidator:
         inctnm = (inctnameonone if isonetable else True);
         from mycol import mycol;#may need to change or get removed
         mystr = "";
+        errmsgpta = "the colname (";
+        errmsgptb = ") must be found on the table class(";
         for n in range(len(colnames)):
             #need to verify that the col name is on the corresponding table
             mcnm = colnames[n];
@@ -603,8 +674,7 @@ class myvalidator:
             if (myclstablenameref.areGivenColNamesOnTable([mcnm], None)):
                 mystr += "" + (tnm + "." if inctnm else "") + mcnm;
                 if (n + 1 < len(colnames)): mystr += ", ";
-            else: raise ValueError("the colname must be found on the table class(" +
-                myclstablenameref.__name__ + ")");
+            else: raise ValueError(errmsgpta + mcnm + errmsgptb + myclstablenameref.__name__ + ")!");
         return "COUNT(" + ("DISTINCT " if usedistinct else "") + mystr + ")";
     @classmethod
     def genCountAll(cls, usedistinct=False): return cls.genCount(None, None, False, usedistinct);
@@ -615,13 +685,12 @@ class myvalidator:
             myvalidator.varmustbeboolean(useselonly, "useselonly");
             myvalidator.varmustbeboolean(useseldistinct, "useseldistinct");
             myvalidator.varmustbeboolean(usecntdistinct, "usecntdistinct");
+            errmsg = "INVALID SQL QUERY: \"SELECT DISTINCT *, COUNT(DISTINCT *)\" IS NOT ALLOWED!";
             if (useseldistinct == usecntdistinct):
                 if (useselonly): pass;
                 else:
                     if (useseldistinct):
-                        if (myvalidator.isvaremptyornull(cntcols)):
-                            raise ValueError("INVALID SQL QUERY: \"SELECT DISTINCT *, " +
-                                             "COUNT(DISTINCT *)\" IS NOT ALLOWED!");
+                        if (myvalidator.isvaremptyornull(cntcols)): raise ValueError(errmsg);
             myutnames = list(set(myvalidator.combineTwoLists(seltbles, cnttables)));
             mylenutnms = len(myutnames);
             inctname = (1 < mylenutnms);
@@ -647,19 +716,16 @@ class myvalidator:
     def genSelectSomeAndOrCountOnTables(cls, selcols, seltbles, cntcols, cnttables,
                                         useselonly=False, usecntonly=False, useseldistinct=False,
                                         usecntdistinct=False):
-        myvalidator.varmustbeboolean(useselonly, "useselonly");
-        myvalidator.varmustbeboolean(usecntonly, "usecntonly");
         myvalidator.varmustbeboolean(useseldistinct, "useseldistinct");
         myvalidator.varmustbeboolean(usecntdistinct, "usecntdistinct");
-        if (useselonly == usecntonly):
-            if (useselonly): raise ValueError("useselonly and usecntonly both cannot be true!");
+        myvalidator.twoBoolVarsMustBeDifferent(useselonly, usecntonly, "useselonly", "usecntonly");
+        
+        errmsg = "INVALID SQL QUERY: \"SELECT DISTINCT *, COUNT(DISTINCT *)\" IS NOT ALLOWED!";
         if (useseldistinct == usecntdistinct):
                 if (useselonly): pass;
                 else:
                     if (useseldistinct):
-                        if (myvalidator.isvaremptyornull(cntcols)):
-                            raise ValueError("INVALID SQL QUERY: \"SELECT DISTINCT *, " +
-                                             "COUNT(DISTINCT *)\" IS NOT ALLOWED!");
+                        if (myvalidator.isvaremptyornull(cntcols)): raise ValueError(errmsg);
     
         #if use select only: no counts
         #if use count only it will be inside of select statement still.
@@ -696,6 +762,49 @@ class myvalidator:
         return cls.genSelectSomeAndOrCountOnTables(selcols, seltbles,
                                                    None, None, True, False, useseldistinct, False);
 
+    #THESE SQL METHODS DO NOT DEPEND ON THE TABLE NAME AT ALL:
+    #
+    #note: the genCustomSelect() and genSQLMinOrMax() do not depend on the table name at all,
+    #but all other select and min or max methods do as you are selecting data from a table.
+    #
+    #When I say these do not depend on it, they do not need it from the class
+    #you may pass it in, but it does not get validated.
+
+    @classmethod
+    def genSQLSumOrAvg(cls, val, usedistinct, usesum):
+        myvalidator.varmustbeboolean(usesum, "usesum");
+        myvalidator.varmustbeboolean(usedistinct, "usedistinct");
+        myvalidator.varmustbethetypeonly(val, str, "val");
+        myvalidator.varmustnotbeempty(val, "val");
+        return ("SUM" if usesum else "AVG") + "(" + ("DISTINCT " if usedistinct else "") + val + ")";
+    @classmethod
+    def genSQLSumOrAverage(cls, val, usedistinct, usesum):
+        return cls.genSQLSumOrAvg(val, usedistinct, usesum);
+    @classmethod
+    def genSQLSum(cls, val, usedistinct): return cls.genSQLSumOrAvg(val, usedistinct, True);
+    @classmethod
+    def genSQLAvg(cls, val, usedistinct): return cls.genSQLSumOrAvg(val, usedistinct, False);
+
+    @classmethod
+    def genSQLimit(cls, num, offset=0):
+        if (num == None or offset == None): raise ValueError("illegal number or offset used!");
+        elif (type(num) == int and type(offset) == int): pass;
+        else: raise ValueError("illegal number or offset used!");
+        if (num < 1 or offset < 0): raise ValueError("illegal number or offset used!");
+        return (f"LIMIT {num}" if (offset == 0) else f"LIMIT {num} OFFSET {offset}");
+    
+    @classmethod
+    def genGroupBy(cls, val):
+        #GROUP BY(tablenamea.colnamea, tablenameb.colnameb ...);#GROUP BY(COUNT(CustomerID))
+        myvalidator.varmustnotbeempty(val, "val");
+        return "GROUP BY(" + val + ")";
+
+    @classmethod
+    def genBetween(cls, vala, valb):
+        myvalidator.varmustnotbenull("vala", "vala");
+        myvalidator.varmustnotbenull("valb", "valb");
+        return f"BETWEEN {vala} AND {valb}";
+
     @classmethod
     def genSQLIn(cls, mvals, incnull=False):
         myvalidator.varmustbeboolean(incnull, "incnull");
@@ -703,7 +812,7 @@ class myvalidator:
             if (val == None): return cls.genSQLIn([oval for oval in mvals if not (oval == None)], True);
         return ("IN(NULL)" if (myvalidator.isvaremptyornull(mvals)) else "IN(" +
                 ("NULL" + (", " if (0 < len(mvals)) else "")  if incnull else "") +
-                (", ".join(mvals)) + ")");
+                myvalidator.myjoin(", ", mvals) + ")");
     
     @classmethod
     def genWhereOrHaving(cls, mval, usewhere):
@@ -801,6 +910,7 @@ class myvalidator:
     #https://www.geeksforgeeks.org/enumerator-enum-in-mysql/
     #https://www.tutorialspoint.com/mysql/mysql-enum.htm
     #https://learnsql.com/blog/mysql-data-types/
+    #https://www.programiz.com/sql/min-and-max
     #
     #if using lite:
     #

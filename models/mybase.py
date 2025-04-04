@@ -9,28 +9,33 @@ class mybase:
     def __init__(self, colnames=None, colvalues=None):
         print("INSIDE BASE CLASS CONSTRUCTOR!");
         print(f"type(self) = {type(self)}");
-        print(f"mytablename = {self.getTableName()}");
-        print(f"multicolconstraints = {self.getMultiColumnConstraints()}");
+        print(f"mytablename = {type(self).getTableName()}");
+        print(f"multicolconstraints = {type(self).getMultiColumnConstraints()}");
         
-        mtargs = self.getAllTableConstraints();
+        mtargs = type(self).getAllTableConstraints();
         if (type(self).isVarPresentOnTableMain("allconstraints_list")): pass;
         else: setattr(type(self), "tableargs", ([] if (mtargs == None) else mtargs));
         print(f"tableargs = {mtargs}");
         print(f"colnames = {colnames}");
         print(f"colvalues = {colvalues}");
         
-        mytempcols = self.getMyCols();
-        mycolnames = self.getMyColNames(mytempcols);
-        mycolattrnames = self.getMyColAttributeNames();
-        varstr = "" + SQLVARIANT;
+        mytempcols = type(self).getMyCols();
+        mycolnames = type(self).getMyColNames(mytempcols);
+        mycolattrnames = type(self).getMyColAttributeNames();
         print(f"mycolnames = {mycolnames}");
         print(f"mycolattrnames = {mycolattrnames}");
-        print(f"varstr = SQLVARIANT = {varstr}");
 
         myvalidator.listMustContainUniqueValuesOnly(mycolnames, "mycolnames");
         myvalidator.listMustContainUniqueValuesOnly(mycolattrnames, "mycolattrnames");
         if (myvalidator.areTwoListsTheSame(mycolnames, mycolattrnames)): pass;
         else: raise ValueError("THE COLUMN ATTRIBUTE NAMES MUST MATCH THE SET COLNAME GIVEN!");
+    
+        if (type(self).areColsWithIndividualConstraintsValid(mytempcols)): pass;
+        else:
+            raise ValueError("there exists one column on the class (" + type(self).__name__ +
+                             ") that does not have a valid constraint!");
+
+        #the constructor essentially begins here...
 
         #for each column if it is a foreign key, now need to evaluate the class string
         #but need and the link col name
@@ -39,10 +44,12 @@ class mybase:
         #we also need the class reference for validation purposes.
         #USING GLOBALS DOES NOT WORK IN THIS CASE SO CANNOT DO STRING TO REF CONVERSION.
 
+        varstr = "" + SQLVARIANT;
         if (hasattr(type(self), "all")):
             if (type(self).all == None): type(self).all = [self];
             else: type(self).all.append(self);
         else: setattr(type(self), "all", [self]);
+        print(f"varstr = SQLVARIANT = {varstr}");
 
         for mc in mytempcols:
             mc.primaryKeyInformationMustBeValid(type(self));
@@ -136,9 +143,11 @@ class mybase:
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
         return getattr(self, clnm + "_value");
 
-    def setValueForColName(self, clnm, valcl, mycolobj):
+    def setValueForColName(self, clnm, valcl, mycolobj=None):
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
-        myvalidator.varmustnotbenull(mycolobj, "mycolobj");
+        if (mycolobj == None):
+            return self.setValueForColName(clnm, valcl, type(self).getMyColObjFromName(clnm));
+        else: myvalidator.varmustnotbenull(mycolobj, "mycolobj");
         varstr = "" + SQLVARIANT;
         errmsgpta = "invalid value (";
         errmsgptb = ") used here for the data type (";
@@ -148,6 +157,10 @@ class mybase:
         print(f"clnm = {clnm}");
         print(f"valcl = {valcl}");
         print(f"mycolobj = {mycolobj}");
+
+        #need to run a validator somewhere in here...
+        #mycol.runAllValidatorsForClass(type(self).__name__, self);
+        #raise ValueError("NOT DONE YET HERE 4-4-2025 2:30 AM MST...!");
 
         if (type(valcl) == list):
             if (mycolobj.isforeignkey):
@@ -265,6 +278,16 @@ class mybase:
     @classmethod
     def getMyColNames(cls, mycols=None):
         return [mclobj.colname for mclobj in cls.getMyColsFromClassOrParam(mycols)];
+    
+    @classmethod
+    def getMyColObjFromName(cls, mcnm, mycols=None):
+        mclist = cls.getMyColsFromClassOrParam(mycols);
+        if (myvalidator.isvaremptyornull(mclist)): pass;
+        else:
+            for mclobj in mclist:
+                if (mclobj.colname == mcnm): return mclobj;
+        errmsg = "col object with name (" + mcnm + ") and class name (" + cls.__name__ + ") not found!";
+        raise ValueError(errmsg);
 
     @classmethod
     def areGivenColNamesOnTable(cls, mlist, mycols=None):
@@ -286,9 +309,39 @@ class mybase:
     def getMyForeignKeyCols(cls, mycols=None): return cls.getMyPrimaryOrForeignKeyCols(False, mycols);
     
     @classmethod
-    def getIndividualColumnConstraints(cls, mycols=None):
-        return [mc.constraints for mc in cls.getMyColsFromClassOrParam(mycols)
+    def getIndividualColumnConstraintsOrColsWithConstraints(cls, useclist, mycols=None):
+        myvalidator.varmustbeboolean(useclist, "useclist");
+        return [(mc.constraints if (useclist) else mc) for mc in cls.getMyColsFromClassOrParam(mycols)
                 if not myvalidator.isvaremptyornull(mc.constraints)];
+    @classmethod
+    def getIndividualColumnConstraints(cls, mycols=None):
+        return cls.getIndividualColumnConstraintsOrColsWithConstraints(True, mycols);
+    @classmethod
+    def getColumnsWithConstraints(cls, mycols=None):
+        return cls.getIndividualColumnConstraintsOrColsWithConstraints(False, mycols);
+
+    @classmethod
+    def areColsWithIndividualConstraintsValid(cls, mycols=None):
+        for mc in cls.getColumnsWithConstraints(mycols):
+            if (myvalidator.isvaremptyornull(mc.constraints)): pass;
+            else:
+                for thecnst in mc.constraints:
+                    if (myvalidator.isvaremptyornull(thecnst)): return False;
+                    else:
+                        if (" CHECK(" in thecnst):
+                            ci = thecnst.index(" CHECK(");
+                            aindxsofnm = [n for n in range(len(thecnst))
+                                        if thecnst[n:].startswith(mc.getColName())];
+                            isvld = False;
+                            if (0 < len(aindxsofnm)):
+                                for i in aindxsofnm:
+                                    if (ci < i):
+                                        isvld = True;
+                                        break;
+                            if (isvld): pass;
+                            else: return False;
+                        else: return False;
+        return True;
     
     @classmethod
     def getPossibleTableNames(cls):

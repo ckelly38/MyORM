@@ -6,6 +6,136 @@ class mycol:
     #everything to init will need to be removed to solve an import problem between
     #this and the sql generator
     __myclassrefs__ = None;
+    __ucconscntr__ = 0;
+    __ccconscntr__ = 0;
+    __all_validators__ = None;
+
+    @classmethod
+    def getMyUniqueOrCheckConstraintCounter(cls, useuctr):
+        myvalidator.varmustbeboolean(useuctr, "useuctr");
+        return (cls.__ucconscntr__ if (useuctr) else cls.__ccconscntr__);
+
+    @classmethod
+    def setMyUniqueOrCheckConstraintCounter(cls, nval, useuctr):
+        myvalidator.varmustbeboolean(useuctr, "useuctr");
+        myvalidator.varmustbethetypeonly(nval, int, "nval");
+        myvalidator.valueMustBeInRange(nval, 0, 0, True, False, "nval");
+        if (useuctr): cls.__ucconscntr__ = nval;
+        else: cls.__ccconscntr__ = nval;
+    @classmethod
+    def setMyUniqueConstraintCounter(cls, nval):
+        cls.setMyUniqueOrCheckConstraintCounter(nval, True);
+    @classmethod
+    def setMyCheckConstraintCounter(cls, nval):
+        cls.setMyUniqueOrCheckConstraintCounter(nval, False);
+    
+    @classmethod
+    def incrementAndGetUniqueOrCheckConstraintCounterBy(cls, useuctr, intval=1):
+        myvalidator.varmustbethetypeonly(intval, int, "intval");
+        cls.setMyUniqueOrCheckConstraintCounter(cls.getMyUniqueOrCheckConstraintCounter(useuctr) +
+                                                intval, useuctr);
+        return cls.getMyUniqueOrCheckConstraintCounter(useuctr);
+    @classmethod
+    def incrementAndGetUniqueConstraintCounterBy(cls, intval=1):
+        return cls.incrementAndGetUniqueOrCheckConstraintCounterBy(True, intval);
+    @classmethod
+    def incrementAndGetCheckConstraintCounterBy(cls, intval=1):
+        return cls.incrementAndGetUniqueOrCheckConstraintCounterBy(False, intval);
+
+    @classmethod
+    def decrementAndGetUniqueOrCheckConstraintCounterBy(cls, useuctr, intval=1):
+        myvalidator.varmustbethetypeonly(intval, int, "intval");
+        cls.setMyUniqueOrCheckConstraintCounter(cls.getMyUniqueOrCheckConstraintCounter(useuctr) -
+                                                intval, useuctr);
+        return cls.getMyUniqueOrCheckConstraintCounter(useuctr);
+    @classmethod
+    def decrementAndGetUniqueConstraintCounterBy(cls, intval=1):
+        return cls.decrementAndGetUniqueOrCheckConstraintCounterBy(True, intval);
+    @classmethod
+    def decrementAndGetCheckConstraintCounterBy(cls, intval=1):
+        return cls.decrementAndGetUniqueOrCheckConstraintCounterBy(False, intval);
+
+    @classmethod
+    def getAllValidators(cls): return cls.__all_validators__;
+
+    @classmethod
+    def getMyValidators(cls, mcnm):
+        myvalidator.stringHasAtMinNumChars(mcnm, 1);
+        myvalidator.stringContainsOnlyAlnumCharsIncludingUnderscores(mcnm);
+        return [item for item in cls.getAllValidators() if (item["classname"] == mcnm)];
+
+    @classmethod
+    def getMyIndividualOrMultiColumnValidators(cls, mcnm, useindiv):
+        myvalidator.varmustbeboolean(useindiv, "useindiv");
+        return [item for item in cls.getMyValidators(mcnm)
+                if ((len(item["keys"]) < 2 and useindiv) or (1 < len(item["keys"]) and not useindiv))];
+    @classmethod
+    def getMyIndividualColumnValidators(cls, mcnm):
+        return cls.getMyIndividualOrMultiColumnValidators(mcnm, True);
+    @classmethod
+    def getMyMultiColumnValidators(cls, mcnm):
+        return cls.getMyIndividualOrMultiColumnValidators(mcnm, False);
+
+    @classmethod
+    def setAllValidators(cls, vlist):
+        #myvalidator.addValidator("Camper", isvalidage, ["age"]);
+        #[{classname: "Camper", methodnameorref: isvalidage, colnames: ["age"]}, ...];
+        cls.__all_validators__ = vlist;#might be a memory leak here
+        return None;
+
+    @classmethod
+    def addValidator(cls, classname, methodref, keys):
+        #mycol.addValidator("Camper", isvalidage, ["age"]);
+        print(f"classname = {classname}");
+        print(f"methodref = {methodref}");
+        print(f"keys = {keys}");
+        myvalidator.varmustnotbeempty(keys, "keys");
+        myvalidator.stringHasAtMinNumChars(classname, 1);
+        myvalidator.stringContainsOnlyAlnumCharsIncludingUnderscores(classname);
+        mlist = cls.getAllValidators();
+        clist = ([] if (myvalidator.isvaremptyornull(mlist)) else [item for item in mlist]);
+        clist.append({"classname": classname, "methodref": methodref, "keys": keys});
+        cls.setAllValidators(clist);
+        #raise ValueError("NOT DONE YET WITH SETTING THE VALIDATORS!");
+        return None;
+    
+    @classmethod
+    def removeValidator(cls, classname, keys):
+        myvalidator.stringHasAtMinNumChars(classname, 1);
+        myvalidator.stringContainsOnlyAlnumCharsIncludingUnderscores(classname);
+        if (myvalidator.isvaremptyornull(keys)): return None;
+        nlist = [item for item in cls.getAllValidators() if (item["classname"] == classname and
+                                                             myvalidator.doTwoListsContainTheSameData(
+                                                                 keys, item["keys"]))];
+        cls.setAllValidators(nlist);
+        return None;
+    
+    #need a run validators by key(s) method.
+    #need a method to get validators for a class by the key(s).
+
+    @classmethod
+    def runAllValidatorsForClass(cls, mcnm, mobj):
+        micvs = cls.getMyIndividualColumnValidators(mcnm);
+        mmcvs = cls.getMyMultiColumnValidators(mcnm);
+        mvs = myvalidator.combineTwoLists(micvs, mmcvs);
+        nmerrmsg = "the class name of the object (" + type(mobj).__name__ + ") and the given ";
+        nmerrmsg += "classname (" + mcnm + ") must match, but they did not!";
+        if (type(mobj).__name__ == mcnm): pass;
+        else: raise ValueError(nmerrmsg);
+        if (myvalidator.isvaremptyornull(mvs)): pass;
+        else:
+            errmsgpta = "invalid value for cols (";
+            errmsgptb = ") used for class (" + mcnm + ")!";
+            for mv in mvs:
+                klist = mv["keys"];
+                vlist = [getattr(mobj, ky + "_value") for ky in mv["keys"]];
+                if (1 < len(klist)): pass;
+                else:
+                    klist = klist[0];
+                    vlist = vlist[0];
+                if (mobj.mv["methodref"](klist, vlist)): pass;
+                else: raise ValueError(errmsgpta + (", ".join(mv["keys"])) + errmsgptb);
+        return True;
 
     @classmethod
     def getMyClassRefs(cls): return cls.__myclassrefs__;

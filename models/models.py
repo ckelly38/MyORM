@@ -110,6 +110,7 @@ class Activity(mybase):
     #id = db.Column(db.Integer, primary_key=True);
     #name = db.Column(db.String);
     #difficulty = db.Column(db.Integer);
+    #
     id = mycol(colname="id", datatype="Integer", defaultvalue=1, isprimarykey=True, isnonnull=True,
                issigned=False, isunique=True, autoincrements=True, constraints=None);
     name = mycol(colname="name", datatype="Text", defaultvalue=None, isprimarykey=False,
@@ -147,22 +148,25 @@ class Camper(mybase):
     #some methods assume that the calling class is the class that has the table name...
     #we already have a method that checks to see if a column name is on a table.
     #but that is the method we cannot call without the class being defined.
+    #
+    #if the individual column has a constraint in the list and it is not empty or null,
+    #then we check to see if the column name is found somewhere after the word CHECK(.
+    #if it is found, then assumed valid, otherwise not valid.
 
 
     #id = db.Column(db.Integer, primary_key=True);
     #name = db.Column(db.String, nullable=False);
     #age = db.Column(db.Integer);
+    #
     id = mycol(colname="id", datatype="Integer", defaultvalue=1, isprimarykey=True, isnonnull=True,
                issigned=False, isunique=True, autoincrements=True, constraints=None);
     name = mycol(colname="name", datatype="Text", defaultvalue=None, isprimarykey=False,
                  isnonnull=True, issigned=False, isunique=True, autoincrements=False,
-                 constraints=[myvalidator.genCheckConstraint("namelencheck",
-                                                             myvalidator.genLengthCol("name",
-                                                                                      __tablename__) +
-                                                                                      " >= 1")]);
+                 constraints=[myvalidator.genSQLCheck("namelencheck",
+                                                      myvalidator.genSQLLength("name") + " >= 1")]);
     age = mycol(colname="age", datatype="Integer", defaultvalue=1, isprimarykey=False, isnonnull=True,
                 issigned=False, isunique=False, autoincrements=False,
-                constraints=[myvalidator.genCheckConstraint("agecheck", "age >= 8 AND age <= 18")]);
+                constraints=[myvalidator.genSQLCheck("agecheck", "age >= 8 AND age <= 18")]);
 
     # Add relationship
     #signups = db.relationship("Signup", back_populates="camper", cascade="all, delete-orphan");
@@ -182,6 +186,10 @@ class Camper(mybase):
     #@validates("age")
     #def isvalidage(self, key, val):
     #    return mv.intValIsAtMinXAndAtMaxY(val, 8, 18, "age");
+    def isvalidage(self, key, val):
+        return myvalidator.isValueInRangeWithMaxAndMin(val, 8, 18);
+    
+    myvalidator.addValidator("Camper", isvalidage, ["age"]);
     
     
     def __repr__(self):
@@ -194,15 +202,17 @@ class Signup(mybase):
 
     #id = db.Column(db.Integer, primary_key=True);
     #time = db.Column(db.Integer);
+    #
     id = mycol(colname="id", datatype="Integer", defaultvalue=1, isprimarykey=True, isnonnull=True,
                issigned=False, isunique=True, autoincrements=True, constraints=None);
     time = mycol(colname="time", datatype="Integer", defaultvalue=0, isprimarykey=False, isnonnull=True,
                 issigned=False, isunique=False, autoincrements=False,
-                constraints=[myvalidator.genCheckConstraint("timecheck", "time >= 0 AND age <= 23")]);
+                constraints=[myvalidator.genCheckConstraint("timecheck", "time >= 0 AND time <= 23")]);
 
     # Add relationships
     #camper_id = db.Column(db.Integer, db.ForeignKey("campers.id"));
     #activity_id = db.Column(db.Integer, db.ForeignKey("activities.id"));
+    #
     camper_id = mycol(colname="camper_id", datatype="Integer", defaultvalue=None, isprimarykey=False,
                       isnonnull=True, isunique=True, autoincrements=False, issigned=False,
                       isforeignkey=True, foreignClass="Camper", foreignColNames=["id"],

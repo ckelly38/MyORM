@@ -6,18 +6,24 @@ from models import MyTestColsClass;
 from models import MyOtherTestClass;
 from models import MyModelWithCompPrimaryKey;
 from models import MyModelWithCompForeignKey;
+from models import Activity;
+from models import Camper;
+from models import Signup;
+#from models import *;
 #these imports are no longer needed
 #import sys;
 #import inspect;
 
-#print("");
-#print("INSIDE OF TEST FILE!");
+print();
+print("INSIDE OF TEST FILE!");
 #print("list of system modules:");
 #print(sys.modules[__name__]);
 #print(inspect.getmembers(sys.modules[__name__], myvalidator.isClass));#list of tuples
 #myclasses = [MyOtherTestClass, MyTestColsClass];
 #mycol.setMyClassRefs(myclasses);
 mycol.getMyClassRefsMain(True);#will force the fetch of the new list if it has changed by now
+
+#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 #print(mynewcol);
 #tstobj = MyTestColsClass(colnames=["mynewcol"], colvalues=[1]);
@@ -137,6 +143,13 @@ for mfcl in tstobjd.getMyForeignKeyCols():
       print(mfcl.getObjectThatHasTheForeignKeyValues(tstobjd));
 
 print();
+print(mycol.getAllValidators());
+print(myvalidator.getAllValidators());
+print();
+#from mybase import mybase;
+#for cls in mycol.getMyClassRefsMain(True):
+#      if (issubclass(cls, mybase)):
+#            ?;
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 print("IS VALUE IN RANGE OR STRING HAS AT MOST OR AT MIN AMOUNT OF CHARS TESTS:");
@@ -656,6 +669,17 @@ raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 print("SQL GEN TESTS:");
 print(myvalidator.genUniqueConstraint("constraintname", ["itema", "itemb", "itemc"]));
+print(myvalidator.genUniqueConstraint("", ["itema", "itemb", "itemc"]));
+print(myvalidator.genCheckConstraint("constraintname", "itema >= 2"));
+print(myvalidator.genCheckConstraint("", "itema >= 2"));
+
+#passes because not from table, from table only passes now because now the class is defined...
+print(myvalidator.genLengthCol("name", "campers"));
+print(myvalidator.genSQLMinOrMax(True, "name"));
+print(myvalidator.genSQLMinOrMax(True, "campers.name"));
+
+print(myvalidator.genSQLMinOrMax(True, [10, 20, 40, 30, 80, 50]));
+print(myvalidator.genSQLMinOrMax(False, [10, 20, 40, 30, 80, 50]));
 #counts
 print(myvalidator.genCount(["mynewcola", "mynewcolb"], [tstobjc.getTableName()], False, False));
 print(myvalidator.genCount(["mynewcola", "mynewcolb"], [tstobjc.getTableName()], True, False));
