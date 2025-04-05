@@ -10,6 +10,8 @@ class mycol:
     __ccconscntr__ = 0;
     __all_validators__ = None;
 
+    #constraint counter methods
+
     @classmethod
     def getMyUniqueOrCheckConstraintCounter(cls, useuctr):
         myvalidator.varmustbeboolean(useuctr, "useuctr");
@@ -55,6 +57,8 @@ class mycol:
     def decrementAndGetCheckConstraintCounterBy(cls, intval=1):
         return cls.decrementAndGetUniqueOrCheckConstraintCounterBy(False, intval);
 
+    #validator methods
+
     @classmethod
     def getAllValidators(cls): return cls.__all_validators__;
 
@@ -63,6 +67,11 @@ class mycol:
         myvalidator.stringHasAtMinNumChars(mcnm, 1);
         myvalidator.stringContainsOnlyAlnumCharsIncludingUnderscores(mcnm);
         return [item for item in cls.getAllValidators() if (item["classname"] == mcnm)];
+
+    @classmethod
+    def getMyValidatorsThatContainKeys(cls, mcnm, mkys):
+        return [item for item in cls.getMyValidators(mcnm)
+                if (myvalidator.isListAInListB(mkys, item["keys"]))];
 
     @classmethod
     def getMyIndividualOrMultiColumnValidators(cls, mcnm, useindiv):
@@ -81,8 +90,9 @@ class mycol:
         #myvalidator.addValidator("Camper", isvalidage, ["age"]);
         #[{classname: "Camper", methodnameorref: isvalidage, colnames: ["age"]}, ...];
         cls.__all_validators__ = vlist;#might be a memory leak here
-        return None;
 
+    #I may want to make this a decorator.
+    #https://www.datacamp.com/tutorial/decorators-python
     @classmethod
     def addValidator(cls, classname, methodref, keys):
         #mycol.addValidator("Camper", isvalidage, ["age"]);
@@ -96,8 +106,6 @@ class mycol:
         clist = ([] if (myvalidator.isvaremptyornull(mlist)) else [item for item in mlist]);
         clist.append({"classname": classname, "methodref": methodref, "keys": keys});
         cls.setAllValidators(clist);
-        #raise ValueError("NOT DONE YET WITH SETTING THE VALIDATORS!");
-        return None;
     
     @classmethod
     def removeValidator(cls, classname, keys):
@@ -108,16 +116,9 @@ class mycol:
                                                              myvalidator.doTwoListsContainTheSameData(
                                                                  keys, item["keys"]))];
         cls.setAllValidators(nlist);
-        return None;
     
-    #need a run validators by key(s) method.
-    #need a method to get validators for a class by the key(s).
-
     @classmethod
-    def runAllValidatorsForClass(cls, mcnm, mobj):
-        micvs = cls.getMyIndividualColumnValidators(mcnm);
-        mmcvs = cls.getMyMultiColumnValidators(mcnm);
-        mvs = myvalidator.combineTwoLists(micvs, mmcvs);
+    def runGivenValidatorsForClass(cls, mcnm, mobj, mvs):
         nmerrmsg = "the class name of the object (" + type(mobj).__name__ + ") and the given ";
         nmerrmsg += "classname (" + mcnm + ") must match, but they did not!";
         if (type(mobj).__name__ == mcnm): pass;
@@ -133,9 +134,43 @@ class mycol:
                 else:
                     klist = klist[0];
                     vlist = vlist[0];
-                if (mobj.mv["methodref"](klist, vlist)): pass;
+                myfunc = getattr(mobj, mv["methodref"]);
+                if (myfunc(klist, vlist)): pass;
                 else: raise ValueError(errmsgpta + (", ".join(mv["keys"])) + errmsgptb);
         return True;
+
+    @classmethod
+    def runValidatorsByKeysForClass(cls, mcnm, mobj, mkys):
+        #if mkys has multiple items on it, then just stick it as is into the runValidators method.
+        #if mkys has one item on it, then the given results could have multiple validators which
+        #need sorted to run individuals first.
+        #if empty skip execution altogether.
+        if (myvalidator.isvaremptyornull(mkys)): return True;
+        initmvs = cls.getMyValidatorsThatContainKeys(mcnm, mkys);
+        finmvslist = None;
+        if (len(mkys) == 1):
+            #split the validators list into individuals if any and then those with multiple
+            #then combine the lists to produce the final list of course.
+            #micvs = [vobj for vobj in initmvs if (len(vobj["keys"]) == 1)];
+            #mmcvs = [vobj for vobj in initmvs if (1 < len(vobj["keys"]))];
+            micvs = [];
+            mmcvs = [];
+            for vobj in initmvs:
+                myvalidator.varmustnotbeempty(vobj["keys"], "vobj[keys]");
+                if (len(vobj["keys"]) == 1): micvs.append(vobj);
+                else: mmcvs.append(vobj);
+            finmvslist = myvalidator.combineTwoLists(micvs, mmcvs);
+        else: finmvslist = initmvs;
+        return cls.runGivenValidatorsForClass(mcnm, mobj, finmvslist);
+
+    @classmethod
+    def runAllValidatorsForClass(cls, mcnm, mobj):
+        micvs = cls.getMyIndividualColumnValidators(mcnm);
+        mmcvs = cls.getMyMultiColumnValidators(mcnm);
+        return cls.runGivenValidatorsForClass(mcnm, mobj, myvalidator.combineTwoLists(micvs, mmcvs));
+
+
+    #my class ref methods
 
     @classmethod
     def getMyClassRefs(cls): return cls.__myclassrefs__;

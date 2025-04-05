@@ -146,6 +146,8 @@ print();
 print(mycol.getAllValidators());
 print(myvalidator.getAllValidators());
 print();
+mcmpr = Camper(["name", "age"], ["Sydney", 20]);
+print(mcmpr);
 #from mybase import mybase;
 #for cls in mycol.getMyClassRefsMain(True):
 #      if (issubclass(cls, mybase)):

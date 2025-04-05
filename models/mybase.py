@@ -10,6 +10,9 @@ class mybase:
         print("INSIDE BASE CLASS CONSTRUCTOR!");
         print(f"type(self) = {type(self)}");
         print(f"mytablename = {type(self).getTableName()}");
+        
+        if (type(self).isVarPresentOnTableMain("multi_column_constraints_list")): pass;
+        else: setattr(type(self), "mymulticolargs", None);
         print(f"multicolconstraints = {type(self).getMultiColumnConstraints()}");
         
         mtargs = type(self).getAllTableConstraints();
@@ -139,6 +142,18 @@ class mybase:
 
     #individual object class methods below here
 
+    def runGivenValidatorsForClass(self, mvs):
+        from mycol import mycol;
+        return mycol.runGivenValidatorsForClass(type(self).__name__, self, mvs);
+
+    def runValidatorsByKeysForClass(self, mkys):
+        from mycol import mycol;
+        return mycol.runValidatorsByKeysForClass(type(self).__name__, self, mkys);
+
+    def runAllValidatorsForClass(self):
+        from mycol import mycol;
+        return mycol.runAllValidatorsForClass(type(self).__name__, self);
+
     def getValueForColName(self, clnm):
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
         return getattr(self, clnm + "_value");
@@ -157,10 +172,6 @@ class mybase:
         print(f"clnm = {clnm}");
         print(f"valcl = {valcl}");
         print(f"mycolobj = {mycolobj}");
-
-        #need to run a validator somewhere in here...
-        #mycol.runAllValidatorsForClass(type(self).__name__, self);
-        #raise ValueError("NOT DONE YET HERE 4-4-2025 2:30 AM MST...!");
 
         if (type(valcl) == list):
             if (mycolobj.isforeignkey):
@@ -217,6 +228,8 @@ class mybase:
                     
                     print("setting the column to the value here!");
                     setattr(self, clnm + "_value", valcl);
+                    self.runValidatorsByKeysForClass([clnm]);
+                    #myvalidator.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
                 else: return self.setValueForColName(clnm, valcl[0], mycolobj);
             else: raise ValueError(errmsgpta + str(valcl) + errptbwithdata + errmsgptc);
         else:
@@ -224,6 +237,8 @@ class mybase:
                                                     mycolobj.getIsNonNull())):
                 print("setting the column to the value here!");
                 setattr(self, clnm + "_value", valcl);
+                self.runValidatorsByKeysForClass([clnm]);
+                #myvalidator.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
             else: raise ValueError(errmsgpta + str(valcl) + errptbwithdata + errmsgptc);
 
     def printValuesForAllCols(self, mycols=None):

@@ -189,7 +189,7 @@ class Camper(mybase):
     def isvalidage(self, key, val):
         return myvalidator.isValueInRangeWithMaxAndMin(val, 8, 18);
     
-    myvalidator.addValidator("Camper", isvalidage, ["age"]);
+    myvalidator.addValidator("Camper", "isvalidage", ["age"]);
     
     
     def __repr__(self):

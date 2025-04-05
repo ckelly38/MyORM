@@ -390,6 +390,9 @@ class myvalidator:
             mystr += str(n % modval);
         return mystr;
 
+
+    #convenience methods since the validators list (and all of these methods) reside in the mycol class
+
     @classmethod
     def getAllValidators(cls):
         from mycol import mycol;
@@ -399,6 +402,11 @@ class myvalidator:
     def getMyValidators(cls, mcnm):
         from mycol import mycol;
         return mycol.getMyValidators(mcnm);
+
+    @classmethod
+    def getMyValidatorsThatContainKeys(cls, mcnm, mkys):
+        from mycol import mycol;
+        return mycol.getMyValidatorsThatContainKeys(mcnm, mkys);
 
     @classmethod
     def getMyIndividualOrMultiColumnValidators(cls, mcnm, useindiv):
@@ -427,10 +435,21 @@ class myvalidator:
         return mycol.removeValidator(classname, keys);
 
     @classmethod
+    def runGivenValidatorsForClass(cls, mcnm, mobj, mvs):
+        from mycol import mycol;
+        return mycol.runGivenValidatorsForClass(mcnm, mobj, mvs);
+
+    @classmethod
+    def runValidatorsByKeysForClass(cls, mcnm, mobj, mkys):
+        from mycol import mycol;
+        return mycol.runValidatorsByKeysForClass(mcnm, mobj, mkys);
+
+    @classmethod
     def runAllValidatorsForClass(cls, mcnm, mobj):
         from mycol import mycol;
         return mycol.runAllValidatorsForClass(mcnm, mobj);
 
+    
     #pretty much all of these need the table name
     #it is my responsibility as the programmer to make sure that the columns are on the table
     #passing in the class refs instead will be a lot bigger, but will make the validation possible
