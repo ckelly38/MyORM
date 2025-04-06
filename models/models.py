@@ -186,13 +186,22 @@ class Camper(mybase):
     #@validates("age")
     #def isvalidage(self, key, val):
     #    return mv.intValIsAtMinXAndAtMaxY(val, 8, 18, "age");
+    @mycol.validates(["age"])#this is the same as #mycol.addValidator("Camper", "isvalidage", ["age"]);
+    #@myvalidator.validates(["age"])
+    #@mybase.validates(["age"])
     def isvalidage(self, key, val):
         return myvalidator.isValueInRangeWithMaxAndMin(val, 8, 18);
     
-    myvalidator.addValidator("Camper", "isvalidage", ["age"]);
+    #myvalidator.addValidator("Camper", "isvalidage", ["age"]);
     
     
     def __repr__(self):
+        #mystr = "<Camper ";
+        #mystr += (str(self.id_value) + ": " if (hasattr(self, "id_value")) else "None: ");
+        #mystr += (str(self.name_value) if (hasattr(self, "name_value")) else "None") + " is ";
+        #mystr += (str(self.age_value) if (hasattr(self, "age_value")) else "None");
+        #mystr += " years old>";
+        #return mystr;
         return f'<Camper {self.id_value}: {self.name_value}>';
 
 #mycol.getMyClassRefsMain(True);

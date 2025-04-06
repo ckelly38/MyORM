@@ -145,6 +145,9 @@ for mfcl in tstobjd.getMyForeignKeyCols():
 print();
 print(mycol.getAllValidators());
 print(myvalidator.getAllValidators());
+for mv in myvalidator.getAllValidators():
+      if mv["classname"] not in [mcref.__name__ for mcref in mycol.getMyClassRefsMain(True)]:
+            raise ValueError("classname " + mv['classname'] + " not found on list of classes!");
 print();
 mcmpr = Camper(["name", "age"], ["Sydney", 20]);
 print(mcmpr);

@@ -424,6 +424,13 @@ class myvalidator:
         from mycol import mycol;
         return mycol.setAllValidators(vlist);
 
+    #This is a decorator. This actually calls a decorator.
+    #https://www.datacamp.com/tutorial/decorators-python
+    @classmethod
+    def validates(cls, keys):
+        from mycol import mycol;
+        return mycol.validates(keys);
+
     @classmethod
     def addValidator(cls, classname, methodref, keys):
         from mycol import mycol;

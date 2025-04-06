@@ -2,6 +2,7 @@ from myvalidator import myvalidator;
 import sys;
 import inspect;
 from init import SQLVARIANT;
+import functools;
 class mycol:
     #everything to init will need to be removed to solve an import problem between
     #this and the sql generator
@@ -91,8 +92,34 @@ class mycol:
         #[{classname: "Camper", methodnameorref: isvalidage, colnames: ["age"]}, ...];
         cls.__all_validators__ = vlist;#might be a memory leak here
 
-    #I may want to make this a decorator.
     #https://www.datacamp.com/tutorial/decorators-python
+    #https://stackoverflow.com/questions/961048/get-class-that-defined-method
+    #
+    #this is a decorator whos only purpose is to register the validator method
+    #this does not actually call it.
+    #the run methods below call the validator after it is registered.
+    @classmethod
+    def validates(cls, keys):
+        #print(f"cls = {cls}");
+        #print(f"keys = {keys}");
+
+        def myAddVDator(myvfunc):
+            #print(f"funcname = {myvfunc.__name__}");
+            #print(dir(myvfunc));
+            #print(f"funcclassfullname = myvfunc.__qualname__ = {myvfunc.__qualname__}");
+            #print(f"keys = {keys}");
+            
+            #the code for this will be different if using under version 3 of Python.
+            mcnm = myvfunc.__qualname__[0: myvfunc.__qualname__.index(myvfunc.__name__) - 1];
+            #print(f"mcnm = {mcnm}");
+
+            mycol.addValidator(mcnm, myvfunc.__name__, keys);
+            
+            #because this is a decorator and not actually calling the function we need to return it
+            #this also prevents getattr seeing the function name and thinking that it is None.
+            return myvfunc;
+        return myAddVDator;
+
     @classmethod
     def addValidator(cls, classname, methodref, keys):
         #mycol.addValidator("Camper", isvalidage, ["age"]);
@@ -125,18 +152,20 @@ class mycol:
         else: raise ValueError(nmerrmsg);
         if (myvalidator.isvaremptyornull(mvs)): pass;
         else:
-            errmsgpta = "invalid value for cols (";
+            errmsgpta = "invalid value for the col";
             errmsgptb = ") used for class (" + mcnm + ")!";
             for mv in mvs:
                 klist = mv["keys"];
                 vlist = [getattr(mobj, ky + "_value") for ky in mv["keys"]];
-                if (1 < len(klist)): pass;
+                errptasornot = "";
+                if (1 < len(klist)): errptasornot = "s";
                 else:
                     klist = klist[0];
                     vlist = vlist[0];
                 myfunc = getattr(mobj, mv["methodref"]);
+                finerrmsgpta = errmsgpta + errptasornot + " (";
                 if (myfunc(klist, vlist)): pass;
-                else: raise ValueError(errmsgpta + (", ".join(mv["keys"])) + errmsgptb);
+                else: raise ValueError(finerrmsgpta + (", ".join(mv["keys"])) + errmsgptb);
         return True;
 
     @classmethod

@@ -142,16 +142,18 @@ class mybase:
 
     #individual object class methods below here
 
+    #This is a decorator. This actually calls a decorator.
+    #https://www.datacamp.com/tutorial/decorators-python
+    @classmethod
+    def validates(cls, keys): return mycol.validates(keys);
+
     def runGivenValidatorsForClass(self, mvs):
-        from mycol import mycol;
         return mycol.runGivenValidatorsForClass(type(self).__name__, self, mvs);
 
     def runValidatorsByKeysForClass(self, mkys):
-        from mycol import mycol;
         return mycol.runValidatorsByKeysForClass(type(self).__name__, self, mkys);
 
     def runAllValidatorsForClass(self):
-        from mycol import mycol;
         return mycol.runAllValidatorsForClass(type(self).__name__, self);
 
     def getValueForColName(self, clnm):
@@ -229,6 +231,7 @@ class mybase:
                     print("setting the column to the value here!");
                     setattr(self, clnm + "_value", valcl);
                     self.runValidatorsByKeysForClass([clnm]);
+                    #mycol.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
                     #myvalidator.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
                 else: return self.setValueForColName(clnm, valcl[0], mycolobj);
             else: raise ValueError(errmsgpta + str(valcl) + errptbwithdata + errmsgptc);
@@ -238,6 +241,7 @@ class mybase:
                 print("setting the column to the value here!");
                 setattr(self, clnm + "_value", valcl);
                 self.runValidatorsByKeysForClass([clnm]);
+                #mycol.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
                 #myvalidator.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
             else: raise ValueError(errmsgpta + str(valcl) + errptbwithdata + errmsgptc);
 
