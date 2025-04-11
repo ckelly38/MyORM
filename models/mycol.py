@@ -98,8 +98,8 @@ class mycol:
     #this is a decorator whos only purpose is to register the validator method
     #this does not actually call it.
     #the run methods below call the validator after it is registered.
-    @classmethod
-    def validates(cls, keys):
+    #@classmethod
+    def validates(keys):#cls, 
         #print(f"cls = {cls}");
         #print(f"keys = {keys}");
 

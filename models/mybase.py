@@ -144,8 +144,8 @@ class mybase:
 
     #This is a decorator. This actually calls a decorator.
     #https://www.datacamp.com/tutorial/decorators-python
-    @classmethod
-    def validates(cls, keys): return mycol.validates(keys);
+    #@classmethod
+    def validates(keys): return mycol.validates(keys);#cls, 
 
     def runGivenValidatorsForClass(self, mvs):
         return mycol.runGivenValidatorsForClass(type(self).__name__, self, mvs);

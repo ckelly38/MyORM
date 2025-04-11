@@ -258,10 +258,9 @@ class myvalidator:
         myvalidator.varmustbethetypeonly(mstr, str, "mstr");
         myvalidator.varmustbethetypeonly(mc, str, "mc");
         if (myvalidator.isvaremptyornull(varnm)): return cls.strMustStartAndEndWith(mstr, mc, "varnm");
+        errmsg = "the string " + varnm + " does not start and end with " + mc + ", but it must!";
         if (mstr.startswith(mc) and mstr.endswith(mc)): return True;
-        else:
-            raise ValueError("the string " + varnm + " does not start and end with " + mc +
-                             ", but it must!");
+        else: raise ValueError(errmsg);
 
     @classmethod
     def isValueInRange(cls, val, minval, maxval, hasmin, hasmax):
@@ -426,8 +425,8 @@ class myvalidator:
 
     #This is a decorator. This actually calls a decorator.
     #https://www.datacamp.com/tutorial/decorators-python
-    @classmethod
-    def validates(cls, keys):
+    #@classmethod
+    def validates(keys):#cls, 
         from mycol import mycol;
         return mycol.validates(keys);
 

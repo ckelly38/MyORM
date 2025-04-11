@@ -1,6 +1,7 @@
 from mybase import mybase;
 from mybase import mycol;
 from mycol import myvalidator;
+validates = mycol.validates;
 class MyTestColsClass(mybase):
     #def __init__(self):
         #print("INSIDE OF CONSTRUCTOR ON TEST CLASS A!");
@@ -182,15 +183,16 @@ class Camper(mybase):
     #    nmvld = mv.strValHasAtMinXChars(val, 1);
     #    if (nmvld): return val;
     #    else: raise ValueError("the camper must have a name!");
+    @validates(["name"])
+    def isvalidname(self, key, val): return myvalidator.stringHasAtMinNumChars(val, 1);
 
     #@validates("age")
-    #def isvalidage(self, key, val):
-    #    return mv.intValIsAtMinXAndAtMaxY(val, 8, 18, "age");
-    @mycol.validates(["age"])#this is the same as #mycol.addValidator("Camper", "isvalidage", ["age"]);
+    #def isvalidage(self, key, val): return mv.intValIsAtMinXAndAtMaxY(val, 8, 18, "age");
+    #@mycol.validates(["age"])#this is the same as #mycol.addValidator("Camper", "isvalidage", ["age"]);
     #@myvalidator.validates(["age"])
     #@mybase.validates(["age"])
-    def isvalidage(self, key, val):
-        return myvalidator.isValueInRangeWithMaxAndMin(val, 8, 18);
+    @validates(["age"])
+    def isvalidage(self, key, val): return myvalidator.isValueInRangeWithMaxAndMin(val, 8, 18);
     
     #myvalidator.addValidator("Camper", "isvalidage", ["age"]);
     
@@ -242,8 +244,9 @@ class Signup(mybase):
     
     # Add validation
     #@validates("time")
-    #def isvalidtime(self, key, val):
-    #    return mv.intValIsAtMinXAndAtMaxY(val, 0, 23, "time");
+    #def isvalidtime(self, key, val): return mv.intValIsAtMinXAndAtMaxY(val, 0, 23, "time");
+    @validates(["time"])
+    def isvalidtime(self, key, val): return myvalidator.isValueInRangeWithMaxAndMin(val, 0, 23);
     
     def __repr__(self):
         return f'<Signup {self.id_value}>';

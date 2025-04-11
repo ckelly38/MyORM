@@ -149,8 +149,21 @@ for mv in myvalidator.getAllValidators():
       if mv["classname"] not in [mcref.__name__ for mcref in mycol.getMyClassRefsMain(True)]:
             raise ValueError("classname " + mv['classname'] + " not found on list of classes!");
 print();
-mcmpr = Camper(["name", "age"], ["Sydney", 20]);
-print(mcmpr);
+#mcmpr = Camper(["name", "age"], ["Sydney", 20]);#error invalid age out of 8 to 18 inclusive range
+#print(mcmpr);
+#omcmpr = Camper(["name", "age"], ["", 9]);#error name cannot be empty!
+#print(omcmpr);
+vcmpr = Camper(["name", "age"], ["Chris", 18]);
+print(vcmpr);
+
+#bug found 4-11-2025 2:30 AM
+#default value for (the column) id overridden in col object, overridden value was valid, but not used.
+#the overridden value because it was valid must have been used, but was not.
+#instead the default value for the type was used...
+#
+#We need to figure out why.
+
+
 #from mybase import mybase;
 #for cls in mycol.getMyClassRefsMain(True):
 #      if (issubclass(cls, mybase)):
