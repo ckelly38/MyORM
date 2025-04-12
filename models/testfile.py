@@ -23,6 +23,7 @@ print("INSIDE OF TEST FILE!");
 #mycol.setMyClassRefs(myclasses);
 mycol.getMyClassRefsMain(True);#will force the fetch of the new list if it has changed by now
 
+print();
 #raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 #print(mynewcol);
@@ -155,13 +156,10 @@ print();
 #print(omcmpr);
 vcmpr = Camper(["name", "age"], ["Chris", 18]);
 print(vcmpr);
-
-#bug found 4-11-2025 2:30 AM
-#default value for (the column) id overridden in col object, overridden value was valid, but not used.
-#the overridden value because it was valid must have been used, but was not.
-#instead the default value for the type was used...
-#
-#We need to figure out why.
+ovcmpr = Camper(["name", "age"], ["Sean", 16]);
+print(ovcmpr);
+#when printed out the ID shows NONE because this will be pulled from the DB.
+#until then the ID = NONE.
 
 
 #from mybase import mybase;

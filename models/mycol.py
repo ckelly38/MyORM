@@ -364,6 +364,7 @@ class mycol:
     datatype = property(getDataType, setDataType);
 
     def getIsSigned(self): return self._issigned;
+    def isSigned(self): return self.getIsSigned();
 
     #both setIsSigned and setIsNonNull depend on getDataTypeObjectWithNameOnVariant(tp, varstr)
     #this method may at times be unreliable as noted, which may effect these often not the case.
@@ -397,6 +398,7 @@ class mycol:
     issigned = property(getIsSigned, setIsSigned);
 
     def getIsNonNull(self): return self._isnonnull;
+    def isNonNull(self): return self.getIsNonNull();
 
     #if isnonnull is set to None, then the default for the type will be used
     #else it must be true if the nonnull default is true, otherwise it can be either true or false
@@ -461,6 +463,7 @@ class mycol:
     colname = property(getColName, setColName);
 
     def getAutoIncrements(self): return self._autoincrements;
+    def autoIncrements(self): return self.getAutoIncrements();
 
     def setAutoIncrements(self, val):
         myvalidator.varmustbethetypeonly(val, bool, "val");
@@ -469,6 +472,7 @@ class mycol:
     autoincrements = property(getAutoIncrements, setAutoIncrements);
 
     def getIsUnique(self): return self._isunique;
+    def isUnique(self): return self.getIsUnique();
 
     def setIsUnique(self, val):
         myvalidator.varmustbethetypeandornull(val, bool, True, "val");
@@ -477,6 +481,7 @@ class mycol:
     isunique = property(getIsUnique, setIsUnique);
 
     def getIsPrimaryKey(self): return self._isprimarykey;
+    def isPrimaryKey(self): return self.getIsPrimaryKey();
 
     #if isprimarykey is true, then it must be unique and non-null.
     def setIsPrimaryKey(self, val):
@@ -529,6 +534,8 @@ class mycol:
         pkycols = myclsref.getMyPrimaryKeyCols();
         myvalidator.varmustnotbeempty(pkycols, "pkycols");
 
+        pkyerrmsg = "for it to be a primary key, for class(" + myclsref.__name__ ;
+        pkyerrmsg += ") it must be non-null and unique!";
         if (1 < len(pkycols)):
             #now get the unique constraints and see if one has those exact columns
             #get the colnames from inside of the unique constraint...
@@ -561,9 +568,7 @@ class mycol:
                             isvalid = True;
                             break;
             if isvalid: pass;
-            else:
-                raise ValueError("for it to be a primary key, for class(" + myclsref.__name__ +
-                                 ") it must be non-null and unique!");
+            else: raise ValueError(pkyerrmsg);
         else:
             if (self.isprimarykey):
                 isvalid = False;
@@ -579,9 +584,7 @@ class mycol:
                     if (self.isnonnull == None or self.isunique == None):
                         self.setIsNonNull(True);
                         self.setIsUnique(True);
-                else:
-                    raise ValueError("for it to be a primary key, for class(" + myclsref.__name__ +
-                                     ") it must be non-null and unique!");
+                else: raise ValueError(pkyerrmsg);
             else:
                 if (self.isnonnull == None): self.setIsNonNull(False);
                 if (self.isunique == None): self.setIsUnique(False);
@@ -633,6 +636,7 @@ class mycol:
     #cannot set is foreign key to be true if the foreign class name is not defined and
     #neither is the foreign col name 
     def getIsForeignKey(self): return self._isforeignkey;
+    def isForeignKey(self): return self.getIsForeignKey();
 
     def setIsForeignKey(self, val):
         myvalidator.varmustbethetypeonly(val, bool, "val");

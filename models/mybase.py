@@ -4,7 +4,7 @@ from init import SQLVARIANT;
 class mybase:
     #mytablename = "basetablename";
     #mymulticolargs = None;
-    disableconstraintswarning = False;
+    #disableconstraintswarning = False;
 
     def __init__(self, colnames=None, colvalues=None):
         print("INSIDE BASE CLASS CONSTRUCTOR!");
@@ -13,11 +13,14 @@ class mybase:
         
         if (type(self).isVarPresentOnTableMain("multi_column_constraints_list")): pass;
         else: setattr(type(self), "mymulticolargs", None);
-        print(f"multicolconstraints = {type(self).getMultiColumnConstraints()}");
+        #multiclcnsts = type(self).getAndSetAllMultiColumnConstraints();
+        multiclcnsts = type(self).getMultiColumnConstraints();
+        print(f"multicolconstraints = {multiclcnsts}");
         
-        mtargs = type(self).getAllTableConstraints();
+        mtargs = type(self).getAllTableConstraints();#bool fetchnow=False
         if (type(self).isVarPresentOnTableMain("allconstraints_list")): pass;
         else: setattr(type(self), "tableargs", ([] if (mtargs == None) else mtargs));
+        #mtargs = type(self).getAndSetAllTableConstraints();#bool fetchnow=False
         print(f"tableargs = {mtargs}");
         print(f"colnames = {colnames}");
         print(f"colvalues = {colvalues}");
@@ -33,10 +36,13 @@ class mybase:
         if (myvalidator.areTwoListsTheSame(mycolnames, mycolattrnames)): pass;
         else: raise ValueError("THE COLUMN ATTRIBUTE NAMES MUST MATCH THE SET COLNAME GIVEN!");
     
+        colinverrmsg = "there exists at least one column on the class (" + type(self).__name__;
+        colinverrmsg += ") that does not have a valid constraint! The invalid colnames are: ";
         if (type(self).areColsWithIndividualConstraintsValid(mytempcols)): pass;
         else:
-            raise ValueError("there exists one column on the class (" + type(self).__name__ +
-                             ") that does not have a valid constraint!");
+            errmsgptc = myvalidator.myjoin(", ", type(self).getMyColNames(
+                type(self).getColumnsWithIndividualInvalidConstraints(mytempcols)));
+            raise ValueError(colinverrmsg + errmsgptc);
 
         #the constructor essentially begins here...
 
@@ -58,9 +64,12 @@ class mybase:
             mc.primaryKeyInformationMustBeValid(type(self));
             mc.foreignKeyInformationMustBeValid(self);
 
+        
         #for each column need to make sure that there is a value if not use the default value
         #how to know which value is for what col?
         #base constructor will take in two parameters, one col names, and one values
+
+
         if myvalidator.isvaremptyornull(colnames): pass;
         else:
             for n in range(len(colnames)):
@@ -75,9 +84,14 @@ class mybase:
 
                     self.setValueForColName(clnm, valcl, mycolobj);
         
+
+        #get the col names not in that list and then compute the default values that can be used
+        #for those columns here and below
+
         #do the same for the colnames not in that list
         ocolnms = [mclnm for mclnm in mycolnames
                    if myvalidator.isvaremptyornull(colnames) or mclnm not in colnames];
+        print();
         print(f"mycolnames = {mycolnames}");
         print(f"colnames = {colnames}");
         print(f"ocolnms = {ocolnms}");
@@ -90,15 +104,84 @@ class mybase:
             tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(fldtnm, varstr);
             print(f"tpobj = {tpobj}");
             print(f"fldtnm = {fldtnm}");
+            print(f"mycolobj = {mycolobj}");
             
             mykynm = myvalidator.getDefaultValueKeyNameForDataTypeObj(tpobj, mycolobj);
             print(f"mykynm = {mykynm}");
 
-            valcl = myvalidator.getDefaultValueForDataTypeObjWithName(tpobj, mykynm, False);
+            #default value from the data type
+            deftpvalcl = myvalidator.getDefaultValueForDataTypeObjWithName(tpobj, mykynm, False);
             print(f"clnm = {clnm}");
-            print(f"valcl = {valcl}");
+            print(f"deftpvalcl = {deftpvalcl}");
 
-            self.setValueForColName(clnm, valcl, mycolobj);
+            #default value from the col from the user (assuming not NONE)
+            defvaloncl = mycolobj.getDefaultValue();
+            print(f"defvaloncl = {defvaloncl}");
+
+            #if the type is an integer of some kind,
+            #then get the maximum value used on the object list (excluding self)
+            #then add 1 if autoincrement.
+            #if no autoincrement, then what?
+            #if the type is not an integer of some kind, then skip
+            tpisintnum = False;
+            for nm in tpobj["names"]:
+                if ("INT" in nm):
+                    tpisintnum = True;
+                    break;
+            print(f"tpisintnum = {tpisintnum}");
+
+            #if they all agree, just use it
+            #if they do not all agree, then we need to pick one of them:
+            #if there is only one instance (the self), then the defaults can be used in this order:
+            #-the column default provided by the user, if not provided then:
+            #-the default for the data type will be used.
+            #if there is more than one instance (other than self), then we need to pick one of them.
+            #-we cannot use the type default. we may be able to use the user provided default,
+            #but the computed value should be used.
+            #unless the user explicitly wants this to come from the DB.
+            
+            #if the user wants it to come from the DB, then do a special set
+            #else compute the value from the defaults below.
+            #if it is a primary key and not provided by the user and not a multi-col primary key,
+            #then get from DB else the user will provide it or it will be computed.
+            #if it is the only primary key column and some sort of integer, then for sure get from DB.
+            #but if it is some other type, then cannot get from DB
+            #unless it is some sort of default like the current date or the current time.
+            #NOT SURE ON THE OTHER STUFF 4-12-2025 2:48 AM MST???
+            mypkycols = type(self).getMyPrimaryKeyCols(mytempcols);
+            getfromdb = ((mycolobj.getIsPrimaryKey() and len(mypkycols) == 1) and (tpisintnum));
+            print(f"getfromdb = {getfromdb}");
+            
+            if (getfromdb): valcl = None;
+            else:
+                if (tpisintnum):
+                    mynum = 0;
+                    fnditemotherthanself = False;
+                    for mobj in type(self).all:
+                        if (mobj == self): pass;
+                        else:
+                            if (not fnditemotherthanself): fnditemotherthanself = True;
+                            tmpobjval = mobj.getValueForColName(clnm);
+                            if (mynum < tmpobjval): mynum = tmpobjval;
+                    print(f"fnditemotherthanself = {fnditemotherthanself}");
+
+                    if (fnditemotherthanself): pass;
+                    else: mynum = (deftpvalcl if (defvaloncl == None) else defvaloncl);
+                    print(f"mycolobj.getAutoIncrements() = {mycolobj.getAutoIncrements()}");
+                    
+                    if (fnditemotherthanself and mycolobj.getAutoIncrements()): mynum += 1;
+                    #else do nothing do not auto-increment on the foreign key for example.
+                    #computed default value
+                    print(f"mynum = {mynum}");
+
+                    #they either all agree or the computed num holds the coorect value now
+                    valcl = mynum;
+                else:
+                    print("TYPE IS NOT AN INTEGER!");
+                    valcl = (deftpvalcl if (defvaloncl == None) else defvaloncl);
+            
+            if (getfromdb): setattr(self, clnm + "_value", valcl);
+            else: self.setValueForColName(clnm, valcl, mycolobj);
         
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!\n");
@@ -340,26 +423,38 @@ class mybase:
         return cls.getIndividualColumnConstraintsOrColsWithConstraints(False, mycols);
 
     @classmethod
+    def isColWithConstraintsValid(cls, mc):
+        myvalidator.varmustnotbenull(mc, "mc");
+        if (myvalidator.isvaremptyornull(mc.constraints)): pass;
+        else:
+            for thecnst in mc.constraints:
+                if (myvalidator.isvaremptyornull(thecnst)): return False;
+                else:
+                    if (" CHECK(" in thecnst):
+                        ci = thecnst.index(" CHECK(");
+                        aindxsofnm = [n for n in range(len(thecnst))
+                                    if thecnst[n:].startswith(mc.getColName())];
+                        isvld = False;
+                        if (0 < len(aindxsofnm)):
+                            for i in aindxsofnm:
+                                if (ci < i):
+                                    isvld = True;
+                                    break;
+                        if (isvld): pass;
+                        else: return False;
+                    else: return False;
+        return True;
+
+    @classmethod
+    def getColumnsWithIndividualInvalidConstraints(cls, mycols=None):
+        return [mc for mc in cls.getColumnsWithConstraints(mycols)
+                if (not cls.isColWithConstraintsValid(mc))];
+
+    @classmethod
     def areColsWithIndividualConstraintsValid(cls, mycols=None):
         for mc in cls.getColumnsWithConstraints(mycols):
-            if (myvalidator.isvaremptyornull(mc.constraints)): pass;
-            else:
-                for thecnst in mc.constraints:
-                    if (myvalidator.isvaremptyornull(thecnst)): return False;
-                    else:
-                        if (" CHECK(" in thecnst):
-                            ci = thecnst.index(" CHECK(");
-                            aindxsofnm = [n for n in range(len(thecnst))
-                                        if thecnst[n:].startswith(mc.getColName())];
-                            isvld = False;
-                            if (0 < len(aindxsofnm)):
-                                for i in aindxsofnm:
-                                    if (ci < i):
-                                        isvld = True;
-                                        break;
-                            if (isvld): pass;
-                            else: return False;
-                        else: return False;
+            if (cls.isColWithConstraintsValid(mc)): pass;
+            else: return False;
         return True;
     
     @classmethod
@@ -370,10 +465,11 @@ class mybase:
     def getMultiColumnConstraintVariableNames(cls):
         return ["mymulticolumnconstraints", "mymulticolconstraints", "mcolconstraints",
                 "mymulticolumnarguments", "mymulticolarguments", "mcolarguments", "mymulticolumnargs",
-                "mymulticolargs", "mcolargs", "my_multi_column_constraints", "my_multicol_constraints",
-                "mcol_constraints", "my_multi_column_arguments", "my_multicol_arguments",
-                "my_multi_col_arguments", "mcol_arguments", "my_multi_column_args", "my_multicol_args",
-                "mcol_args", "my_multi_col_args", "my_multi_col_constraints"];
+                "mymulticolargs", "multicolargs", "mcolargs", "my_multi_column_constraints",
+                "my_multicol_constraints", "mcol_constraints", "my_multi_column_arguments",
+                "my_multicol_arguments", "my_multi_col_arguments", "multi_col_arguments",
+                "mcol_arguments", "my_multi_column_args", "my_multicol_args",
+                "mcol_args", "my_multi_col_args", "multi_col_args", "my_multi_col_constraints"];
 
     @classmethod
     def getAllConstraintVariableNames(cls):
@@ -457,6 +553,11 @@ class mybase:
         return cls.getValueOfVarIfPresentOnTableMain("multi_column_constraints_list");
 
     @classmethod
+    def getAndSetMultiColumnConstraints(cls):
+        mlist = cls.getMultiColumnConstraints();
+        setattr(cls, "mymulticolargs", mlist);
+
+    @classmethod
     def getOtherKnownSafeAttributesOnTheClass(cls):
         return [attr for attr in dir(cls)
                 if (type(getattr(cls, attr)) in [int, float, str, list, tuple] and
@@ -480,23 +581,25 @@ class mybase:
         return mlist;
 
     @classmethod
-    def getAllTableConstraints(cls):
+    def getAllTableConstraints(cls, fetchnow=False):
         #will have all of the multi-column constraints args list on it
         #plus all of the individual col arguments or constraints on it
+        myvalidator.varmustbeboolean(fetchnow, "fetchnow");
         if (cls.isVarPresentOnTableMain("allconstraints_list")):
             valofall = cls.getValueOfVarIfPresentOnTableMain("allconstraints_list");
             if (myvalidator.isvaremptyornull(valofall)): pass;
             else:
-                if (cls.disableconstraintswarning): pass;
-                else:
-                    allattrp = cls.getNameOfVarIfPresentOnTableMain("allconstraints_list");
-                    print("");
-                    print("WARNING: you provided a " + allattrp + " attribute in the class (" +
-                        cls.__name__ + "), the list you provided will be used and not the " +
-                        "generated one! If this is not the desired behavior, please remove it! " +
-                        "This warning can safely be ignored!");
-                    print("");
-                    return valofall;
+                # if (cls.disableconstraintswarning): pass;
+                # else:
+                #     allattrp = cls.getNameOfVarIfPresentOnTableMain("allconstraints_list");
+                #     print("");
+                #     print("WARNING: you provided a " + allattrp + " attribute in the class (" +
+                #         cls.__name__ + "), the list you provided will be used and not the " +
+                #         "generated one! If this is not the desired behavior, please remove it! " +
+                #         "This warning can safely be ignored!");
+                #     print("");
+                if (fetchnow): pass;
+                else: return valofall;
 
         mclconstraints = cls.getMultiColumnConstraints();
         myiclconstraints = cls.getIndividualColumnConstraints();
@@ -508,3 +611,8 @@ class mybase:
 
         #setattr(cls, "tableargs", ([] if (nwlist == None) else nwlist));
         return nwlist;
+
+    @classmethod
+    def getAndSetAllTableConstraints(cls, fetchnow=False):
+        nwlist = cls.getAllTableConstraints(fetchnow);
+        setattr(cls, "tableargs", ([] if (nwlist == None) else nwlist));
