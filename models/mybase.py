@@ -228,7 +228,7 @@ class mybase:
     #This is a decorator. This actually calls a decorator.
     #https://www.datacamp.com/tutorial/decorators-python
     #@classmethod
-    def validates(keys): return mycol.validates(keys);#cls, 
+    def validates(*args): return mycol.validates(args);#cls, 
 
     def runGivenValidatorsForClass(self, mvs):
         return mycol.runGivenValidatorsForClass(type(self).__name__, self, mvs);
@@ -333,23 +333,34 @@ class mybase:
         for mc in self.getMyColNames(fincols):
             print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
 
-    def getKnownAttributeNamesForSerialization(self):
+    def getKnownAttributeNamesForRepresentation(self):
         return [nm for nm in type(self).getKnownAttributeNamesOnTheClass()];
 
     def __repr__(self):
         mstr = "<" + self.__class__.__name__ + " ";
-        nmscls = self.getKnownAttributeNamesForSerialization();
+        nmscls = self.getKnownAttributeNamesForRepresentation();
         #print(nmscls);
         
         handleallsame = False;
+        previscol = False;
         for n in range(len(nmscls)):
             attr = nmscls[n];
+            addnl = False;
             if (hasattr(self, attr)):
                 if (attr == "all"):
                     if (handleallsame): mstr += attr + ": " + str(getattr(self, attr));
                     else: mstr += "all: [list of all instances of the class]";
-                else: mstr += attr + ": " + str(getattr(self, attr));
-                if (n + 1 < len(nmscls)): mstr += ", ";
+                else:
+                    mval = getattr(self, attr);
+                    if ((type(mval) == mycol) and not previscol): mstr += "\n";
+                    mstr += attr + ": " + str(mval);
+                    previscol = (type(mval) == mycol);
+                    if (previscol): addnl = True;
+                if (n + 1 < len(nmscls)):
+                    if (addnl):
+                        mstr += ",\n";
+                        addnl = False;
+                    else: mstr += ", ";
         mstr += " /" + self.__class__.__name__ + ">";
         #print(dir(type(self)));
         #mlist = [{"key": attr, "value": getattr(self, attr)} for attr in dir(type(self))
@@ -381,6 +392,9 @@ class mybase:
     def getMyColNames(cls, mycols=None):
         return [mclobj.colname for mclobj in cls.getMyColsFromClassOrParam(mycols)];
     
+    @classmethod
+    def getValueColNames(cls, mycols=None): return [nm + "_value" for nm in cls.getMyColNames(mycols)];
+
     @classmethod
     def getMyColObjFromName(cls, mcnm, mycols=None):
         mclist = cls.getMyColsFromClassOrParam(mycols);

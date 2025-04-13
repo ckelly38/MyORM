@@ -426,9 +426,9 @@ class myvalidator:
     #This is a decorator. This actually calls a decorator.
     #https://www.datacamp.com/tutorial/decorators-python
     #@classmethod
-    def validates(keys):#cls, 
+    def validates(*args):#cls, 
         from mycol import mycol;
-        return mycol.validates(keys);
+        return mycol.validates(args);
 
     @classmethod
     def addValidator(cls, classname, methodref, keys):

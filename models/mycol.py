@@ -99,21 +99,36 @@ class mycol:
     #this does not actually call it.
     #the run methods below call the validator after it is registered.
     #@classmethod
-    def validates(keys):#cls, 
+    def validates(*args):#cls, 
+        #print();
         #print(f"cls = {cls}");
-        #print(f"keys = {keys}");
+        #print(f"keys = {args}");
 
         def myAddVDator(myvfunc):
             #print(f"funcname = {myvfunc.__name__}");
             #print(dir(myvfunc));
+            #print(dir(myvfunc.__code__));
             #print(f"funcclassfullname = myvfunc.__qualname__ = {myvfunc.__qualname__}");
-            #print(f"keys = {keys}");
+            #print(f"keys = {args}");
+
+            mkys = [];
+            for ky in args:
+                if (type(ky) in [list, tuple]):
+                    if (len(args) == 1):
+                        for item in ky:
+                            if (type(item) == str): mkys.append(item);
+                            else: raise TypeError("the type of item on keys must be a string!");
+                    else: raise ValueError("args must only have the list of keys on it!");
+                elif (type(ky) == str): mkys.append(ky);
+                else: raise TypeError("each key must be a list a tuple or a string");
+            #print(f"mkys = {mkys}");
             
             #the code for this will be different if using under version 3 of Python.
             mcnm = myvfunc.__qualname__[0: myvfunc.__qualname__.index(myvfunc.__name__) - 1];
             #print(f"mcnm = {mcnm}");
+            #print();
 
-            mycol.addValidator(mcnm, myvfunc.__name__, keys);
+            mycol.addValidator(mcnm, myvfunc.__name__, mkys);
             
             #because this is a decorator and not actually calling the function we need to return it
             #this also prevents getattr seeing the function name and thinking that it is None.
@@ -139,9 +154,9 @@ class mycol:
         myvalidator.stringHasAtMinNumChars(classname, 1);
         myvalidator.stringContainsOnlyAlnumCharsIncludingUnderscores(classname);
         if (myvalidator.isvaremptyornull(keys)): return None;
-        nlist = [item for item in cls.getAllValidators() if (item["classname"] == classname and
-                                                             myvalidator.doTwoListsContainTheSameData(
-                                                                 keys, item["keys"]))];
+        nlist = [item for item in cls.getAllValidators()
+                 if (item["classname"] == classname and myvalidator.doTwoListsContainTheSameData(
+                     keys, item["keys"]))];
         cls.setAllValidators(nlist);
     
     @classmethod
@@ -154,6 +169,7 @@ class mycol:
         else:
             errmsgpta = "invalid value for the col";
             errmsgptb = ") used for class (" + mcnm + ")!";
+            #print(f"mobj = {mobj}");#may error out due to a timing issue if the method is overridden.
             for mv in mvs:
                 klist = mv["keys"];
                 vlist = [getattr(mobj, ky + "_value") for ky in mv["keys"]];
@@ -461,6 +477,16 @@ class mycol:
         self._colname = val;
     
     colname = property(getColName, setColName);
+
+    def getValue(self, mobj):
+        from mybase import mybase;
+        if (issubclass(type(mobj), mybase)): return mobj.getValueForColName(self.getColName());
+        else: raise ValueError("mobj must be a subclass of mybase class!");
+
+    def setValue(self, mobj, val):
+        from mybase import mybase;
+        if (issubclass(type(mobj), mybase)): mobj.setValueForColName(self.getColName(), val, self);
+        else: raise ValueError("mobj must be a subclass of mybase class!");
 
     def getAutoIncrements(self): return self._autoincrements;
     def autoIncrements(self): return self.getAutoIncrements();
