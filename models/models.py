@@ -17,7 +17,7 @@ class MyTestColsClass(mybase):
                     defaultvalue=None, isprimarykey=False, isnonnull=True, issigned=False,
                     isunique=True, autoincrements=False,
                     isforeignkey=True, foreignClass="MyOtherTestClass", foreignColNames=["mynewcol"],
-                    constraints=None);# value=None,
+                    foreignObjectName="myotstobj", constraints=None);# value=None,
     myothervar = 2;
     mymulticolargs = None;
     #__mytablename__ = "testtable";
@@ -40,7 +40,7 @@ class MyOtherTestClass(mybase):
                     defaultvalue=None, isprimarykey=False, isnonnull=True, issigned=False,
                     isunique=True, autoincrements=False,
                     isforeignkey=True, foreignClass="MyTestColsClass", foreignColNames=["mynewcol"],
-                    constraints=None);# value=None,
+                    foreignObjectName="mytstcolsobj", constraints=None);# value=None,
     mymulticolargs = None;
     myothervar = 2;
     #__mytablename__ = "testtable";
@@ -99,7 +99,7 @@ class MyModelWithCompForeignKey(mybase):
                     isunique=True, autoincrements=False, issigned=False,
                     isforeignkey=True, foreignClass="MyModelWithCompPrimaryKey",
                     foreignColNames=["mynewcola", "mynewcolb"],
-                    constraints=None);#, "mynewcolc"#, value=None,
+                    foreignObjectName="mycomppkyobj", constraints=None);#, "mynewcolc"#, value=None,
     mymulticolargs = None;
     mytablename = "compfkeytesttable";
 
@@ -283,11 +283,11 @@ class Signup(mybase):
     camper_id = mycol(colname="camper_id", datatype="Integer", defaultvalue=None, isprimarykey=False,
                       isnonnull=True, isunique=True, autoincrements=False, issigned=False,
                       isforeignkey=True, foreignClass="Camper", foreignColNames=["id"],
-                      constraints=None);
+                      foreignObjectName="camper", constraints=None);
     activity_id = mycol(colname="activity_id", datatype="Integer", defaultvalue=None, isprimarykey=False,
                         isnonnull=True, isunique=True, autoincrements=False, issigned=False,
                         isforeignkey=True, foreignClass="Activity", foreignColNames=["id"],
-                        constraints=None);
+                        foreignObjectName="activity", constraints=None);
 
     #camper = db.relationship("Camper", back_populates="signups");
     #activity = db.relationship("Activity", back_populates="signups");

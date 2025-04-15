@@ -1,6 +1,7 @@
 from mycol import mycol;
 from mycol import myvalidator;
 from init import SQLVARIANT;
+import traceback;
 class mybase:
     #mytablename = "basetablename";
     #mymulticolargs = None;
@@ -183,6 +184,19 @@ class mybase:
             if (getfromdb): setattr(self, clnm + "_value", valcl);
             else: self.setValueForColName(clnm, valcl, mycolobj);
         
+        #set the objects for the foreign key object cols here...
+        #IE say we have a SignUps DB table and it has a reference to a Camper object called camper
+        #we also have the ID of the Camper in the foreign key column.
+        #so we can look up the correct camper from our list.
+        #this list assumes it has been synced with the DB.
+        #now this adds a new property called camper and sets it equal to the object with the given ID.
+        #note if the other class's objects were not created yet due to sequencing, then this will say
+        #camper = None; or null for example.
+        #this information will need to be refetched in that case before a save is done.
+        #if the user tries to access it, and the object exists, but did not before,
+        #we may want to refetch then instead of just before save.
+        self.getAndSetForeignKeyObjectsFromCols(mytempcols);
+
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!\n");
     
@@ -327,6 +341,99 @@ class mybase:
                 #mycol.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
                 #myvalidator.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
             else: raise ValueError(errmsgpta + str(valcl) + errptbwithdata + errmsgptc);
+
+    #returns None if not found instead of throwing an error
+    @classmethod
+    def getObjectFromGivenKeysAndValues(cls, mlist, keys, values):
+        if (myvalidator.isvaremptyornull(mlist)): return None;
+        else:
+            for mobj in mlist:
+                fndallvals = True;
+                for n in range(len(keys)):
+                    mattr = keys[n];
+                    mval = values[n];
+                    if (hasattr(mobj, mattr)):
+                        if (mval == getattr(mobj, mattr)): pass;
+                        else:
+                            fndallvals = False;
+                            break;
+                    else: return None;
+                if (fndallvals): return mobj;
+            return None;
+
+    def getForeignKeyObjectFromCol(self, mc):
+        myvalidator.varmustnotbenull(mc, "mc");
+        #using the foreign key column information stored in the column,
+        #we can get attributes like foreignClass="Camper", foreignColNames=["id"], and
+        #our colname="camper_id"
+        #we can then notice that the object will be called the classname but lower case first letter
+        #if it is the same case as the letter it will be the opposite case.
+        #or we can force the case here...
+        #now we know what to call it (varname in the setattr call).
+        #the value is what we need
+        #first of all, if it exists on the list of objects, then we can return the object
+        #if it does not exist on the list of objects, then we can return None or attempt
+        #to get it from the DB. or force resync then do it here...
+        #if not found, return None. Either the user entered invalid information or it does not exist.
+        #setattr(self, nm, val);
+        #What if there are multiple foreign key columns that refer to the same class?
+        #There may be two objects that are different.
+        #The two objects supposedly created should not be named the same.
+        #Therefore, the foreign key object name should be required,
+        #or specified by the user that the user does not want an object created for one or the other.
+        #stringMustContainOnlyAlnumCharsIncludingUnderscores(cls, mstr, varnm="varnm");
+        #stringContainsOnlyAlnumCharsIncludingUnderscores(cls, mstr)
+        #fkyobjname from col
+        if (type(self).needToCreateAnObjectForCol(mc)):
+            #fkyobjnmfromcl = mc.getForeignObjectName();
+            #we depend on it, but do not need it here if not calling setattr
+            #using the foreign class and the attributes and values specified in the column
+            #look up the object from the list...
+            mcnm = mc.getForeignClass();
+            mcref = None;
+            try:
+                mcref = mycol.getMyClassRefFromString(mcnm);
+            except Exception as ex:
+                #traceback.print_exc();
+                print(f"class name {mcnm} not found!");
+                return None;
+            #get the object here...
+            mobj = type(self).getObjectFromGivenKeysAndValues(mcref.all, mc.getForeignColNames(),
+                                                              self.getValueForColName(mc.getColName()));
+            #now we can maybe call setattr here... or just return...
+            return mobj;
+        else: return None;
+
+    @classmethod
+    def needToCreateAnObjectForCol(cls, mc):
+        myvalidator.varmustbethetypeonly(mc, mycol, "mc");
+        fobjnm = mc.getForeignObjectName();
+        if (myvalidator.isvaremptyornull(fobjnm)): return False;
+        else:
+            myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(fobjnm, "fobjnm");
+            return True;
+
+    def getForeignKeyObjectsFromCols(self, mycols=None):
+        #get the foreign key cols
+        #then for each col
+        return [self.getForeignKeyObjectFromCol(mc) for mc in type(self).getMyForeignKeyCols(mycols)
+                if (type(self).needToCreateAnObjectForCol(mc))];
+
+    def getForeignKeyObjectNamesFromCols(self, mycols=None):
+        return [mc.getForeignObjectName() for mc in type(self).getMyForeignKeyCols(mycols)
+                if (type(self).needToCreateAnObjectForCol(mc))];
+
+    def getAndSetForeignKeyObjectsFromCols(self, mycols=None):
+        mobjnms = self.getForeignKeyObjectNamesFromCols(mycols);
+        mobjs = self.getForeignKeyObjectsFromCols(mycols);
+        myvalidator.listMustContainUniqueValuesOnly(mobjnms, "mobjnms");
+        myvalidator.twoArraysMustBeTheSameSize(mobjnms, mobjs);
+        for n in range(len(mobjnms)):
+            mobj = mobjs[n];
+            mnm = mobjnms[n];
+            setattr(self, mnm, mobj);
+        return mobjs;
+        
 
     def printValuesForAllCols(self, mycols=None):
         fincols = type(self).getMyColsFromClassOrParam(mycols);

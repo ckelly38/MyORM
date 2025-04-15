@@ -273,7 +273,7 @@ class mycol:
     def __init__(self, colname, datatype, defaultvalue,
                  isprimarykey=False, isnonnull=None, isunique=None, issigned=None,
                  autoincrements=False, isforeignkey=False, foreignClass=None, foreignColNames=None,
-                 constraints=None):#value, 
+                 foreignObjectName=None, constraints=None):#value, 
         print("INSIDE OF MY COL CONSTRUCTOR!");
         print(f"colname = {colname}");
         print(f"datatype = {datatype}");
@@ -289,6 +289,7 @@ class mycol:
         print(f"isforeignkey = {isforeignkey}");
         print(f"foreignClass = {foreignClass}");
         print(f"foreignColNames = {foreignColNames}");
+        print(f"foreignObjectName = {foreignObjectName}");
         print(f"constraints = {constraints}");#like length or value limits
         #CONSTRAINT CHK_Person CHECK(LENGTH(description) >= 10)
         #THEY NEED A NAME IF YOU WANT TO REMOVE THEM LATER ON
@@ -323,6 +324,7 @@ class mycol:
         self.setAutoIncrements(autoincrements);
         self.setIsPrimaryKey(isprimarykey);
         self.setColName(colname);
+        self.setForeignObjectName(foreignObjectName);
 
         self.setMyClassRefs(None);
         
@@ -473,10 +475,21 @@ class mycol:
         #the colname must be unique on each table
         #(CANNOT BE ENFORCED HERE, BUT WHEN A NEW OBJECT IS CREATED AND SAVED, ETC)
         #the colname cannot be null or empty
-        myvalidator.varmustnotbeempty(val, "val");
+        #myvalidator.varmustnotbeempty(val, "val");
+        #myvalidator.varmustbethetypeonly(val, str, "val");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(val, "val");
         self._colname = val;
     
     colname = property(getColName, setColName);
+
+    def getForeignObjectName(self): return self._foreignobjectname;
+
+    def setForeignObjectName(self, val):
+        if (myvalidator.isvaremptyornull(val)): pass;
+        else: myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(val, "val");
+        self._foreignobjectname = val;
+
+    foreignobjectname = property(getForeignObjectName, setForeignObjectName);
 
     def getValue(self, mobj):
         from mybase import mybase;
