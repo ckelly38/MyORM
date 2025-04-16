@@ -7,28 +7,27 @@ class mybase:
     #mymulticolargs = None;
     #disableconstraintswarning = False;
 
-    def __init__(self, colnames=None, colvalues=None):
-        print("INSIDE BASE CLASS CONSTRUCTOR!");
-        print(f"type(self) = {type(self)}");
-        print(f"mytablename = {type(self).getTableName()}");
+    @classmethod
+    def setup(cls):
+        print("\nINSIDE BASE SETUP CLASS METHOD!");
+        print(f"cls = {cls}");
+        print(f"mytablename = {cls.getTableName()}");
         
-        if (type(self).isVarPresentOnTableMain("multi_column_constraints_list")): pass;
-        else: setattr(type(self), "mymulticolargs", None);
-        #multiclcnsts = type(self).getAndSetAllMultiColumnConstraints();
-        multiclcnsts = type(self).getMultiColumnConstraints();
+        if (cls.isVarPresentOnTableMain("multi_column_constraints_list")): pass;
+        else: setattr(cls, "mymulticolargs", None);
+        #multiclcnsts = cls.getAndSetAllMultiColumnConstraints();
+        multiclcnsts = cls.getMultiColumnConstraints();
         print(f"multicolconstraints = {multiclcnsts}");
         
-        mtargs = type(self).getAllTableConstraints();#bool fetchnow=False
-        if (type(self).isVarPresentOnTableMain("allconstraints_list")): pass;
-        else: setattr(type(self), "tableargs", ([] if (mtargs == None) else mtargs));
-        #mtargs = type(self).getAndSetAllTableConstraints();#bool fetchnow=False
+        mtargs = cls.getAllTableConstraints();#bool fetchnow=False
+        if (cls.isVarPresentOnTableMain("allconstraints_list")): pass;
+        else: setattr(cls, "tableargs", ([] if (mtargs == None) else mtargs));
+        #mtargs = cls.getAndSetAllTableConstraints();#bool fetchnow=False
         print(f"tableargs = {mtargs}");
-        print(f"colnames = {colnames}");
-        print(f"colvalues = {colvalues}");
         
-        mytempcols = type(self).getMyCols();
-        mycolnames = type(self).getMyColNames(mytempcols);
-        mycolattrnames = type(self).getMyColAttributeNames();
+        mytempcols = cls.getMyCols();
+        mycolnames = cls.getMyColNames(mytempcols);
+        mycolattrnames = cls.getMyColAttributeNames();
         print(f"mycolnames = {mycolnames}");
         print(f"mycolattrnames = {mycolattrnames}");
 
@@ -37,13 +36,71 @@ class mybase:
         if (myvalidator.areTwoListsTheSame(mycolnames, mycolattrnames)): pass;
         else: raise ValueError("THE COLUMN ATTRIBUTE NAMES MUST MATCH THE SET COLNAME GIVEN!");
     
-        colinverrmsg = "there exists at least one column on the class (" + type(self).__name__;
+        colinverrmsg = "there exists at least one column on the class (" + cls.__name__;
         colinverrmsg += ") that does not have a valid constraint! The invalid colnames are: ";
-        if (type(self).areColsWithIndividualConstraintsValid(mytempcols)): pass;
+        if (cls.areColsWithIndividualConstraintsValid(mytempcols)): pass;
         else:
-            errmsgptc = myvalidator.myjoin(", ", type(self).getMyColNames(
-                type(self).getColumnsWithIndividualInvalidConstraints(mytempcols)));
+            errmsgptc = myvalidator.myjoin(", ", cls.getMyColNames(
+                cls.getColumnsWithIndividualInvalidConstraints(mytempcols)));
             raise ValueError(colinverrmsg + errmsgptc);
+
+        #make sure all gets added.
+        if (hasattr(cls, "all")): pass;
+        else: setattr(cls, "all", None);
+        print(f"DONE WITH THE SETUP METHOD FOR {cls.__name__}!\n");
+    
+    @classmethod
+    def setupMain(cls):
+        for mclsref in mycol.getMyClassRefsMain(True):
+            if (issubclass(mclsref, mybase)): mclsref.setup();
+
+    def __init__(self, colnames=None, colvalues=None):
+        print("INSIDE BASE CLASS CONSTRUCTOR CALLING SETUP IF NEEDED FIRST!");
+        if (not mycol.hasRunSetupYet()): type(self).setupMain();
+        mytempcols = type(self).getMyCols();
+        mycolnames = type(self).getMyColNames(mytempcols);
+        print("INSIDE BASE CLASS CONSTRUCTOR AFTER SETUP CALL!");
+        print(f"type(self) = {type(self)}");
+        print(f"mytablename = {type(self).getTableName()}");
+        print(f"mycolnames = {mycolnames}");
+        print(f"colnames = {colnames}");
+        print(f"colvalues = {colvalues}");
+
+        # print(f"type(self) = {type(self)}");
+        # print(f"mytablename = {type(self).getTableName()}");
+        
+        # if (type(self).isVarPresentOnTableMain("multi_column_constraints_list")): pass;
+        # else: setattr(type(self), "mymulticolargs", None);
+        # #multiclcnsts = type(self).getAndSetAllMultiColumnConstraints();
+        # multiclcnsts = type(self).getMultiColumnConstraints();
+        # print(f"multicolconstraints = {multiclcnsts}");
+        
+        # mtargs = type(self).getAllTableConstraints();#bool fetchnow=False
+        # if (type(self).isVarPresentOnTableMain("allconstraints_list")): pass;
+        # else: setattr(type(self), "tableargs", ([] if (mtargs == None) else mtargs));
+        # #mtargs = type(self).getAndSetAllTableConstraints();#bool fetchnow=False
+        # print(f"tableargs = {mtargs}");
+        # print(f"colnames = {colnames}");
+        # print(f"colvalues = {colvalues}");
+        
+        # mytempcols = type(self).getMyCols();
+        # mycolnames = type(self).getMyColNames(mytempcols);
+        # mycolattrnames = type(self).getMyColAttributeNames();
+        # print(f"mycolnames = {mycolnames}");
+        # print(f"mycolattrnames = {mycolattrnames}");
+
+        # myvalidator.listMustContainUniqueValuesOnly(mycolnames, "mycolnames");
+        # myvalidator.listMustContainUniqueValuesOnly(mycolattrnames, "mycolattrnames");
+        # if (myvalidator.areTwoListsTheSame(mycolnames, mycolattrnames)): pass;
+        # else: raise ValueError("THE COLUMN ATTRIBUTE NAMES MUST MATCH THE SET COLNAME GIVEN!");
+    
+        # colinverrmsg = "there exists at least one column on the class (" + type(self).__name__;
+        # colinverrmsg += ") that does not have a valid constraint! The invalid colnames are: ";
+        # if (type(self).areColsWithIndividualConstraintsValid(mytempcols)): pass;
+        # else:
+        #     errmsgptc = myvalidator.myjoin(", ", type(self).getMyColNames(
+        #         type(self).getColumnsWithIndividualInvalidConstraints(mytempcols)));
+        #     raise ValueError(colinverrmsg + errmsgptc);
 
         #the constructor essentially begins here...
 
@@ -59,12 +116,15 @@ class mybase:
             if (type(self).all == None): type(self).all = [self];
             else: type(self).all.append(self);
         else: setattr(type(self), "all", [self]);
+        
         print(f"varstr = SQLVARIANT = {varstr}");
-
+        print("\nNOW VERIFYING THE FOREIGN AND PRIMARY KEY INFORMATION IN BASE CLASS CONSTRUCTOR:\n");
+        
         for mc in mytempcols:
             mc.primaryKeyInformationMustBeValid(type(self));
             mc.foreignKeyInformationMustBeValid(self);
 
+        print("\nDONE VERIFYING THE FOREIGN AND PRIMARY KEY INFORMATION IN BASE CLASS CONSTRUCTOR!");
         
         #for each column need to make sure that there is a value if not use the default value
         #how to know which value is for what col?
@@ -200,6 +260,7 @@ class mybase:
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!\n");
     
+
     #uses alphabetic order for colnames
     @classmethod
     def newBase(cls, myvals):
@@ -345,15 +406,38 @@ class mybase:
     #returns None if not found instead of throwing an error
     @classmethod
     def getObjectFromGivenKeysAndValues(cls, mlist, keys, values):
+        print(f"mlist = {mlist}");
+        print(f"keys = {keys}");
+        print(f"values = {values}");
+
+        tperrmsg = "invalid data type found and used here for the values! There are multiple keys, ";
+        tperrmsg += "so there must be multiple values!";
         if (myvalidator.isvaremptyornull(mlist)): return None;
         else:
+            klen = len(keys);
+            isvalslist = (type(values) in [list, tuple]);
+            print(f"klen = {klen}");
+            print(f"isvalslist = {isvalslist}");
+
+            if (klen == 1): pass;
+            elif (1 < klen):
+                if (type(values) in [list, tuple]): pass;
+                else: raise TypeError(tperrmsg);
+            if (isvalslist): pass;
+            else:
+                if (klen == 1): pass;
+                else: raise TypeError(tperrmsg + " BUT the values was not a list!");
+            
             for mobj in mlist:
                 fndallvals = True;
-                for n in range(len(keys)):
+                for n in range(klen):
                     mattr = keys[n];
-                    mval = values[n];
-                    if (hasattr(mobj, mattr)):
-                        if (mval == getattr(mobj, mattr)): pass;
+                    mval = (values[n] if (isvalslist) else values);
+                    print(f"mattr = {mattr}");
+                    print(f"mval = {mval}");
+
+                    if (hasattr(mobj, mattr + "_value")):
+                        if (mval == getattr(mobj, mattr + "_value")): pass;
                         else:
                             fndallvals = False;
                             break;
@@ -423,6 +507,52 @@ class mybase:
         return [mc.getForeignObjectName() for mc in type(self).getMyForeignKeyCols(mycols)
                 if (type(self).needToCreateAnObjectForCol(mc))];
 
+    #dynamic properties for class objects from the foreign keys set here
+    
+    #remember in Python properties have the normal property name and the private name
+    #remember to set the private name initially to an initial value first to prevent not found
+    #remember to get from the private name to prevent an infinite loop
+    #remember to set both the private name and public name property to the new value.
+    #when I say public name think camper.
+    #when I say private name think _camper.
+    #one other thing, for the dynamic property to work, your getters and setters must return a function.
+    #therefore these getters and setters are kind of like decorators.
+    #keep in mind you can also use a property decorator like this:
+    #@property
+    #def prop(self): return self._name;
+    #
+    #@property.setter
+    #def prop(self, val): self._name = val;
+    #
+    #the normal example is:
+    #def mygettername(self): return self._name;
+    #
+    #def mysettername(self, val): self._name = val;
+    #
+    #name = property(mygettername, mysettername);
+
+    def myObjectGet(self, attrnm):
+        def fget(self):
+            print("INSIDE GET!");
+            print(f"attrnm = {attrnm}");
+            myattval = getattr(self, "_" + attrnm);
+            #myattval = __getattr__(self, attrnm);
+            #print(f"myattval = {myattval}");
+            return myattval;
+        return fget;
+
+    def myObjectSet(self, attrnm):
+        def fset(self, val):
+            print("INSIDE SET!");
+            print(f"attrnm = {attrnm}");
+            print(f"val = {val}");
+            myattval = getattr(self, attrnm);
+            myattval = val;
+            #myattval.value = val;
+            setattr(self, "_" + attrnm, val);
+            print("DONE WITH SET!");
+        return fset;
+
     def getAndSetForeignKeyObjectsFromCols(self, mycols=None):
         mobjnms = self.getForeignKeyObjectNamesFromCols(mycols);
         mobjs = self.getForeignKeyObjectsFromCols(mycols);
@@ -431,7 +561,37 @@ class mybase:
         for n in range(len(mobjnms)):
             mobj = mobjs[n];
             mnm = mobjnms[n];
+            print(f"mobj = {mobj}");
+            print(f"mnm = {mnm}");
+            
+            #setattr(self, mnm, mobj);
+            setattr(type(self), mnm, property(self.myObjectGet(mnm), self.myObjectSet(mnm)));
+            setattr(self, "_" + mnm, mobj);
+            
+            #properties need a get, set functions as well as a name
+            #properties are applied to the class only not just the self object...
+            #but you cannot only do it on self, otherwise the access methods will not be enforced.
+            #properties have a certain name like camper
+            #but to access it you need to do self._camper ...
+            #
+            #so first you need to create the property
+            #then you need to set the private value
+            #now you can try getting the value, but the getter needs to pull it from the private value
+            #then you can officially attempt to set the value using the property
+            #this will then tell the setter to get the current value of the property and say it is val
+            #then set the private value
+            
+            
+            print("val of the new attribute should be the initial value!");
+            print(getattr(self, mnm));
+            #print(getattr(self, mnm).fget(self));
+            
+            print("now setting the value here.");
+            #getattr(self, mnm).fset(self, mobj);
             setattr(self, mnm, mobj);
+            print("val of the property should now be the object!");
+            print(getattr(self, mnm));
+            #raise ValueError("NOT DONE YET 4-15-2025 10:44 PM MST!");
         return mobjs;
         
 

@@ -42,16 +42,19 @@ print(f"tstobj.myfkeyid_value = {tstobj.myfkeyid_value}");
 #print(myvalidator.listMustContainUniqueValuesOnly(
 #    ["colnamea", "colnameb", "colnamea"], "nonucolnames"));#also errors out
 print(tstobj);
+print(tstobj.myotstobj);
 print();
 #raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
-tstobjb = MyOtherTestClass();
+tstobjb = MyOtherTestClass(["myfkeyid"], [1]);
 print(tstobjb.getMyCols());
 print(tstobjb.getTableName());
 print("values for tstobjb:");
 tstobjb.printValuesForAllCols();
 print(tstobjb);
+print(tstobjb.mytstcolsobj);
 print();
+raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 #the question is how can we get it so the user does not have to create an init?
 #if we assign the foreign key col name in the col constructor,

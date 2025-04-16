@@ -10,6 +10,7 @@ class mycol:
     __ucconscntr__ = 0;
     __ccconscntr__ = 0;
     __all_validators__ = None;
+    __ransetup__= False;
 
     #constraint counter methods
 
@@ -213,6 +214,16 @@ class mycol:
         micvs = cls.getMyIndividualColumnValidators(mcnm);
         mmcvs = cls.getMyMultiColumnValidators(mcnm);
         return cls.runGivenValidatorsForClass(mcnm, mobj, myvalidator.combineTwoLists(micvs, mmcvs));
+
+    #has setup run yet methods
+
+    @classmethod
+    def hasRunSetupYet(cls): return cls.__ransetup__;
+
+    @classmethod
+    def setRanSetup(cls, val):
+        myvalidator.varmustbeboolean(val);
+        cls.__ransetup__ = True;
 
 
     #my class ref methods
@@ -1022,5 +1033,6 @@ class mycol:
         mystr += f" isnonnull: {self.isnonnull} isunique: {self.isunique} issigned: {self.issigned}";
         mystr += f" autoincrements: {self.autoincrements} isforeignkey: {self.isforeignkey}";
         mystr += f" foreignClass: {self.foreignClass} foreignColNames: {self.foreignColNames}";
-        mystr += f" constraints: {self.constraints} /MyCol>";
+        mystr += f" foreignobjectname: {self.foreignobjectname} constraints: {self.constraints}";
+        mystr += " /MyCol>";
         return mystr;
