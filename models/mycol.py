@@ -59,6 +59,7 @@ class mycol:
     def decrementAndGetCheckConstraintCounterBy(cls, intval=1):
         return cls.decrementAndGetUniqueOrCheckConstraintCounterBy(False, intval);
 
+    
     #validator methods
 
     @classmethod
@@ -215,6 +216,7 @@ class mycol:
         mmcvs = cls.getMyMultiColumnValidators(mcnm);
         return cls.runGivenValidatorsForClass(mcnm, mobj, myvalidator.combineTwoLists(micvs, mmcvs));
 
+    
     #has setup run yet methods
 
     @classmethod
@@ -223,7 +225,7 @@ class mycol:
     @classmethod
     def setRanSetup(cls, val):
         myvalidator.varmustbeboolean(val);
-        cls.__ransetup__ = True;
+        cls.__ransetup__ = val;
 
 
     #my class ref methods
@@ -337,6 +339,7 @@ class mycol:
         self.setColName(colname);
         self.setForeignObjectName(foreignObjectName);
 
+        self.setContext(None);
         self.setMyClassRefs(None);
         
         #self._value = value;
@@ -455,11 +458,12 @@ class mycol:
     def getDefaultValue(self): return self._defaultvalue;
 
     def setDefaultValue(self, val):
-        #if we get the type object from the validator, there is a chance the type will provide a default
+        #if we get the type object from the validator, then maybe the type will provide a default
         #if however the type is signed, and has two different ranges, then we will need to
         #pull the parameter value from the user.
         #myvalidator.isValueValidForDataType(tpnm, val, varstr, useunsigned, isnonnull);
         varstr = SQLVARIANT;
+        valerrmsgptc = ") found and used here for the variant (" + varstr + ")!";
         if (val == None):
             if (type(self.getDataType()) == list): self._defaultvalue = None;
             else:
@@ -474,9 +478,8 @@ class mycol:
                                                     not(self.getIsSigned()), self.getIsNonNull())):
                 self._defaultvalue = val;
             else:
-                raise ValueError("invalid default value (" + val + ") for data type (" +
-                                 self.getDataType() + ") found and used here for the variant (" +
-                                 varstr + ")!");
+                valerrmsgptb = ") for data type (" + self.getDataType();
+                raise ValueError("invalid default value (" + str(val) + valerrmsgptb + valerrmsgptc);
     
     defaultvalue = property(getDefaultValue, setDefaultValue);
 
@@ -502,15 +505,52 @@ class mycol:
 
     foreignobjectname = property(getForeignObjectName, setForeignObjectName);
 
+    
+    #if you want to do mycolobj.value, then the context must be set correctly:
+    #
+    #you must first call mycolobj.setContext or setContainer(containerobj);
+    #with the container object.
+    #for example if you have a tstclassobj that is an instance of a subclass of the mybase class,
+    #then you can use this as the context object.
+    #this will of course contain columns like ID for example.
+    #tstclassobj.myidcol.setContext(tstclassobj);
+    #then you can use the value like so:
+    #print(tstclassobj.myidcol.value);#calls the get
+    #tstclassobj.myidcol.value = newval;#calls the set
+    #because now the value property has the context it needs.
+    #the get and set value methods actually call it on the object.
+    #so the get and set value methods must be an instance of a subclass of the mybase class.
+    #
+    #context should not be relied on and these methods are strongly subjective to it.
+    #the context is set in the mybase constructor, but it can be overridden by the user.
+    #because the cols are class attributes, one cannot assume the context is correct.
+
+    def getContext(self): return self._context;
+    def getContainer(self): return self.getContext();
+
+    def setContext(self, val): self._context = val;
+    def setContainer(self, val): self.setContext(val);
+
+    context = property(getContext, setContext);
+
     def getValue(self, mobj):
+        myvalidator.varmustnotbenull(mobj, "mobj (aka the context object)");
         from mybase import mybase;
         if (issubclass(type(mobj), mybase)): return mobj.getValueForColName(self.getColName());
         else: raise ValueError("mobj must be a subclass of mybase class!");
 
     def setValue(self, mobj, val):
+        myvalidator.varmustnotbenull(mobj, "mobj (aka the context object)");
         from mybase import mybase;
         if (issubclass(type(mobj), mybase)): mobj.setValueForColName(self.getColName(), val, self);
         else: raise ValueError("mobj must be a subclass of mybase class!");
+
+    def getValueFromContext(self): return self.getValue(self.getContext());
+
+    def setValueFromContext(self, val): self.setValue(self.getContext(), val);
+
+    value = property(getValueFromContext, setValueFromContext);
+
 
     def getAutoIncrements(self): return self._autoincrements;
     def autoIncrements(self): return self.getAutoIncrements();
@@ -646,6 +686,8 @@ class mycol:
         #if (val == None or myvalidator.isClass(val)): pass;
         #else: raise ValueError("val must be a class not an object!");
         self._foreignClass = val;
+        from mybase import mybase;
+        mybase.updateAllForeignKeyObjectsForAllClasses();
 
     foreignClass = property(getForeignClass, setForeignClass);
 
@@ -680,6 +722,8 @@ class mycol:
             #else: raise ValueError(f"invalid column name ({val})!");
             myvalidator.listMustContainUniqueValuesOnly(val);
             self._foreignColNames = val;
+        from mybase import mybase;
+        mybase.updateAllForeignKeyObjectsForAllClasses();
 
     foreignColNames = property(getForeignColNames, setForeignColNames);
 
@@ -699,12 +743,32 @@ class mycol:
             if (myvalidator.isvaremptyornull(self.foreignColNames)): pass;
             else: self.setForeignColNames(None);
         self._isforeignkey = val;
+        from mybase import mybase;
+        mybase.updateAllForeignKeyObjectsForAllClasses();
 
     isforeignkey = property(getIsForeignKey, setIsForeignKey);
 
+    
     #NOT DONE YET ENFORCING FOREIGN KEY DATA TYPES bug found 3-29-2025 3:26 AM
 
-    def genForeignKeyDataObjectInfo(self, fcobj):
+    #these methods for getting the foreign key information and then checking it
+    #take in a context object called fcobj
+    #
+    #if the context object fcobj is None, then we attempt to get the context from our variable
+    #called context via self.getContext();
+    #
+    #if that is still None, now it is an error because the context object is not allowed to be null.
+    #
+    #a word of warning: the context is set in the mybase class constructor
+    #however, this should not be relied on as being correct.
+    #because the mycol object is a class attribute to many classes that extend mybase class.
+
+    def genForeignKeyDataObjectInfo(self, fcobj=None):
+        if (fcobj == None):
+            cntxt = self.getContext();
+            myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
+            return self.genForeignKeyDataObjectInfo(cntxt);
+
         print("GET FOREIGN KEY DATA OBJECT METHOD NOW:");
         print(f"self.isforeignkey = {self.isforeignkey}");
         print(f"self.foreignColNames = {self.foreignColNames}");
@@ -762,8 +826,13 @@ class mycol:
     #then it also will not be on that list.
     #
     #this method is really sensitive as to when it is run.
-    def doesOrGetObjectThatHasTheForeignKeyValues(self, fcobj, useget):
+    def doesOrGetObjectThatHasTheForeignKeyValues(self, useget, fcobj=None):
         myvalidator.varmustbeboolean(useget, "useget");
+
+        if (fcobj == None):
+            cntxt = self.getContext();
+            myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
+            return self.doesOrGetObjectThatHasTheForeignKeyValues(useget, cntxt);
 
         print("BEGIN FOREIGN KEY DATA VALIDATION METHOD NOW:");
         print(f"self.isforeignkey = {self.isforeignkey}");
@@ -841,12 +910,12 @@ class mycol:
                     
                     if (ismatch): return (mobj if (useget) else True);
         return (None if (useget) else False);
-    def getObjectThatHasTheForeignKeyValues(self, fcobj):
-        return self.doesOrGetObjectThatHasTheForeignKeyValues(fcobj, True);
-    def doesForeignKeyValuesExistOnObjectsList(self, fcobj):
-        return self.doesOrGetObjectThatHasTheForeignKeyValues(fcobj, False);
+    def getObjectThatHasTheForeignKeyValues(self, fcobj=None):
+        return self.doesOrGetObjectThatHasTheForeignKeyValues(True, fcobj);
+    def doesForeignKeyValuesExistOnObjectsList(self, fcobj=None):
+        return self.doesOrGetObjectThatHasTheForeignKeyValues(False, fcobj);
 
-    def foreignKeyInformationMustBeValid(self, fcobj):
+    def foreignKeyInformationMustBeValid(self, fcobj=None):
         #this method takes in the calling class's object and the current column object
         #the goal of this method is to make sure that the foreign key information is valid
         #it will look at the list of cols given and make sure that they are unique (handled by set)
@@ -855,6 +924,11 @@ class mycol:
         #it will make sure that the referring class has a valid primary key
         #it will make sure that the column names on the link from the calling object
         #are on the referring class and has the unique data enforced.
+
+        if (fcobj == None):
+            cntxt = self.getContext();
+            myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
+            return self.foreignKeyInformationMustBeValid(cntxt);
         
         #has is foreign key
         print("BEGIN FOREIGN KEY VALIDATION METHOD NOW:");

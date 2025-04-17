@@ -51,11 +51,17 @@ class mybase:
     
     @classmethod
     def setupMain(cls):
-        for mclsref in mycol.getMyClassRefsMain(True):
-            if (issubclass(mclsref, mybase)): mclsref.setup();
+        mlist = mycol.getMyClassRefsMain(True);
+        isempty = myvalidator.isvaremptyornull(mlist);
+        if (isempty): pass;
+        else:
+            for mclsref in mlist:
+                if (issubclass(mclsref, mybase)): mclsref.setup();
+        mycol.setRanSetup(not isempty);
 
     def __init__(self, colnames=None, colvalues=None):
         print("INSIDE BASE CLASS CONSTRUCTOR CALLING SETUP IF NEEDED FIRST!");
+        #print(f"mycol.hasRunSetupYet() = {mycol.hasRunSetupYet()}");
         if (not mycol.hasRunSetupYet()): type(self).setupMain();
         mytempcols = type(self).getMyCols();
         mycolnames = type(self).getMyColNames(mytempcols);
@@ -116,6 +122,10 @@ class mybase:
             if (type(self).all == None): type(self).all = [self];
             else: type(self).all.append(self);
         else: setattr(type(self), "all", [self]);
+
+        #provide the context to the cols for the object here...
+        #get my cols, then for each col, call setContext with the current object.
+        for mc in self.getMyCols(): mc.setContext(self);
         
         print(f"varstr = SQLVARIANT = {varstr}");
         print("\nNOW VERIFYING THE FOREIGN AND PRIMARY KEY INFORMATION IN BASE CLASS CONSTRUCTOR:\n");
@@ -256,6 +266,10 @@ class mybase:
         #if the user tries to access it, and the object exists, but did not before,
         #we may want to refetch then instead of just before save.
         self.getAndSetForeignKeyObjectsFromCols(mytempcols);
+
+        #update them all here...
+        print();
+        mybase.updateAllForeignKeyObjectsForAllClasses();
 
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!\n");
@@ -402,6 +416,7 @@ class mybase:
                 #mycol.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
                 #myvalidator.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
             else: raise ValueError(errmsgpta + str(valcl) + errptbwithdata + errmsgptc);
+        if (mycolobj.isforeignkey): mybase.updateAllForeignKeyObjectsForAllClasses();
 
     #returns None if not found instead of throwing an error
     @classmethod
@@ -439,10 +454,13 @@ class mybase:
                     if (hasattr(mobj, mattr + "_value")):
                         if (mval == getattr(mobj, mattr + "_value")): pass;
                         else:
+                            print("not found on this object moving on to the next one!");
                             fndallvals = False;
                             break;
                     else: return None;
                 if (fndallvals): return mobj;
+        
+            print("the object with those values for those columns was not found on the list!");
             return None;
 
     def getForeignKeyObjectFromCol(self, mc):
@@ -507,7 +525,13 @@ class mybase:
         return [mc.getForeignObjectName() for mc in type(self).getMyForeignKeyCols(mycols)
                 if (type(self).needToCreateAnObjectForCol(mc))];
 
+    
     #dynamic properties for class objects from the foreign keys set here
+
+    #these links were not that helpful, but did provide some insight into the problem:
+    #https://stackoverflow.com/questions/60686572/dynamic-property-getter-and-setter
+    #https://stackoverflow.com/questions/10967551/how-do-i-dynamically-create-properties-in-python
+    #https://stackoverflow.com/questions/37869030/how-to-programmatically-define-properties-in-python
     
     #remember in Python properties have the normal property name and the private name
     #remember to set the private name initially to an initial value first to prevent not found
@@ -533,8 +557,8 @@ class mybase:
 
     def myObjectGet(self, attrnm):
         def fget(self):
-            print("INSIDE GET!");
-            print(f"attrnm = {attrnm}");
+            #print("INSIDE GET!");
+            #print(f"attrnm = {attrnm}");
             myattval = getattr(self, "_" + attrnm);
             #myattval = __getattr__(self, attrnm);
             #print(f"myattval = {myattval}");
@@ -543,14 +567,14 @@ class mybase:
 
     def myObjectSet(self, attrnm):
         def fset(self, val):
-            print("INSIDE SET!");
-            print(f"attrnm = {attrnm}");
-            print(f"val = {val}");
+            #print("INSIDE SET!");
+            #print(f"attrnm = {attrnm}");
+            #print(f"val = {val}");
             myattval = getattr(self, attrnm);
             myattval = val;
             #myattval.value = val;
             setattr(self, "_" + attrnm, val);
-            print("DONE WITH SET!");
+            #print("DONE WITH SET!");
         return fset;
 
     def getAndSetForeignKeyObjectsFromCols(self, mycols=None):
@@ -593,7 +617,30 @@ class mybase:
             print(getattr(self, mnm));
             #raise ValueError("NOT DONE YET 4-15-2025 10:44 PM MST!");
         return mobjs;
-        
+
+    #update all foreign key objects methods:
+    
+    @classmethod
+    def updateAllForeignKeyObjectsForMyClass(cls):
+        #from mybase import mybase;
+        if (issubclass(cls, mybase)):
+            if (myvalidator.isvaremptyornull(cls.all)): pass;
+            else:
+                print(f"\nBEGIN WORKING ON THOSE FOR {cls.__name__}!");
+                for mobj in cls.all: mobj.getAndSetForeignKeyObjectsFromCols(cls.getMyCols());
+                print(f"\nDONE WITH THOSE FOR {cls.__name__}!");
+
+    @classmethod
+    def updateAllForeignKeyObjectsForAllClasses(cls):
+        print("UPDATING ALL OBJECT REFS NOW:\n");
+        mlist = mycol.getMyClassRefsMain(True);
+        if (myvalidator.isvaremptyornull(mlist)): pass;
+        else:
+            for mclsref in mlist:
+                #from mybase import mybase;
+                if (issubclass(mclsref, mybase)): mclsref.updateAllForeignKeyObjectsForMyClass();   
+        print("DONE UPDATING ALL OBJECT REFS NOW!");
+
 
     def printValuesForAllCols(self, mycols=None):
         fincols = type(self).getMyColsFromClassOrParam(mycols);

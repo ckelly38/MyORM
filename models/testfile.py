@@ -29,7 +29,7 @@ print();
 #print(mynewcol);
 #tstobj = MyTestColsClass(colnames=["mynewcol"], colvalues=[1]);
 #values of the cols must get past into the constructor...
-tstobj = MyTestColsClass(["mynewcol"], [1]);
+tstobj = MyTestColsClass(["mynewcol", "myfkeyid"], [1, 1]);
 tstobjcols = tstobj.getMyCols();
 print(tstobjcols);
 print(tstobj.getTableName());
@@ -38,22 +38,37 @@ tstobj.printValuesForAllCols(tstobjcols);
 print("some values for tstobj printed out via property:");
 print(f"tstobj.mynewcol_value = {tstobj.mynewcol_value}");
 print(f"tstobj.myfkeyid_value = {tstobj.myfkeyid_value}");
-#print(tstobj.mynewcol.value);#error for the moment on this line not done with type enforcement...
+#context will be set in the constructor unless the user overrides it
+#context should not be relied on and these methods are strongly subjective to it.
+#tstobj.mynewcol.setContainer(tstobj);
+print(tstobj.mynewcol.value);#no error if context is tstobj
+#tstobj.mynewcol.setContainer(None);#error because context is not allowed to be null!
+#tstobj.mynewcol.setContainer(tstobj.mynewcol);
+#error because context must be an instance of a subclass of mybase
+#print(tstobj.mynewcol.value);#errors out if one of the two immediately above setContexts are run.
 #print(myvalidator.listMustContainUniqueValuesOnly(
 #    ["colnamea", "colnameb", "colnamea"], "nonucolnames"));#also errors out
 print(tstobj);
-print(tstobj.myotstobj);
+print(f"tstobj.myotstobj = {tstobj.myotstobj}");
 print();
 #raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
-tstobjb = MyOtherTestClass(["myfkeyid"], [1]);
+print("\nBEGIN CREATING OUR NEW OBJECT HERE NOW:\n");
+
+tstobjb = MyOtherTestClass(["mynewcol", "myfkeyid"], [1, 1]);
 print(tstobjb.getMyCols());
 print(tstobjb.getTableName());
 print("values for tstobjb:");
 tstobjb.printValuesForAllCols();
 print(tstobjb);
-print(tstobjb.mytstcolsobj);
+print(f"tstobjb.mytstcolsobj = {tstobjb.mytstcolsobj}");
 print();
+print(f"tstobj.myotstobj = {tstobj.myotstobj}");
+print();
+
+#bug 4-17-2025 4:09 AM MST repr method on mybase class does not include added foreign key object names
+#these are not considdered safe, but I am not even sure if there is a method to get them all anyways.
+
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 #the question is how can we get it so the user does not have to create an init?
