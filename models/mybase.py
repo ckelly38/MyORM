@@ -1,5 +1,6 @@
 from mycol import mycol;
 from mycol import myvalidator;
+from myrefcol import myrefcol;
 from init import SQLVARIANT;
 import traceback;
 class mybase:
@@ -8,7 +9,7 @@ class mybase:
     #disableconstraintswarning = False;
 
     @classmethod
-    def setup(cls):
+    def setupPartA(cls):
         print("\nINSIDE BASE SETUP CLASS METHOD!");
         print(f"cls = {cls}");
         print(f"mytablename = {cls.getTableName()}");
@@ -28,13 +29,22 @@ class mybase:
         mytempcols = cls.getMyCols();
         mycolnames = cls.getMyColNames(mytempcols);
         mycolattrnames = cls.getMyColAttributeNames();
+        myrefcols = cls.getMyRefCols();
+        myrefcolnames = cls.getMyRefColNames(myrefcols);
+        myrefcolattrnames = cls.getMyRefColAttributeNames();
         print(f"mycolnames = {mycolnames}");
         print(f"mycolattrnames = {mycolattrnames}");
+        print(f"myrefcolattrnames = {myrefcolattrnames}");
+        print(f"myrefcolnames = {myrefcolnames}");
 
         myvalidator.listMustContainUniqueValuesOnly(mycolnames, "mycolnames");
         myvalidator.listMustContainUniqueValuesOnly(mycolattrnames, "mycolattrnames");
+        myvalidator.listMustContainUniqueValuesOnly(myrefcolattrnames, "myrefcolattrnames");
+        myvalidator.listMustContainUniqueValuesOnly(myrefcolnames, "myrefcolnames");
         if (myvalidator.areTwoListsTheSame(mycolnames, mycolattrnames)): pass;
         else: raise ValueError("THE COLUMN ATTRIBUTE NAMES MUST MATCH THE SET COLNAME GIVEN!");
+        if (myvalidator.areTwoListsTheSameSize(myrefcolnames, myrefcolattrnames)): pass;
+        else: raise ValueError("THE REF COLUMN ATTRIBUTE NAMES MUST BE THE SAME SIZE AS THE COLNAMES!");
     
         colinverrmsg = "there exists at least one column on the class (" + cls.__name__;
         colinverrmsg += ") that does not have a valid constraint! The invalid colnames are: ";
@@ -47,8 +57,39 @@ class mybase:
         #make sure all gets added.
         if (hasattr(cls, "all")): pass;
         else: setattr(cls, "all", None);
+
         print(f"DONE WITH THE SETUP METHOD FOR {cls.__name__}!\n");
     
+    #depends on the all list existing and being set for all of the classes that is a subclass of mybase
+    #and not mybase before this runs.
+    #this method sets up the refcols here.
+    @classmethod
+    def setupPartB(cls, calledinmain=False):
+        myvalidator.varmustbeboolean(calledinmain, "calledinmain");
+        if (issubclass(cls, mybase) and not (cls == mybase)):
+            for myrefcolobj in cls.getMyRefCols():
+                mynwattrnm = myrefcolobj.getListColName();
+                myrefclsnm = myrefcolobj.getRefClassColName();
+                
+                #if we outright call it before setupPartA has run,
+                #then there is a chance that the class instance will not have been defined yet.
+                #the error is not fatal yet. Though it should be.
+                #it is when it is called in the main setup then it is fatal.
+                myrefclsref = None;
+                try:
+                    myrefclsref = mycol.getMyClassRefFromString(myrefclsnm);
+                except Exception as ex:
+                    #traceback.print_exc();
+                    print(f"class name {myrefclsnm} was not found (so setup exited prematurely)!");
+                    if (calledinmain): raise ex;
+                    else: return None;
+                
+                callset = True;
+                if (hasattr(cls, mynwattrnm)):
+                    mval = getattr(cls, mynwattrnm);
+                    if (mval == myrefclsref.all): callset = False;
+                if (callset): setattr(cls, mynwattrnm, myrefclsref.all);
+
     @classmethod
     def setupMain(cls):
         mlist = mycol.getMyClassRefsMain(True);
@@ -56,7 +97,15 @@ class mybase:
         if (isempty): pass;
         else:
             for mclsref in mlist:
-                if (issubclass(mclsref, mybase)): mclsref.setup();
+                if (issubclass(mclsref, mybase) and not (mclsref == mybase)): mclsref.setupPartA();
+            
+            #due to a dependency on the all list existing and being set for all of the classes
+            #(that are a subclass of mybase and not mybase),
+            #we need to set the refcols here essentially after the setup method has run.
+            #therefore it must be done in a separate loop after all of partA has finished running.
+
+            for mclsref in mlist:
+                if (issubclass(mclsref, mybase) and not (mclsref == mybase)): mclsref.setupPartB(True);
         mycol.setRanSetup(not isempty);
 
     def __init__(self, colnames=None, colvalues=None):
@@ -71,44 +120,6 @@ class mybase:
         print(f"mycolnames = {mycolnames}");
         print(f"colnames = {colnames}");
         print(f"colvalues = {colvalues}");
-
-        # print(f"type(self) = {type(self)}");
-        # print(f"mytablename = {type(self).getTableName()}");
-        
-        # if (type(self).isVarPresentOnTableMain("multi_column_constraints_list")): pass;
-        # else: setattr(type(self), "mymulticolargs", None);
-        # #multiclcnsts = type(self).getAndSetAllMultiColumnConstraints();
-        # multiclcnsts = type(self).getMultiColumnConstraints();
-        # print(f"multicolconstraints = {multiclcnsts}");
-        
-        # mtargs = type(self).getAllTableConstraints();#bool fetchnow=False
-        # if (type(self).isVarPresentOnTableMain("allconstraints_list")): pass;
-        # else: setattr(type(self), "tableargs", ([] if (mtargs == None) else mtargs));
-        # #mtargs = type(self).getAndSetAllTableConstraints();#bool fetchnow=False
-        # print(f"tableargs = {mtargs}");
-        # print(f"colnames = {colnames}");
-        # print(f"colvalues = {colvalues}");
-        
-        # mytempcols = type(self).getMyCols();
-        # mycolnames = type(self).getMyColNames(mytempcols);
-        # mycolattrnames = type(self).getMyColAttributeNames();
-        # print(f"mycolnames = {mycolnames}");
-        # print(f"mycolattrnames = {mycolattrnames}");
-
-        # myvalidator.listMustContainUniqueValuesOnly(mycolnames, "mycolnames");
-        # myvalidator.listMustContainUniqueValuesOnly(mycolattrnames, "mycolattrnames");
-        # if (myvalidator.areTwoListsTheSame(mycolnames, mycolattrnames)): pass;
-        # else: raise ValueError("THE COLUMN ATTRIBUTE NAMES MUST MATCH THE SET COLNAME GIVEN!");
-    
-        # colinverrmsg = "there exists at least one column on the class (" + type(self).__name__;
-        # colinverrmsg += ") that does not have a valid constraint! The invalid colnames are: ";
-        # if (type(self).areColsWithIndividualConstraintsValid(mytempcols)): pass;
-        # else:
-        #     errmsgptc = myvalidator.myjoin(", ", type(self).getMyColNames(
-        #         type(self).getColumnsWithIndividualInvalidConstraints(mytempcols)));
-        #     raise ValueError(colinverrmsg + errmsgptc);
-
-        #the constructor essentially begins here...
 
         #for each column if it is a foreign key, now need to evaluate the class string
         #but need and the link col name
@@ -521,10 +532,6 @@ class mybase:
         return [self.getForeignKeyObjectFromCol(mc) for mc in type(self).getMyForeignKeyCols(mycols)
                 if (type(self).needToCreateAnObjectForCol(mc))];
 
-    def getForeignKeyObjectNamesFromCols(self, mycols=None):
-        return [mc.getForeignObjectName() for mc in type(self).getMyForeignKeyCols(mycols)
-                if (type(self).needToCreateAnObjectForCol(mc))];
-
     
     #dynamic properties for class objects from the foreign keys set here
 
@@ -638,7 +645,8 @@ class mybase:
         else:
             for mclsref in mlist:
                 #from mybase import mybase;
-                if (issubclass(mclsref, mybase)): mclsref.updateAllForeignKeyObjectsForMyClass();   
+                if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
+                    mclsref.updateAllForeignKeyObjectsForMyClass();   
         print("DONE UPDATING ALL OBJECT REFS NOW!");
 
 
@@ -650,27 +658,59 @@ class mybase:
     def getKnownAttributeNamesForRepresentation(self):
         return [nm for nm in type(self).getKnownAttributeNamesOnTheClass()];
 
-    def __repr__(self):
+    def __myrepr__(self, exobjslist=None, usesafelistonly=False):
+        myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
         mstr = "<" + self.__class__.__name__ + " ";
+        unsafelist = type(self).getForeignKeyObjectNamesFromCols();
         nmscls = self.getKnownAttributeNamesForRepresentation();
-        #print(nmscls);
+        #the ref col info objects we do not actually want to print to the user...
+        pinforefcols = False;
+        tmpnmscls = [nm for nm in nmscls if (pinforefcols or
+                                             (nm not in type(self).getMyRefColAttributeNames()))];
+        allsafelist = [nm for nm in tmpnmscls if nm not in unsafelist];
+        finlist = (allsafelist if (usesafelistonly) else tmpnmscls);
+        #print(finlist);
+        #print(f"my class name = {self.__class__.__name__}");
+        #print(f"usesafelistonly = {usesafelistonly}");
         
         handleallsame = False;
         previscol = False;
-        for n in range(len(nmscls)):
-            attr = nmscls[n];
+        for n in range(len(finlist)):
+            attr = finlist[n];
             addnl = False;
+            #print(f"attr = {attr}");
+
             if (hasattr(self, attr)):
-                if (attr == "all"):
-                    if (handleallsame): mstr += attr + ": " + str(getattr(self, attr));
-                    else: mstr += "all: [list of all instances of the class]";
+                if (attr == "all" and not handleallsame):
+                    mstr += "all: [list of all instances of the class]";
                 else:
                     mval = getattr(self, attr);
-                    if ((type(mval) == mycol) and not previscol): mstr += "\n";
-                    mstr += attr + ": " + str(mval);
-                    previscol = (type(mval) == mycol);
-                    if (previscol): addnl = True;
-                if (n + 1 < len(nmscls)):
+                    #if item is on the exclusion object list, just say self reference to stop
+                    #the infinite recursion otherwise.
+                    isexcluded = (myvalidator.isvaremptyornull(exobjslist) or (mval in exobjslist));
+                    if (isexcluded):
+                        #we can have it do the safe list only here
+                        dispsafelist = True;
+                        if (dispsafelist):
+                            mstr += attr + " (self): " + mval.__myrepr__(exobjslist, True);
+                        else: mstr += attr + ": self";
+                    else:
+                        ciscol = (False if (attr == "all") else (type(mval) == mycol));
+                        if ((not (attr == "all")) and ciscol and not previscol): mstr += "\n";
+                        #print("calling to string of the item!");
+                        #if attribute name is on the unsafelist,
+                        #then need to call myrepr but with the exlist;
+                        if (attr in unsafelist):
+                            if (mval == None): mstr += attr + ": None";
+                            else:
+                                nwexlist = [self];
+                                for item in exobjslist: nwexlist.append(item);
+                                mstr += attr + ": " + mval.__myrepr__(nwexlist, False);
+                                #print(f"back in calling class {self.__class__.__name__}!");
+                        else: mstr += attr + ": " + str(mval);
+                        previscol = ciscol;
+                        if (previscol): addnl = True;
+                if (n + 1 < len(finlist)):
                     if (addnl):
                         mstr += ",\n";
                         addnl = False;
@@ -685,26 +725,57 @@ class mybase:
         #raise ValueError("NOT DONE YET!");
         return mstr;
 
+    def __repr__(self): return self.__myrepr__([self]);
+        
+
     #class methods of the base class, but not constructors.
 
     @classmethod
-    def getMyColsOrMyColAttributeNames(cls, usemycols):
+    def getMyColsOrRefColsOrMyColAttributeNames(cls, retobjs, usemycols):
         #print(f"cls = {cls}");
         myvalidator.varmustbeboolean(usemycols, "usemycols");
-        return [(getattr(cls, attr) if usemycols else attr)
-                for attr in dir(cls) if (type(getattr(cls, attr)) == mycol)];
+        myvalidator.varmustbeboolean(retobjs, "retobjs");
+        return [(getattr(cls, attr) if retobjs else attr)
+                for attr in dir(cls) if (type(getattr(cls, attr)) ==
+                                         (mycol if (usemycols) else myrefcol))];
     @classmethod
-    def getMyCols(cls): return cls.getMyColsOrMyColAttributeNames(True);
+    def getMyColObjects(cls, usemycols):
+        return cls.getMyColsOrRefColsOrMyColAttributeNames(True, usemycols);
     @classmethod
-    def getMyColAttributeNames(cls): return cls.getMyColsOrMyColAttributeNames(False);
+    def getMyAttributeNamesForColsOrRefCols(cls, usemycols):
+        return cls.getMyColsOrRefColsOrMyColAttributeNames(False, usemycols);
+    @classmethod
+    def getMyCols(cls): return cls.getMyColObjects(True);
+    @classmethod
+    def getMyRefCols(cls): return cls.getMyColObjects(False);
+    @classmethod
+    def getMyColAttributeNames(cls): return cls.getMyAttributeNamesForColsOrRefCols(True);
+    @classmethod
+    def getMyRefColAttributeNames(cls): return cls.getMyAttributeNamesForColsOrRefCols(False);
 
+    @classmethod
+    def getMyOrRefColsFromClassOrParam(cls, usemycols, mycols=None):
+        myvalidator.varmustbeboolean(usemycols, "usemycols");
+        return (cls.getMyColObjects(usemycols) if myvalidator.isvaremptyornull(mycols) else mycols);
     @classmethod
     def getMyColsFromClassOrParam(cls, mycols=None):
-        return (cls.getMyCols() if myvalidator.isvaremptyornull(mycols) else mycols);
+        return cls.getMyOrRefColsFromClassOrParam(True, mycols);
+    @classmethod
+    def getMyRefColsFromClassOrParam(cls, mycols=None):
+        return cls.getMyOrRefColsFromClassOrParam(False, mycols);
 
     @classmethod
-    def getMyColNames(cls, mycols=None):
-        return [mclobj.colname for mclobj in cls.getMyColsFromClassOrParam(mycols)];
+    def getMyOrRefColNames(cls, usemycols, mycols=None):
+        return [(mclobj.colname if (usemycols) else mclobj.listcolname) for mclobj in
+                 cls.getMyOrRefColsFromClassOrParam(usemycols, mycols)];
+    #the colnames for mycol object match the attribute names for it so you may use this method or
+    #getMyColAttributeNames(cls) since they both return the same result
+    @classmethod
+    def getMyColNames(cls, mycols=None): return cls.getMyOrRefColNames(True, mycols);
+    #returns the value colnames for the refcols
+    #if this is not what you want use: getMyRefColAttributeNames(cls)
+    @classmethod
+    def getMyRefColNames(cls, mycols=None): return cls.getMyOrRefColNames(False, mycols);
     
     @classmethod
     def getValueColNames(cls, mycols=None): return [nm + "_value" for nm in cls.getMyColNames(mycols)];
@@ -738,6 +809,11 @@ class mybase:
     @classmethod
     def getMyForeignKeyCols(cls, mycols=None): return cls.getMyPrimaryOrForeignKeyCols(False, mycols);
     
+    @classmethod
+    def getForeignKeyObjectNamesFromCols(cls, mycols=None):
+        return [mc.getForeignObjectName() for mc in cls.getMyForeignKeyCols(mycols)
+                if (cls.needToCreateAnObjectForCol(mc))];
+
     @classmethod
     def getIndividualColumnConstraintsOrColsWithConstraints(cls, useclist, mycols=None):
         myvalidator.varmustbeboolean(useclist, "useclist");
@@ -895,10 +971,17 @@ class mybase:
 
     @classmethod
     def getKnownAttributeNamesOnTheClass(cls):
-        mlist = [item for item in cls.getOtherKnownSafeAttributesOnTheClass()];
+        mycols = cls.getMyCols();
+        safelist = cls.getOtherKnownSafeAttributesOnTheClass();
+        unsafelist = cls.getForeignKeyObjectNamesFromCols(mycols);
+        mlist = myvalidator.combineTwoLists(safelist, unsafelist);
+        myvalidator.varmustnotbeempty(mlist, "mlist");
         for nm in cls.getMyColAttributeNames():
             mlist.append(nm);
             mlist.append(nm + "_value");
+        myrefcols = cls.getMyRefCols();
+        for nm in cls.getMyRefColAttributeNames(): mlist.append(nm);
+        for nm in cls.getMyRefColNames(myrefcols): mlist.append(nm);
         tnmattrnm = cls.getNameOfVarIfPresentOnTableMain("tablename");
         mcsattrnm = cls.getNameOfVarIfPresentOnTableMain("multi_column_constraints_list");
         acsattrnm = cls.getNameOfVarIfPresentOnTableMain("allconstraints_list");

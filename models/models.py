@@ -1,6 +1,7 @@
 from mybase import mybase;
 from mybase import mycol;
 from mycol import myvalidator;
+from myrefcol import myrefcol;
 validates = mycol.validates;
 class MyTestColsClass(mybase):
     #def __init__(self):
@@ -122,7 +123,7 @@ class Activity(mybase):
 
     # Add relationship
     #signups = db.relationship("Signup", back_populates="activity", cascade="all, delete-orphan");
-    #?
+    signupsinfo = myrefcol(listcolname="signups", refclassname="Signup");
     
     # Add serialization rules
     #serialize_rules = ("-signups",);
@@ -171,7 +172,16 @@ class Camper(mybase):
 
     # Add relationship
     #signups = db.relationship("Signup", back_populates="camper", cascade="all, delete-orphan");
-    #?
+    signupsinfo = myrefcol(listcolname="signups", refclassname="Signup");
+    #
+    #want it to refer to Signup.all.
+    #we can add it once the class becomes defined
+    #how do we know what the user wants to call it? colname
+    #how do we know what class the users wants to reference? foreignclass name
+    #maybe make it a mycol object that holds the information we need for this...
+    #we could use some sort of colname
+    #we could set the foreignClass
+    #but this is not a foreign key. This is not a DB column at all.
     
     # Add serialization rules
     #serialize_rules = ("-signups",);
@@ -249,9 +259,9 @@ class Camper(mybase):
     #    mlist.append(nm + "_value");
     #all is a reserved attribute name for a list of all instances of the class
 
-    def getKnownAttributeNamesForRepresentation(self):
-        return ["id_value", "name_value", "age_value"];
-        #return type(self).getValueColNames();#uses abc order of the above list
+    #def getKnownAttributeNamesForRepresentation(self):
+    #    return ["id_value", "name_value", "age_value"];
+    #    #return type(self).getValueColNames();#uses abc order of the above list
 
     #def __repr__(self):
         #mystr = "<Camper ";

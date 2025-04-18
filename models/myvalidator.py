@@ -142,12 +142,21 @@ class myvalidator:
     def areTwoArraysTheSameSize(cls, arra, arrb):
         if (myvalidator.isvaremptyornull(arra)): return myvalidator.isvaremptyornull(arrb);
         else: return (False if myvalidator.isvaremptyornull(arrb) else (len(arra) == len(arrb)));
+    @classmethod
+    def areTwoListsTheSameSize(cls, arra, arrb): return cls.areTwoArraysTheSameSize(arra, arrb);
 
     @classmethod
     def twoArraysMustBeTheSameSize(cls, arra, arrb, arranm="arranm", arrbnm="arrbnm"):
+        if (myvalidator.isvaremptyornull(arranm)):
+            return cls.twoArraysMustBeTheSameSize(arra, arrb, "arranm", arrbnm);
+        if (myvalidator.isvaremptyornull(arrbnm)):
+            return cls.twoArraysMustBeTheSameSize(arra, arrb, arranm, "arrbnm");
+        errmsg = "the two arrays " + arranm + " and " + arrbnm + " must be the same size!";
         if (myvalidator.areTwoArraysTheSameSize(arra, arrb)): return True;
-        else:
-            raise ValueError("the two arrays " + arranm + " and " + arrbnm + " must be the same size!");
+        else: raise ValueError(errmsg);
+    @classmethod
+    def twoListsMustBeTheSameSize(cls, arra, arrb, arranm="arranm", arrbnm="arrbnm"):
+        return cls.twoArraysMustBeTheSameSize(arra, arrb, arranm, arrbnm);
 
     @classmethod
     def combineTwoLists(cls, lista, listb):
@@ -160,8 +169,7 @@ class myvalidator:
                 #list of strings and another list of strings
                 #copy one, then copy the other directly
                 mynwlist = [mstr for mstr in lista];
-                for mstr in listb:
-                    mynwlist.append(mstr);
+                for mstr in listb: mynwlist.append(mstr);
                 return mynwlist;
 
     @classmethod
@@ -179,9 +187,9 @@ class myvalidator:
 
     @classmethod
     def stringContainsOnlyAlnumCharsIncludingUnderscores(cls, mstr):
-        if (cls.isvaremptyornull(mstr)): return True;
+        if (myvalidator.isvaremptyornull(mstr)): return True;
         else:
-            cls.varmustbethetypeonly(mstr, str, "mstr");
+            myvalidator.varmustbethetypeonly(mstr, str, "mstr");
             for c in mstr:
                 if (c.isalnum() or c == '_'): pass;
                 else: return False;
@@ -191,7 +199,7 @@ class myvalidator:
     def stringMustContainOnlyAlnumCharsIncludingUnderscores(cls, mstr, varnm="varnm"):
         if (myvalidator.isvaremptyornull(varnm)):
             return cls.stringMustContainOnlyAlnumCharsIncludingUnderscores(mstr, "varnm");
-        if (cls.stringContainsOnlyAlnumCharsIncludingUnderscores(mstr)): return True;
+        if (myvalidator.stringContainsOnlyAlnumCharsIncludingUnderscores(mstr)): return True;
         else: raise ValueError(varnm + " must contain alpha-numeric characters only!");
 
     @classmethod

@@ -2,6 +2,7 @@ from init import CURSOR, CONN;
 from models import mycol;
 from mycol import myvalidator;
 #from myvalidator import myvalidator;
+from mybase import mybase;
 from models import MyTestColsClass;
 from models import MyOtherTestClass;
 from models import MyModelWithCompPrimaryKey;
@@ -21,7 +22,9 @@ print("INSIDE OF TEST FILE!");
 #print(inspect.getmembers(sys.modules[__name__], myvalidator.isClass));#list of tuples
 #myclasses = [MyOtherTestClass, MyTestColsClass];
 #mycol.setMyClassRefs(myclasses);
-mycol.getMyClassRefsMain(True);#will force the fetch of the new list if it has changed by now
+#mycol.getMyClassRefsMain(True);#will force the fetch of the new list if it has changed by now
+#print(issubclass(mybase, mybase));
+mybase.setupMain();
 
 print();
 #raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
@@ -66,10 +69,7 @@ print();
 print(f"tstobj.myotstobj = {tstobj.myotstobj}");
 print();
 
-#bug 4-17-2025 4:09 AM MST repr method on mybase class does not include added foreign key object names
-#these are not considdered safe, but I am not even sure if there is a method to get them all anyways.
-
-raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 #the question is how can we get it so the user does not have to create an init?
 #if we assign the foreign key col name in the col constructor,
@@ -176,14 +176,23 @@ vcmpr = Camper(["name", "age"], ["Chris", 18]);
 print(vcmpr);
 ovcmpr = Camper(["name", "age"], ["Sean", 16]);
 print(ovcmpr);
+print(ovcmpr.getMyRefCols());
+print(ovcmpr.getMyRefColNames());
 #when printed out the ID shows NONE because this will be pulled from the DB.
 #until then the ID = NONE.
 
+#bug 4-17-2025 6:26 PM MISSING METHOD OR FEATURE REQUEST:
+#need to add a method to add something like signups
+#which is not normally in the class and not linked directly by a foreign key
 
-#from mybase import mybase;
-#for cls in mycol.getMyClassRefsMain(True):
-#      if (issubclass(cls, mybase)):
-#            ?;
+#add some activities here too
+
+#add some signups here for the campers, and maybe IDs for the campers
+
+#now recheck the signups to see if the lists are accurate...
+
+#after this build a better test and then do serialization.
+
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 print("IS VALUE IN RANGE OR STRING HAS AT MOST OR AT MIN AMOUNT OF CHARS TESTS:");
@@ -807,7 +816,7 @@ print(myvalidator.genSQLSum("price", False));
 #-figure out where to put the sql generator methods
 #-ways to save data, ways to add new data, ways to remove data, ways to update the data, (#2)
 #-and ways to remove tables (#3)
-#-ways to print out objects via serialization (#4)
+#-ways to print out objects via serialization (#4) (currently doing stuff like this)
 #-ways to back up the database (#5)
 
 #some data types have the same names, but the parameters for max and min sizes depend on the variant.
