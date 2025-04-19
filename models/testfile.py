@@ -172,24 +172,44 @@ print();
 #print(mcmpr);
 #omcmpr = Camper(["name", "age"], ["", 9]);#error name cannot be empty!
 #print(omcmpr);
-vcmpr = Camper(["name", "age"], ["Chris", 18]);
+vcmpr = Camper(["id", "name", "age"], [1, "Chris", 18]);
 print(vcmpr);
-ovcmpr = Camper(["name", "age"], ["Sean", 16]);
+ovcmpr = Camper(["id", "name", "age"], [2, "Sean", 16]);
 print(ovcmpr);
 print(ovcmpr.getMyRefCols());
 print(ovcmpr.getMyRefColNames());
 #when printed out the ID shows NONE because this will be pulled from the DB.
 #until then the ID = NONE.
 
-#bug 4-17-2025 6:26 PM MISSING METHOD OR FEATURE REQUEST:
-#need to add a method to add something like signups
-#which is not normally in the class and not linked directly by a foreign key
-
 #add some activities here too
+dball = Activity(["id", "name", "difficulty"], [1, "dodgeball", 5]);
+prgmng = Activity(["id", "name", "difficulty"], [2, "programming", 10]);
+print(dball);
+print(prgmng);
+print();
+print("\nBEGIN CREATING SOME SIGNUPS HERE:\n");
 
 #add some signups here for the campers, and maybe IDs for the campers
+sa = Signup(["id", "time", "camper_id", "activity_id"], [1, 8, 1, 2]);
+sb = Signup(["id", "time", "camper_id", "activity_id"], [2, 9, 2, 1]);
+sc = Signup(["id", "time", "camper_id", "activity_id"], [3, 9, 1, 1]);
+print();
+
+if (len(Signup.all) == 3): pass;
+else: raise ValueError("there must be 3 signups, but there was not!");
 
 #now recheck the signups to see if the lists are accurate...
+runlinkreftests = False;
+if (runlinkreftests):
+      print("\nSIGNUPS:");
+      print(Signup.all);
+      print();
+      print("CAMPER SIGNUPS:");
+      print(ovcmpr.signups);
+      print();
+      print("ACTIVITY SIGNUPS:");
+      print(dball.signups);
+      print();
 
 #after this build a better test and then do serialization.
 

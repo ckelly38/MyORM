@@ -129,8 +129,8 @@ class Activity(mybase):
     #serialize_rules = ("-signups",);
     #serialize_rules = ("-signups.activity",);#copied from old code what we used
     
-    def __repr__(self):
-        return f'<Activity {self.id_value}: {self.name_value}>';
+    #def __repr__(self):
+    #    return f'<Activity {self.id_value}: {self.name_value}>';
 
 #mycol.getMyClassRefsMain(True);
 
@@ -335,7 +335,7 @@ class Signup(mybase):
     @validates("time")
     def isvalidtime(self, key, val): return myvalidator.isValueInRangeWithMaxAndMin(val, 0, 23);
     
-    def __repr__(self):
-        return f'<Signup {self.id_value}>';
+    #def __repr__(self):
+    #    return f'<Signup {self.id_value}>';
 
 #mycol.getMyClassRefsMain(True);

@@ -769,7 +769,7 @@ class mycol:
             myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
             return self.genForeignKeyDataObjectInfo(cntxt);
 
-        print("GET FOREIGN KEY DATA OBJECT METHOD NOW:");
+        print("\nGET FOREIGN KEY DATA OBJECT METHOD NOW:");
         print(f"self.isforeignkey = {self.isforeignkey}");
         print(f"self.foreignColNames = {self.foreignColNames}");
         print(f"self.foreignClass = {self.foreignClass}");
@@ -931,7 +931,7 @@ class mycol:
             return self.foreignKeyInformationMustBeValid(cntxt);
         
         #has is foreign key
-        print("BEGIN FOREIGN KEY VALIDATION METHOD NOW:");
+        print("\nBEGIN FOREIGN KEY VALIDATION METHOD NOW:");
         print(f"self.isforeignkey = {self.isforeignkey}");
         print(f"self.foreignColNames = {self.foreignColNames}");
         print(f"self.foreignClass = {self.foreignClass}");

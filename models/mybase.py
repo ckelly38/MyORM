@@ -89,6 +89,8 @@ class mybase:
                     mval = getattr(cls, mynwattrnm);
                     if (mval == myrefclsref.all): callset = False;
                 if (callset): setattr(cls, mynwattrnm, myrefclsref.all);
+    @classmethod
+    def updateAllLinkRefsForMyClass(cls): cls.setupPartB(True);
 
     @classmethod
     def setupMain(cls):
@@ -151,6 +153,7 @@ class mybase:
         #how to know which value is for what col?
         #base constructor will take in two parameters, one col names, and one values
 
+        print("\nBEGIN ASSIGNING GIVEN VALUES FOR THE COLUMNS IN THE BASE CLASS CONSTRUCTOR:");
 
         if myvalidator.isvaremptyornull(colnames): pass;
         else:
@@ -165,6 +168,9 @@ class mybase:
                     print(f"mycolobj = {mycolobj}");
 
                     self.setValueForColName(clnm, valcl, mycolobj);
+                print();
+        
+        print("DONE ASSIGNING GIVEN VALUES FOR THE COLUMNS IN THE BASE CLASS CONSTRUCTOR!");
         
 
         #get the col names not in that list and then compute the default values that can be used
@@ -178,6 +184,8 @@ class mybase:
         print(f"colnames = {colnames}");
         print(f"ocolnms = {ocolnms}");
         
+        print("\nBEGIN ASSIGNING REMAINING COLUMNS WITH DEFAULT VALUES IN BASE CLASS CONSTRUCTOR:");
+
         for clnm in ocolnms:
             #the value is the default value for the type for the varaint
             #get the type object for that type for the variant
@@ -265,6 +273,8 @@ class mybase:
             if (getfromdb): setattr(self, clnm + "_value", valcl);
             else: self.setValueForColName(clnm, valcl, mycolobj);
         
+        print("DONE ASSIGNING REMAINING COLUMNS WITH DEFAULT VALUES IN BASE CLASS CONSTRUCTOR!");
+        
         #set the objects for the foreign key object cols here...
         #IE say we have a SignUps DB table and it has a reference to a Camper object called camper
         #we also have the ID of the Camper in the foreign key column.
@@ -281,6 +291,7 @@ class mybase:
         #update them all here...
         print();
         mybase.updateAllForeignKeyObjectsForAllClasses();
+        mybase.updateAllLinkRefsForAllClasses();
 
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!\n");
@@ -475,6 +486,7 @@ class mybase:
             return None;
 
     def getForeignKeyObjectFromCol(self, mc):
+        print(f"mc = {mc}");
         myvalidator.varmustnotbenull(mc, "mc");
         #using the foreign key column information stored in the column,
         #we can get attributes like foreignClass="Camper", foreignColNames=["id"], and
@@ -498,6 +510,7 @@ class mybase:
         #stringContainsOnlyAlnumCharsIncludingUnderscores(cls, mstr)
         #fkyobjname from col
         if (type(self).needToCreateAnObjectForCol(mc)):
+            print("WE NEED TO CREATE AN OBJECT FOR THE COLUMN HERE!");
             #fkyobjnmfromcl = mc.getForeignObjectName();
             #we depend on it, but do not need it here if not calling setattr
             #using the foreign class and the attributes and values specified in the column
@@ -510,9 +523,18 @@ class mybase:
                 #traceback.print_exc();
                 print(f"class name {mcnm} not found!");
                 return None;
+            print(f"GOT THE REFERENCE CLASS NAME {mcref.__name__}!");
+            print(f"foreign col names = {mc.getForeignColNames()}");
+            print(f"my col name = {mc.getColName()}");
+            mval = None;
+            try:
+                mval = self.getValueForColName(mc.getColName());
+            except Exception as ex:
+                #traceback.print_exc();
+                print(f"col name {str(mc.getColName() + '_value')} not found!");
+                return None;
             #get the object here...
-            mobj = type(self).getObjectFromGivenKeysAndValues(mcref.all, mc.getForeignColNames(),
-                                                              self.getValueForColName(mc.getColName()));
+            mobj = type(self).getObjectFromGivenKeysAndValues(mcref.all, mc.getForeignColNames(), mval);
             #now we can maybe call setattr here... or just return...
             return mobj;
         else: return None;
@@ -586,9 +608,14 @@ class mybase:
 
     def getAndSetForeignKeyObjectsFromCols(self, mycols=None):
         mobjnms = self.getForeignKeyObjectNamesFromCols(mycols);
+        print(f"mobjnms = {mobjnms}");
+
         mobjs = self.getForeignKeyObjectsFromCols(mycols);
+        print(f"mobjs = {mobjs}");
+
         myvalidator.listMustContainUniqueValuesOnly(mobjnms, "mobjnms");
         myvalidator.twoArraysMustBeTheSameSize(mobjnms, mobjs);
+
         for n in range(len(mobjnms)):
             mobj = mobjs[n];
             mnm = mobjnms[n];
@@ -639,7 +666,7 @@ class mybase:
 
     @classmethod
     def updateAllForeignKeyObjectsForAllClasses(cls):
-        print("UPDATING ALL OBJECT REFS NOW:\n");
+        print("\nUPDATING ALL OBJECT REFS FROM FOREIGN KEYS NOW:\n");
         mlist = mycol.getMyClassRefsMain(True);
         if (myvalidator.isvaremptyornull(mlist)): pass;
         else:
@@ -647,8 +674,19 @@ class mybase:
                 #from mybase import mybase;
                 if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
                     mclsref.updateAllForeignKeyObjectsForMyClass();   
-        print("DONE UPDATING ALL OBJECT REFS NOW!");
+        print("DONE UPDATING ALL OBJECT REFS FROM FOREIGN KEYS NOW!");
 
+    @classmethod
+    def updateAllLinkRefsForAllClasses(cls):
+        print("\nUPDATING ALL LINK REFS FROM FOREIGN KEYS NOW:\n");
+        mlist = mycol.getMyClassRefsMain(True);
+        if (myvalidator.isvaremptyornull(mlist)): pass;
+        else:
+            for mclsref in mlist:
+                #from mybase import mybase;
+                if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
+                    mclsref.updateAllLinkRefsForMyClass();#mclsref.setupPartB(True);
+        print("DONE UPDATING ALL LINK REFS FROM FOREIGN KEYS NOW!");
 
     def printValuesForAllCols(self, mycols=None):
         fincols = type(self).getMyColsFromClassOrParam(mycols);
@@ -663,8 +701,7 @@ class mybase:
         mstr = "<" + self.__class__.__name__ + " ";
         unsafelist = type(self).getForeignKeyObjectNamesFromCols();
         nmscls = self.getKnownAttributeNamesForRepresentation();
-        #the ref col info objects we do not actually want to print to the user...
-        pinforefcols = False;
+        pinforefcols = False;#if this is false, col info is not printed to the user, if true, it is
         tmpnmscls = [nm for nm in nmscls if (pinforefcols or
                                              (nm not in type(self).getMyRefColAttributeNames()))];
         allsafelist = [nm for nm in tmpnmscls if nm not in unsafelist];
@@ -690,12 +727,13 @@ class mybase:
                     isexcluded = (myvalidator.isvaremptyornull(exobjslist) or (mval in exobjslist));
                     if (isexcluded):
                         #we can have it do the safe list only here
-                        dispsafelist = True;
+                        dispsafelist = False;
                         if (dispsafelist):
                             mstr += attr + " (self): " + mval.__myrepr__(exobjslist, True);
                         else: mstr += attr + ": self";
                     else:
                         ciscol = (False if (attr == "all") else (type(mval) == mycol));
+                        ciscol = (ciscol or ((attr in unsafelist) and not (mval == None)));
                         if ((not (attr == "all")) and ciscol and not previscol): mstr += "\n";
                         #print("calling to string of the item!");
                         #if attribute name is on the unsafelist,
@@ -724,8 +762,10 @@ class mybase:
         #print(mstr);
         #raise ValueError("NOT DONE YET!");
         return mstr;
-
     def __repr__(self): return self.__myrepr__([self]);
+
+    #def __to_dict(self):
+    #    raise ValueError("NOT DONE YET 4-19-2025 1:20 AM MST!");
         
 
     #class methods of the base class, but not constructors.
