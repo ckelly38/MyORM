@@ -131,6 +131,10 @@ class Activity(mybase):
     
     #def __repr__(self):
     #    return f'<Activity {self.id_value}: {self.name_value}>';
+    def __repr__(self):
+        return self.__simplerepr__(["<Activity ", ": ", " other ", ">"],
+                                   ["id_value", "name_value", "signups"],
+                                   ignoreerr=True, strstarts=True);
 
 #mycol.getMyClassRefsMain(True);
 
@@ -271,6 +275,12 @@ class Camper(mybase):
         #mystr += " years old>";
         #return mystr;
         #return f'<Camper {self.id_value}: {self.name_value}>';
+    
+    def __repr__(self, exobjslist=None, usesafelistonly=False):
+        return self.__simplerepr__(["<Camper ", ": ", " is ", " years old>"],
+                                   myattrs=["id_value", "name_value", "age_value", "signups"],
+                                   ignoreerr=True, strstarts=True, exobjslist=exobjslist,
+                                   usesafelistonly=usesafelistonly);
 
 #mycol.getMyClassRefsMain(True);
 
@@ -322,7 +332,7 @@ class Signup(mybase):
     #if the class is not instantiated or the values are not found, then None
     #if found it gets returned.
     #if not found, we need to keep doing the look up on them each time a new object is created or
-    #when the foreign key values change 
+    #when the foreign key values change
     
     # Add serialization rules
     #serialize_rules = ("-camper", "-activity");
@@ -337,5 +347,9 @@ class Signup(mybase):
     
     #def __repr__(self):
     #    return f'<Signup {self.id_value}>';
+
+    def __repr__(self):
+        return self.__simplerepr__(["<Signup ", "other ", "stuff"],
+                                   ["id_value", "camper", "activity"], ignoreerr=True, strstarts=True);
 
 #mycol.getMyClassRefsMain(True);

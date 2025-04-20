@@ -696,6 +696,89 @@ class mybase:
     def getKnownAttributeNamesForRepresentation(self):
         return [nm for nm in type(self).getKnownAttributeNamesOnTheClass()];
 
+    
+    #NOT DONE YET 4-19-2025 11 PM MST...
+    
+    def __simplerepr__(self, mystrs, myattrs=None, ignoreerr=True, strstarts=True,
+                       exobjslist=None, usesafelistonly=False):
+        myvalidator.varmustbeboolean(strstarts, "strstarts");
+        myvalidator.varmustbeboolean(ignoreerr, "ignoreerr");
+        myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
+        if (myvalidator.isvaremptyornull(myattrs)): return myvalidator.myjoin("", mystrs);
+        else:
+            #they alternate starting with one or other other
+            #when one runs out, just put the other
+            #when the attributes runs out and the strings are left we can join the remaining strings.
+            #we cannot do the same for the attributes.
+            #if the attributes are on the unsafelist, copy how it is handled in myrepr
+            #if the attribute does not exist, then either
+            #-add None to the string and ignore the error OR kill it.
+            myvalidator.listMustContainUniqueValuesOnly(myattrs, "myattrs");
+            print(f"my class name = {self.__class__.__name__}");
+
+            fobjnames = type(self).getForeignKeyObjectNamesFromCols();
+            refcolnames = type(self).getMyRefColNames();
+            unsafelist = myvalidator.combineTwoLists(fobjnames, refcolnames);
+            print(f"unsafelist = {unsafelist}");
+            print(type(self).getMyRefColAttributeNames());
+            #safe to serialize and represent, but not really needed
+            #what they refer to absolutely is not safe
+
+            mstr = "";
+            maxlen = max(len(mystrs), len(myattrs));
+            nostrsleft = False;
+            for n in range(maxlen):
+                #get the first item
+                #now attempt to get the other item...
+                cstr = None;
+                if (n < len(mystrs)): cstr = mystrs[n];
+                else: nostrsleft = True;
+                cattr = None;
+                if (n < len(myattrs)): cattr = myattrs[n];
+                else:
+                    #strings only but no attributes... we want n<=x not: x<n;
+                    return mstr + myvalidator.myjoin("", [mystrs[x] for x in range(len(mystrs))
+                                                          if(not (x < n))]);
+                #we want to add both if we have them here...
+                #the question is what order:
+                print(f"cstr = {cstr}");
+                print(f"cattr = {cattr}");
+
+                if (strstarts and not nostrsleft): mstr += "" + cstr;
+                if (hasattr(self, cattr)):
+                    #need to get the attribute from the object, but also need to be careful...
+                    #if our attribute is on the unsafe list, we need to be really careful
+                    #if our attribute is on the safe list, we are safe.
+
+                    print("NEED TO DO SOMETHING HERE... 4-19-2025 10 PM MST!");
+                    if (cattr in unsafelist):
+                        mval = getattr(self, cattr);
+                        #if item is on the exclusion object list, just say self reference to stop
+                        #the infinite recursion otherwise.
+                        isexcluded = (myvalidator.isvaremptyornull(exobjslist) or (mval in exobjslist));
+                        if (isexcluded):
+                            #we can have it do the safe list only here
+                            dispsafelist = False;
+                            if (dispsafelist):
+                                #mstr += cattr + " (self): " +
+                                #mval.__simplerepr__(mystrs, myattrs=None, ignoreerr=True,
+                                #                    strstarts=True, exobjslist=None,
+                                #                    usesafelistonly=False);
+                                #mval.__myrepr__(exobjslist, True);
+                                raise ValueError("NOT DONE YET 4-19-2025 11 PM MST!");
+                            else: mstr += "self";
+                        else:
+                            raise ValueError("NOT DONE YET 4-19-2025 11 PM MST!");
+                    else: mstr += "" + str(getattr(self, cattr));
+                    #mstr += "" + cattr;
+                else:
+                    if (ignoreerr): mstr += "None";
+                    else: raise AttributeError(f"'{type(self).__name__}' has no attribute '{cattr}'");
+                if (not strstarts and not nostrsleft): mstr += "" + cstr;
+            return mstr;
+                    
+
+
     def __myrepr__(self, exobjslist=None, usesafelistonly=False):
         myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
         mstr = "<" + self.__class__.__name__ + " ";
