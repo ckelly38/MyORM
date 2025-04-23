@@ -697,8 +697,6 @@ class mybase:
         return [nm for nm in type(self).getKnownAttributeNamesOnTheClass()];
 
     
-    #NOT DONE YET 4-19-2025 11 PM MST...
-    
     def __simplerepr__(self, mystrs, myattrs=None, ignoreerr=True, strstarts=True,
                        exobjslist=None, usesafelistonly=False):
         myvalidator.varmustbeboolean(strstarts, "strstarts");
@@ -714,13 +712,13 @@ class mybase:
             #if the attribute does not exist, then either
             #-add None to the string and ignore the error OR kill it.
             myvalidator.listMustContainUniqueValuesOnly(myattrs, "myattrs");
-            print(f"my class name = {self.__class__.__name__}");
+            #print(f"my class name = {self.__class__.__name__}");
 
             fobjnames = type(self).getForeignKeyObjectNamesFromCols();
             refcolnames = type(self).getMyRefColNames();
             unsafelist = myvalidator.combineTwoLists(fobjnames, refcolnames);
-            print(f"unsafelist = {unsafelist}");
-            print(type(self).getMyRefColAttributeNames());
+            #print(f"unsafelist = {unsafelist}");
+            #print(type(self).getMyRefColAttributeNames());
             #safe to serialize and represent, but not really needed
             #what they refer to absolutely is not safe
 
@@ -741,34 +739,77 @@ class mybase:
                                                           if(not (x < n))]);
                 #we want to add both if we have them here...
                 #the question is what order:
-                print(f"cstr = {cstr}");
-                print(f"cattr = {cattr}");
+                #print(f"cstr = {cstr}");
+                #print(f"cattr = {cattr}");
 
                 if (strstarts and not nostrsleft): mstr += "" + cstr;
                 if (hasattr(self, cattr)):
                     #need to get the attribute from the object, but also need to be careful...
                     #if our attribute is on the unsafe list, we need to be really careful
                     #if our attribute is on the safe list, we are safe.
+                    #print("the attribute was found!");
 
-                    print("NEED TO DO SOMETHING HERE... 4-19-2025 10 PM MST!");
                     if (cattr in unsafelist):
-                        mval = getattr(self, cattr);
-                        #if item is on the exclusion object list, just say self reference to stop
-                        #the infinite recursion otherwise.
-                        isexcluded = (myvalidator.isvaremptyornull(exobjslist) or (mval in exobjslist));
-                        if (isexcluded):
-                            #we can have it do the safe list only here
-                            dispsafelist = False;
-                            if (dispsafelist):
-                                #mstr += cattr + " (self): " +
-                                #mval.__simplerepr__(mystrs, myattrs=None, ignoreerr=True,
-                                #                    strstarts=True, exobjslist=None,
-                                #                    usesafelistonly=False);
-                                #mval.__myrepr__(exobjslist, True);
-                                raise ValueError("NOT DONE YET 4-19-2025 11 PM MST!");
-                            else: mstr += "self";
+                        #print("the attribute is on the unsafe list!");
+                        #print(f"cattr = {cattr}");
+                        #print(f"usesafelistonly = {usesafelistonly}");
+                        #print(f"current class is = {type(self).__name__}");
+
+                        if (usesafelistonly): pass;
                         else:
-                            raise ValueError("NOT DONE YET 4-19-2025 11 PM MST!");
+                            mval = getattr(self, cattr);
+                            if (mval == None): mstr += "None";
+                            else:
+                                #if item is on the exclusion object list, just say self reference
+                                #to stop the infinite recursion otherwise.
+                                isexcluded = (False if (myvalidator.isvaremptyornull(exobjslist))
+                                            else (mval in exobjslist));
+                                if (isexcluded):
+                                    #we can have it do the safe list only here
+                                    dispsafelist = True;
+                                    if (dispsafelist):
+                                        #not sure which one to use:
+                                        mstr += cattr + " (self): ";
+                                        try:
+                                            mstr += mval.__repr__(exobjslist=exobjslist,
+                                                                usesafelistonly=True);
+                                        except Exception as ex:
+                                            traceback.print_exc();
+                                            mstr += mval.__repr__();
+                                        #mstr += cattr + " (self): " +
+                                        #mval.__simplerepr__(mystrs, myattrs=None, ignoreerr=True,
+                                        #                    strstarts=True, exobjslist=None,
+                                        #                    usesafelistonly=False);
+                                        #mval.__myrepr__(exobjslist=exobjslist, usesafelistonly=True);
+                                        #raise ValueError("NOT DONE YET 4-19-2025 11 PM MST!");
+                                    else: mstr += "self";
+                                else:
+                                    #if item is a list of unsafe objects, then what?
+                                    #like for example signups in a different class like Activity
+                                    #if we just let it run it will be infinite, so we can try generating
+                                    #it ourselves, then...
+                                    if (type(mval) in [list, tuple]):
+                                        mstr += "[";
+                                        for k in range(len(mval)):
+                                            item = mval[k];
+                                            #print(f"class of item = {type(item).__name__}");
+                                            try:
+                                                mstr += item.__repr__(exobjslist=exobjslist,
+                                                                    usesafelistonly=True);
+                                            except Exception as ex:
+                                                traceback.print_exc();
+                                                mstr += item.__repr__();
+                                            if (k + 1 < len(mval)): mstr += ", ";
+                                        mstr += "]";
+                                    else:
+                                        #print(f"cattr = {cattr}");
+                                        try:
+                                            mstr += mval.__repr__(exobjslist=exobjslist,
+                                                                  usesafelistonly=True);
+                                        except Exception as ex:
+                                            traceback.print_exc();
+                                            mstr += mval.__repr__();
+                                        #raise ValueError("NOT DONE YET 4-19-2025 11 PM MST!");
                     else: mstr += "" + str(getattr(self, cattr));
                     #mstr += "" + cattr;
                 else:

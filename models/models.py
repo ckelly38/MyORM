@@ -348,8 +348,10 @@ class Signup(mybase):
     #def __repr__(self):
     #    return f'<Signup {self.id_value}>';
 
-    def __repr__(self):
-        return self.__simplerepr__(["<Signup ", "other ", "stuff"],
-                                   ["id_value", "camper", "activity"], ignoreerr=True, strstarts=True);
+    def __repr__(self, exobjslist=None, usesafelistonly=False):
+        return self.__simplerepr__(["<Signup ", "other ", "stuff", ">"],
+                                   ["id_value", "camper", "activity"],
+                                   ignoreerr=True, strstarts=True, exobjslist=exobjslist,
+                                   usesafelistonly=usesafelistonly);
 
 #mycol.getMyClassRefsMain(True);
