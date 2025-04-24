@@ -888,8 +888,66 @@ class mybase:
         return mstr;
     def __repr__(self): return self.__myrepr__([self]);
 
-    #def __to_dict(self):
-    #    raise ValueError("NOT DONE YET 4-19-2025 1:20 AM MST!");
+    #NOT DONE YET 4-24-2024 at 2 AM MST
+
+    def __to_dict__(self, myattrs=None, exobjslist=None, usesafelistonly=False):
+        myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
+        
+        #make sure the self object is always excluded.
+        if (myvalidator.isvaremptyornull(exobjslist)):
+            return self.__to_dict__(myattrs, exobjslist=[self], usesafelistonly=usesafelistonly);
+
+        fobjnames = type(self).getForeignKeyObjectNamesFromCols();
+        refcolnames = type(self).getMyRefColNames();
+        unsafelist = myvalidator.combineTwoLists(fobjnames, refcolnames);
+        if (unsafelist == None): unsafelist = ["all"];
+        elif ("all" not in unsafelist): unsafelist.append("all");
+        nmscls = self.getKnownAttributeNamesForRepresentation();
+        print(f"myattrs = {myattrs}");
+        print(f"unsafelist = {unsafelist}");
+        print(f"all list = nmscls = {nmscls}");
+
+        usealist = (myvalidator.isvaremptyornull(myattrs));#use_all_list or included attribute list
+        safelist = [item for item in nmscls if (item not in unsafelist)];
+        myfinlist = ((safelist if (usesafelistonly) else nmscls) if (usealist) else myattrs);
+        print(f"usealist = {usealist}");
+        print(f"usesafelistonly = {usesafelistonly}");
+        print(f"safelist = {safelist}");
+        print(f"myfinlist = {myfinlist}");
+
+        #serialization does not care about the order
+        #so handle everything that is safe before we even both to deal with the hard stuff
+        mdict = {};
+        for attr in myfinlist:
+            if (attr in safelist): mdict[attr] = getattr(self, attr);
+            else:
+                mval = getattr(self, attr);
+                if (mval == None): mdict[attr] = mval;
+                elif ((type(mval) in [list, tuple]) and myvalidator.isvaremptyornull(mval)):
+                    mdict[attr] = mval;
+                #else handle unsafe list in other loop below
+        print(f"safedict = {mdict}");
+
+        #signups has unsafe stuff like:
+        #activity object
+        #camper object
+        #all signups list (camper and activity and all models include all list on theirs too)
+        #
+        #when we have to serialize stuff like camper, what do we do?
+        #first we serialize the safe stuff, but we also need to exclude signups class as a whole.
+
+        for attr in myfinlist:
+            if (attr in safelist): pass;
+            else:
+                mval = getattr(self, attr);
+                if (mval == None): pass;
+                elif ((type(mval) in [list, tuple]) and myvalidator.isvaremptyornull(mval)): pass;
+                else:
+                    print("attr is in the unsafe list!");
+                    print(f"attr = {attr}");
+                    raise ValueError("NOT DONE YET WITH THE UNSAFE LIST STUFF YET 4-24-2025 2 AM MST!");
+
+        return mdict;
         
 
     #class methods of the base class, but not constructors.

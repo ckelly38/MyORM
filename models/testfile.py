@@ -212,6 +212,8 @@ if (runlinkreftests):
       print();
 
 #after this build a better test and then do serialization.
+for item in Signup.all:
+      print(item.__to_dict__());
 
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
