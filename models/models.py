@@ -337,6 +337,8 @@ class Signup(mybase):
     # Add serialization rules
     #serialize_rules = ("-camper", "-activity");
     #serialize_rules = ("-campers.signups", "-activity.signups");#copied from old code what we used
+    #
+    #ex_rules = ["*.signups"];#["camper.signups", "activity.signups"];
     
     # Add validation
     #@validates("time")
@@ -353,5 +355,11 @@ class Signup(mybase):
                                    ["id_value", "camper", "activity"],
                                    ignoreerr=True, strstarts=True, exobjslist=exobjslist,
                                    usesafelistonly=usesafelistonly);
+
+    def __to_dict__(self, myattrs=None, exobjslist=None, usesafelistonly=False, prefix=""):
+        #nwlist = myvalidator.combineTwoLists(exobjslist, ["activity.signups", "camper.signups"]);
+        nwlist = myvalidator.combineTwoLists(exobjslist, ["*.signups"]);
+        return super().__to_dict__(myattrs=myattrs, exobjslist=nwlist, usesafelistonly=usesafelistonly,
+                                   prefix=prefix);
 
 #mycol.getMyClassRefsMain(True);

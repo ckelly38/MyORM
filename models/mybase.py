@@ -693,8 +693,10 @@ class mybase:
         for mc in self.getMyColNames(fincols):
             print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
 
-    def getKnownAttributeNamesForRepresentation(self):
-        return [nm for nm in type(self).getKnownAttributeNamesOnTheClass()];
+    def getKnownAttributeNamesForRepresentation(self, useserial=False):
+        return [nm for nm in type(self).getKnownAttributeNamesOnTheClass(useserial)];
+    def getKnownAttributeNamesForSerialization(self):
+        return self.getKnownAttributeNamesForRepresentation(useserial=True);
 
     
     def __simplerepr__(self, mystrs, myattrs=None, ignoreerr=True, strstarts=True,
@@ -824,7 +826,7 @@ class mybase:
         myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
         mstr = "<" + self.__class__.__name__ + " ";
         unsafelist = type(self).getForeignKeyObjectNamesFromCols();
-        nmscls = self.getKnownAttributeNamesForRepresentation();
+        nmscls = self.getKnownAttributeNamesForRepresentation(useserial=False);
         pinforefcols = False;#if this is false, col info is not printed to the user, if true, it is
         tmpnmscls = [nm for nm in nmscls if (pinforefcols or
                                              (nm not in type(self).getMyRefColAttributeNames()))];
@@ -890,22 +892,65 @@ class mybase:
 
     #NOT DONE YET 4-24-2024 at 2 AM MST
 
-    def __to_dict__(self, myattrs=None, exobjslist=None, usesafelistonly=False):
+    #mcntr = 0;
+
+    def __to_dict__(self, myattrs=None, exobjslist=None, usesafelistonly=False, prefix=""):
         myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
+
+        if (prefix == None):
+            return self.__to_dict__(myattrs=myattrs, exobjslist=exobjslist,
+                                    usesafelistonly=usesafelistonly, prefix="");
         
+        #this method serialized and makes a dict of the given object for its given
+        #attributes or properties.
+        #
+        #not sure what to exclude.
+        #we know that some attributes are always safe and some are unsafe
+        #the unsafe stuff may be excluded or included but how?
+        #we need some kind of list to determine what gets excluded...
+        #we also may only want to serialize certain items and ignore the rest...
+        #but we do not really want that to depend on the context.
+        #
+        #if we are in the Signups class for example:
+        #when we go to something unsafe like activity or camper, we need to exclude at minimum:
+        #-our current signup object (self)
+        #-we also need to exclude camper.signups and activity.signups or *.signups
+        #-but really it is a reference to the starting class or the classes used.
+        #for example:
+        #signups has a camper object and an activity object
+        #the camper and activity objects both have a list of signup objects that must be excluded
+        #Class order: Signup, Camper, List<Signup>, Signup (if not excluded) or Activity, List<Signup> 
+        #if we assume that the lists are all of the same type then we can get the type of the first
+        #item or all items assuming non-null and if it refers to an already used class
+        #exclude altogether or serialize safe items only or just exclude that...
+        #
+        #sometimes in the camper, we want the signups and other times we do not.
+        #so we need to be able to specify that we do not want something...
+        #we also need some way of saying we only want these...
+        #the only is myattrs provided list.
+        #
+        #do we want to include stuff like the tablename and the constraints that are common for the
+        #whole class or not? For serialization it seems pointless to include this stuff.
+        #That kind of stuff is not included now.
+
         #make sure the self object is always excluded.
-        if (myvalidator.isvaremptyornull(exobjslist)):
-            return self.__to_dict__(myattrs, exobjslist=[self], usesafelistonly=usesafelistonly);
+        #if (myvalidator.isvaremptyornull(exobjslist)):
+        #    return self.__to_dict__(myattrs=myattrs, exobjslist=[self],
+        #       usesafelistonly=usesafelistonly, prefix=prefix);
 
         fobjnames = type(self).getForeignKeyObjectNamesFromCols();
         refcolnames = type(self).getMyRefColNames();
         unsafelist = myvalidator.combineTwoLists(fobjnames, refcolnames);
         if (unsafelist == None): unsafelist = ["all"];
         elif ("all" not in unsafelist): unsafelist.append("all");
-        nmscls = self.getKnownAttributeNamesForRepresentation();
+        nmscls = self.getKnownAttributeNamesForSerialization();
+        print("\nINSIDE TO_DICT():");
         print(f"myattrs = {myattrs}");
         print(f"unsafelist = {unsafelist}");
         print(f"all list = nmscls = {nmscls}");
+        print(f"exlistforserialization = {type(self).getTheExclusionListForSerialization()}");
+        print(f"exobjslist = {exobjslist}");
+        print(f"prefix = {prefix}");
 
         usealist = (myvalidator.isvaremptyornull(myattrs));#use_all_list or included attribute list
         safelist = [item for item in nmscls if (item not in unsafelist)];
@@ -926,27 +971,91 @@ class mybase:
                 elif ((type(mval) in [list, tuple]) and myvalidator.isvaremptyornull(mval)):
                     mdict[attr] = mval;
                 #else handle unsafe list in other loop below
-        print(f"safedict = {mdict}");
+        print(f"\nsafedict = {mdict}\n");
 
+        #if (10 < mybase.mcntr): raise RecursionError("did not stop the recursion problem!");
+
+        
         #signups has unsafe stuff like:
-        #activity object
-        #camper object
+        #activity object (signups list and some other stuff)
+        #camper object (signups list and some other stuff)
         #all signups list (camper and activity and all models include all list on theirs too)
         #
         #when we have to serialize stuff like camper, what do we do?
         #first we serialize the safe stuff, but we also need to exclude signups class as a whole.
+        #or do we exclude the class as a whole or just everything on the signups...
 
-        for attr in myfinlist:
-            if (attr in safelist): pass;
-            else:
-                mval = getattr(self, attr);
-                if (mval == None): pass;
-                elif ((type(mval) in [list, tuple]) and myvalidator.isvaremptyornull(mval)): pass;
+        if (usesafelistonly): pass;
+        else:
+            for attr in myfinlist:
+                if (attr in safelist): pass;
                 else:
-                    print("attr is in the unsafe list!");
-                    print(f"attr = {attr}");
-                    raise ValueError("NOT DONE YET WITH THE UNSAFE LIST STUFF YET 4-24-2025 2 AM MST!");
+                    mval = getattr(self, attr);
+                    if (mval == None): pass;
+                    elif ((type(mval) in [list, tuple]) and myvalidator.isvaremptyornull(mval)): pass;
+                    else:
+                        #if on the exclusion list, exclude it; if not, add it to the dict.
+                        #isonexlist = (False if (myvalidator.isvaremptyornull(exobjslist)) else
+                        #              (mval in exobjslist));
+                        fulnm = (attr if (myvalidator.isvaremptyornull(prefix)) else
+                                 prefix + "." + attr);
+                        print("attr is in the unsafe list!");
+                        print(f"attr = {attr}");
+                        print(f"fulnm = {fulnm}");
+                        
+                        isonexlist = (False if (myvalidator.isvaremptyornull(exobjslist)) else
+                                      (fulnm in exobjslist));
+                        if (isonexlist or myvalidator.isvaremptyornull(exobjslist)): pass;
+                        else:
+                            for exrule in exobjslist:
+                                print(f"exrule = {exrule}");
+                                ptinrule = ("." in exrule);
+                                attrinexrule = (exrule[exrule.rindex(".") + 1:] if (ptinrule) else
+                                                "" + exrule);
+                                print(f"attrinexrule = {attrinexrule}");
 
+                                if (attr == attrinexrule):
+                                    print("the attributes match!");
+
+                                    if (exrule == "*." + attr):
+                                        print("the rule excludes the attribute!");
+                                        isonexlist = True;
+                                        break;
+                        #isonexlist = False;
+                        
+                        print(f"isonexlist = {isonexlist}");
+                        print(f"calling class is {type(self).__name__}");
+                        
+                        if (isonexlist): pass;
+                        else:
+                            print("item is not excluded!");
+
+                            if (type(mval) in [list, tuple]):
+                                print("item is a list of unsafe objects!");
+
+                                #mybase.mcntr += 1;
+                                mdict[attr] = [item.__to_dict__(myattrs=myattrs, exobjslist=exobjslist,
+                                                                #exobjslist=[exitem for exitem in
+                                                                #            exobjslist].append(item),
+                                                            usesafelistonly=False, prefix=fulnm)
+                                                            for item in mval];
+                                #pass;
+                            else:
+                                print("this is just an unsafe item!");
+                                
+                                #add the self object to the new exclusive object list
+                                #nwlist = ([] if (myvalidator.isvaremptyornull(exobjslist)) else
+                                #          [item for item in exobjslist]);
+                                #nwlist.append(mval);
+                                #print(f"nwlist = {nwlist}");
+                                print(f"myattrs = {myattrs}");
+                                
+                                #mybase.mcntr += 1;
+                                mdict[attr] = mval.__to_dict__(myattrs=myattrs, exobjslist=exobjslist,
+                                                            usesafelistonly=False, prefix=fulnm);
+                            #raise ValueError("NOT DONE YET WITH THE UNSAFE LIST STUFF YET " +
+                            #                "4-24-2025 2 AM MST!");
+        print(f"\nFINAL mdict = {mdict}\n");
         return mdict;
         
 
@@ -1192,26 +1301,65 @@ class mybase:
         #but there is already a method specifically for that
 
     @classmethod
-    def getKnownAttributeNamesOnTheClass(cls):
+    def getKnownAttributeNamesOnTheClass(cls, useserial=False):
+        myvalidator.varmustbeboolean(useserial, "useserial");
         mycols = cls.getMyCols();
         safelist = cls.getOtherKnownSafeAttributesOnTheClass();
         unsafelist = cls.getForeignKeyObjectNamesFromCols(mycols);
         mlist = myvalidator.combineTwoLists(safelist, unsafelist);
+        #print(f"safelist = {safelist}");
+        #print(f"unsafelist = {unsafelist}");
+        #print(f"init mlist = {mlist}");
+        
         myvalidator.varmustnotbeempty(mlist, "mlist");
+        mxlist = [];#exclusion list for serialization
         for nm in cls.getMyColAttributeNames():
-            mlist.append(nm);
-            mlist.append(nm + "_value");
+            if (useserial): mxlist.append(nm);
+            else:
+                if (nm not in mlist): mlist.append(nm);
+            if (nm + "_value" not in mlist): mlist.append(nm + "_value");
+        #print(f"NEW mlist = {mlist}");
+        
         myrefcols = cls.getMyRefCols();
-        for nm in cls.getMyRefColAttributeNames(): mlist.append(nm);
-        for nm in cls.getMyRefColNames(myrefcols): mlist.append(nm);
+        for nm in cls.getMyRefColAttributeNames():
+            if (useserial): mxlist.append(nm);
+            else:
+                if (nm not in mlist): mlist.append(nm);
+        for nm in cls.getMyRefColNames(myrefcols):
+            if (nm not in mlist): mlist.append(nm);
+        #print(f"NEW mlist = {mlist}");
+        
         tnmattrnm = cls.getNameOfVarIfPresentOnTableMain("tablename");
         mcsattrnm = cls.getNameOfVarIfPresentOnTableMain("multi_column_constraints_list");
         acsattrnm = cls.getNameOfVarIfPresentOnTableMain("allconstraints_list");
-        if (tnmattrnm not in mlist): mlist.append(tnmattrnm);
-        if (mcsattrnm not in mlist): mlist.append(mcsattrnm);
-        if (acsattrnm not in mlist): mlist.append(acsattrnm);
-        if ("all" not in mlist): mlist.append("all");
-        return mlist;
+        if (useserial):
+            mxlist.append(tnmattrnm);
+            mxlist.append(mcsattrnm);
+            mxlist.append(acsattrnm);
+        else:
+            if (tnmattrnm not in mlist): mlist.append(tnmattrnm);
+            if (mcsattrnm not in mlist): mlist.append(mcsattrnm);
+            if (acsattrnm not in mlist): mlist.append(acsattrnm);
+        if (useserial): mxlist.append("all");
+        elif ("all" not in mlist): mlist.append("all");
+        #print(f"FINAL mlist = {mlist}");
+        
+        myretlist = [item for item in mlist if item not in mxlist];
+        #print(f"myretlist = {myretlist}");
+        
+        myvalidator.listMustContainUniqueValuesOnly(myretlist, "myretlist");
+        return myretlist;
+    @classmethod
+    def getAllKnownAttributeNamesOnTheClass(cls): return cls.getKnownAttributeNamesOnTheClass(False);
+    @classmethod
+    def getKnownAttributeNamesOnTheClassForSerialization(cls):
+        return cls.getKnownAttributeNamesOnTheClass(True);
+    @classmethod
+    def getTheExclusionListForSerialization(cls):
+        alllist = cls.getAllKnownAttributeNamesOnTheClass();
+        serlist = cls.getKnownAttributeNamesOnTheClassForSerialization();
+        if (myvalidator.isvaremptyornull(serlist)): return alllist;
+        else: return [item for item in alllist if item not in serlist];
 
     @classmethod
     def getAllTableConstraints(cls, fetchnow=False):

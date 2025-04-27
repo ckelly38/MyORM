@@ -212,8 +212,11 @@ if (runlinkreftests):
       print();
 
 #after this build a better test and then do serialization.
-for item in Signup.all:
-      print(item.__to_dict__());
+mysclslist = [Signup, Camper, Activity];
+for mycls in mysclslist:
+      for item in mycls.all: print(item.__to_dict__());
+      print("\nDONE WITH THE SERIALIZATION FOR " + mycls.__name__ + "!\n");
+      #mybase.mcntr = 0;
 
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
