@@ -128,6 +128,8 @@ class Activity(mybase):
     # Add serialization rules
     #serialize_rules = ("-signups",);
     #serialize_rules = ("-signups.activity",);#copied from old code what we used
+    #
+    ex_rules = ["signups.activity"];
     
     #def __repr__(self):
     #    return f'<Activity {self.id_value}: {self.name_value}>';
@@ -190,6 +192,8 @@ class Camper(mybase):
     # Add serialization rules
     #serialize_rules = ("-signups",);
     #serialize_rules = ("-signups.camper",);#copied from old code what we used
+    #
+    ex_rules = ["signups.camper"];
     
     # Add validation
     #@validates("name")
@@ -338,7 +342,7 @@ class Signup(mybase):
     #serialize_rules = ("-camper", "-activity");
     #serialize_rules = ("-campers.signups", "-activity.signups");#copied from old code what we used
     #
-    #ex_rules = ["*.signups"];#["camper.signups", "activity.signups"];
+    ex_rules = ["*.signups"];#["camper.signups", "activity.signups"];
     
     # Add validation
     #@validates("time")
@@ -356,10 +360,10 @@ class Signup(mybase):
                                    ignoreerr=True, strstarts=True, exobjslist=exobjslist,
                                    usesafelistonly=usesafelistonly);
 
-    def __to_dict__(self, myattrs=None, exobjslist=None, usesafelistonly=False, prefix=""):
-        #nwlist = myvalidator.combineTwoLists(exobjslist, ["activity.signups", "camper.signups"]);
-        nwlist = myvalidator.combineTwoLists(exobjslist, ["*.signups"]);
-        return super().__to_dict__(myattrs=myattrs, exobjslist=nwlist, usesafelistonly=usesafelistonly,
-                                   prefix=prefix);
+    #def __to_dict__(self, myattrs=None, exobjslist=None, usesafelistonly=False, prefix=""):
+    #    #nwlist = myvalidator.combineTwoLists(exobjslist, ["activity.signups", "camper.signups"]);
+    #    nwlist = myvalidator.combineTwoLists(exobjslist, ["*.signups"]);
+    #    return super().__to_dict__(myattrs=myattrs, exobjslist=nwlist, usesafelistonly=usesafelistonly,
+    #                               prefix=prefix);
 
 #mycol.getMyClassRefsMain(True);

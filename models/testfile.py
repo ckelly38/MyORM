@@ -217,6 +217,12 @@ for mycls in mysclslist:
       for item in mycls.all: print(item.__to_dict__());
       print("\nDONE WITH THE SERIALIZATION FOR " + mycls.__name__ + "!\n");
       #mybase.mcntr = 0;
+#for item in Signup.all: print(item.__to_dict__());
+#print("\nDONE WITH THE SERIALIZATION FOR SIGNUPS!\n");
+#for item in Camper.all: print(item.__to_dict__());
+#print("\nDONE WITH THE SERIALIZATION FOR CAMPER!\n");
+#for item in Activity.all: print(item.__to_dict__());
+#print("\nDONE WITH THE SERIALIZATION FOR ACTIVITY!\n");
 
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 

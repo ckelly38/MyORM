@@ -336,6 +336,9 @@ class mybase:
 
     #individual object class methods below here
 
+    #validator convenience methods here
+    #(actual validator methods are stored in mycol, but data type validations are done in myvalidator)
+
     #This is a decorator. This actually calls a decorator.
     #https://www.datacamp.com/tutorial/decorators-python
     #@classmethod
@@ -349,6 +352,9 @@ class mybase:
 
     def runAllValidatorsForClass(self):
         return mycol.runAllValidatorsForClass(type(self).__name__, self);
+
+
+    #get and set column and update object references
 
     def getValueForColName(self, clnm):
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
@@ -693,6 +699,9 @@ class mybase:
         for mc in self.getMyColNames(fincols):
             print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
 
+
+    #begin serialization and representation methods here
+
     def getKnownAttributeNamesForRepresentation(self, useserial=False):
         return [nm for nm in type(self).getKnownAttributeNamesOnTheClass(useserial)];
     def getKnownAttributeNamesForSerialization(self):
@@ -821,7 +830,6 @@ class mybase:
             return mstr;
                     
 
-
     def __myrepr__(self, exobjslist=None, usesafelistonly=False):
         myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
         mstr = "<" + self.__class__.__name__ + " ";
@@ -890,10 +898,7 @@ class mybase:
         return mstr;
     def __repr__(self): return self.__myrepr__([self]);
 
-    #NOT DONE YET 4-24-2024 at 2 AM MST
-
-    #mcntr = 0;
-
+    
     def __to_dict__(self, myattrs=None, exobjslist=None, usesafelistonly=False, prefix=""):
         myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
 
@@ -944,12 +949,44 @@ class mybase:
         if (unsafelist == None): unsafelist = ["all"];
         elif ("all" not in unsafelist): unsafelist.append("all");
         nmscls = self.getKnownAttributeNamesForSerialization();
+        
+        hasonlyrules = True;
+        myonlyrules = None;
+        try:
+            myonlyrules = type(self).getSerializeOnlyRules();
+        except Exception as ex:
+            hasonlyrules = False;
+        hasexrules = True;
+        myexrules = None;
+        try:
+            myexrules = type(self).getExclusiveSerializeRules();
+        except Exception as ex:
+            hasexrules = False;
+        
+        if (hasexrules):
+            if (myvalidator.isvaremptyornull(myexrules)): pass;
+            else:
+                noorigexrules = myvalidator.isvaremptyornull(exobjslist);
+                nwlist = [mxrule for mxrule in myexrules if (noorigexrules
+                                                             or mxrule not in exobjslist)];
+                if (myvalidator.isvaremptyornull(nwlist)): pass;
+                else:
+                    finxlist = myvalidator.combineTwoLists(exobjslist, nwlist);
+                    return self.__to_dict__(myattrs=myattrs, exobjslist=finxlist,
+                                        usesafelistonly=usesafelistonly, prefix=prefix);
+
+
         print("\nINSIDE TO_DICT():");
+        print(f"current class is {type(self).__name__}");
         print(f"myattrs = {myattrs}");
         print(f"unsafelist = {unsafelist}");
         print(f"all list = nmscls = {nmscls}");
         print(f"exlistforserialization = {type(self).getTheExclusionListForSerialization()}");
         print(f"exobjslist = {exobjslist}");
+        print(f"hasonlyrules = {hasonlyrules}");
+        print(f"myonlyrules = {myonlyrules}");
+        print(f"hasexrules = {hasexrules}");
+        print(f"myexrules = {myexrules}");
         print(f"prefix = {prefix}");
 
         usealist = (myvalidator.isvaremptyornull(myattrs));#use_all_list or included attribute list
@@ -973,9 +1010,25 @@ class mybase:
                 #else handle unsafe list in other loop below
         print(f"\nsafedict = {mdict}\n");
 
-        #if (10 < mybase.mcntr): raise RecursionError("did not stop the recursion problem!");
-
         
+        #need to check the prefix for circles
+        #activity.signups.activity.signups
+        #if a part of the prefix is contained inside it other than itself we have a circle...
+        if (myvalidator.isvaremptyornull(prefix)): pass;
+        else:
+            #split the string at the .
+            #combine a few with the .s until a circle is produced or not possible.
+            mysubstrs = myvalidator.mysplitWithDelimeter(prefix, ".", 0);
+            print(f"mysubstrs = {mysubstrs}");
+
+            frqsingles = [];
+            for mystr in mysubstrs:
+                cnt = prefix.count(mystr);
+                if (1 < cnt): raise RecursionError("prefix string contains a circle!");
+                else: frqsingles.append(cnt);
+            print(f"frqsingles = {frqsingles}");
+        
+
         #signups has unsafe stuff like:
         #activity object (signups list and some other stuff)
         #camper object (signups list and some other stuff)
@@ -1220,15 +1273,33 @@ class mybase:
                 "tablecol_args"];
 
     @classmethod
+    def getAllExclusiveSerializeRuleNames(cls):
+        return ["ex_rules", "exclusive_rules", "exrules", "exclusiverules", "exclusionrules",
+                "serialize_exclusive_rules", "serialize_ex_rules", "serialize_exclusion_only_rules",
+                "serializeexclusion_only_rules", "serializeexclusiononly_rules",
+                "serializeexclusiononlyrules", "exclusion_rules", "serialize_exclusive_only_rules",
+                "serializeexclusive_only_rules", "serializeexclusiveonly_rules",
+                "serializeexclusiveonlyrules"];
+    @classmethod
+    def getAllGeneralSerializeRuleNames(cls):
+        return ["serialize_rules", "serializerules", "serialize_only", "only_rules", "onlyrules",
+                "serialize_only_rules", "serializeonly", "serializeonlyrules"];
+
+    @classmethod
     def getListOfPossibleNamesForVariable(cls, varnm="varnm"):
         if (myvalidator.isvaremptyornull(varnm)): return cls.varMustBePresentOnTable("varnm");
+        errmsg = "variable name " + varnm + " not recognized or is not associated with a list!";
         if (varnm == "tablename"): return cls.getPossibleTableNames();
         elif (varnm == "multi_column_constraints_list"):
             return cls.getMultiColumnConstraintVariableNames();
         elif (varnm == "allconstraints_list"): return cls.getAllConstraintVariableNames();
-        else:
-            raise ValueError("variable name " + varnm +
-                             " not recognized or is not associated with a list!");
+        elif (varnm == "allexrules"): return cls.getAllExclusiveSerializeRuleNames();
+        elif (varnm == "allonlyrules"): return cls.getAllGeneralSerializeRuleNames();
+        elif (varnm == "allserializerules"):
+            mlist = [item for item in cls.getAllGeneralSerializeRuleNames()];
+            for item in cls.cls.getAllExclusiveSerializeRuleNames(): mlist.append(item);
+            return mlist;
+        else: raise ValueError(errmsg);
 
     @classmethod
     def getValObjectIfPresent(cls, ilist=None, varnm="varnm"):
@@ -1286,6 +1357,15 @@ class mybase:
     @classmethod
     def getMultiColumnConstraints(cls):
         return cls.getValueOfVarIfPresentOnTableMain("multi_column_constraints_list");
+    #this gets the rules that the user has defined in their class which extends mybase class
+    #in the event that the user did not define it, it throws an attribute error
+    #this does not get all attributes that will be serialized
+    @classmethod
+    def getSerializeOnlyRules(cls):
+        return cls.getValueOfVarIfPresentOnTableMain("allonlyrules");
+    @classmethod
+    def getExclusiveSerializeRules(cls):
+        return cls.getValueOfVarIfPresentOnTableMain("allexrules");
 
     @classmethod
     def getAndSetMultiColumnConstraints(cls):
@@ -1332,14 +1412,32 @@ class mybase:
         tnmattrnm = cls.getNameOfVarIfPresentOnTableMain("tablename");
         mcsattrnm = cls.getNameOfVarIfPresentOnTableMain("multi_column_constraints_list");
         acsattrnm = cls.getNameOfVarIfPresentOnTableMain("allconstraints_list");
+        
+        exrulesnm = None;
+        hasexrules = True;
+        try:
+            exrulesnm = cls.getNameOfVarIfPresentOnTableMain("allexrules");
+        except Exception as ex:
+            hasexrules = False;
+        onlyrulesnm = None;
+        hasonlyrules = True;
+        try:
+            onlyrulesnm = cls.getNameOfVarIfPresentOnTableMain("allonlyrules");
+        except Exception as ex:
+            hasonlyrules = False;
+        
         if (useserial):
             mxlist.append(tnmattrnm);
             mxlist.append(mcsattrnm);
             mxlist.append(acsattrnm);
+            if (hasexrules): mxlist.append(exrulesnm);
+            if (hasonlyrules): mxlist.append(onlyrulesnm);
         else:
             if (tnmattrnm not in mlist): mlist.append(tnmattrnm);
             if (mcsattrnm not in mlist): mlist.append(mcsattrnm);
             if (acsattrnm not in mlist): mlist.append(acsattrnm);
+            if (hasexrules and exrulesnm not in mlist): mlist.append(exrulesnm);
+            if (hasonlyrules and onlyrulesnm not in mlist): mlist.append(onlyrulesnm);
         if (useserial): mxlist.append("all");
         elif ("all" not in mlist): mlist.append("all");
         #print(f"FINAL mlist = {mlist}");
@@ -1385,10 +1483,10 @@ class mybase:
         mclconstraints = cls.getMultiColumnConstraints();
         myiclconstraints = cls.getIndividualColumnConstraints();
         nwlist = myvalidator.combineTwoLists(myiclconstraints, mclconstraints);
-        print(f"cls.__name__ = {cls.__name__}");
-        print(f"mclconstraints = {mclconstraints}");
-        print(f"myiclconstraints = {myiclconstraints}");
-        print(f"nwlist = {nwlist}");
+        #print(f"cls.__name__ = {cls.__name__}");
+        #print(f"mclconstraints = {mclconstraints}");
+        #print(f"myiclconstraints = {myiclconstraints}");
+        #print(f"nwlist = {nwlist}");
 
         #setattr(cls, "tableargs", ([] if (nwlist == None) else nwlist));
         return nwlist;
