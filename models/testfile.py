@@ -214,10 +214,29 @@ if (runlinkreftests):
 #after this build a better test and then do serialization.
 mysclslist = [Signup, Camper, Activity];
 for mycls in mysclslist:
-      for item in mycls.all: print(item.__to_dict__());
+      for item in mycls.all:
+            print(item.__to_dict__());
+            
+            hasonlyrules = True;
+            myonlyrules = None;
+            try:
+                  myonlyrules = mycls.getSerializeOnlyRules();
+            except Exception as ex:
+                  hasonlyrules = False;
+            hasexrules = True;
+            myexrules = None;
+            try:
+                  myexrules = mycls.getExclusiveSerializeRules();
+            except Exception as ex:
+                  hasexrules = False;
+            if (hasonlyrules): print(f"item.only_rules = {myonlyrules}");
+            if (hasexrules): print(f"item.ex_rules = {myexrules}");
       print("\nDONE WITH THE SERIALIZATION FOR " + mycls.__name__ + "!\n");
       #mybase.mcntr = 0;
-#for item in Signup.all: print(item.__to_dict__());
+#for item in Signup.all:
+#      print(item.__to_dict__());
+      #print(f"item.only_rules = {item.only_rules}");
+#      print(f"item.ex_rules = {item.ex_rules}");
 #print("\nDONE WITH THE SERIALIZATION FOR SIGNUPS!\n");
 #for item in Camper.all: print(item.__to_dict__());
 #print("\nDONE WITH THE SERIALIZATION FOR CAMPER!\n");

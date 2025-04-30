@@ -343,6 +343,8 @@ class Signup(mybase):
     #serialize_rules = ("-campers.signups", "-activity.signups");#copied from old code what we used
     #
     ex_rules = ["*.signups"];#["camper.signups", "activity.signups"];
+    #only_rules = ["id_value", "time_value", "camper_id_value", "activity_id_value",
+    #              "camper.name_value", "camper.id_value", "activity.name_value", "activity.id_value"];
     
     # Add validation
     #@validates("time")

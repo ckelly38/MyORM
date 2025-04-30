@@ -974,6 +974,19 @@ class mybase:
                     finxlist = myvalidator.combineTwoLists(exobjslist, nwlist);
                     return self.__to_dict__(myattrs=myattrs, exobjslist=finxlist,
                                         usesafelistonly=usesafelistonly, prefix=prefix);
+        nogivenrules = myvalidator.isvaremptyornull(myattrs);
+        if (hasonlyrules and nogivenrules):
+            if (myvalidator.isvaremptyornull(myonlyrules)): pass;
+            else:
+                #noorigexrules = myvalidator.isvaremptyornull(myattrs);
+                #nwlist = [mxrule for mxrule in myonlyrules if (noorigexrules
+                #                                             or mxrule not in myattrs)];
+                nwlist = [mxrule for mxrule in myonlyrules];
+                if (myvalidator.isvaremptyornull(nwlist)): pass;
+                else:
+                    finxlist = myvalidator.combineTwoLists(myattrs, nwlist);
+                    return self.__to_dict__(myattrs=finxlist, exobjslist=exobjslist,
+                                        usesafelistonly=usesafelistonly, prefix=prefix);
 
 
         print("\nINSIDE TO_DICT():");
@@ -997,17 +1010,52 @@ class mybase:
         print(f"safelist = {safelist}");
         print(f"myfinlist = {myfinlist}");
 
+        hasnvals = False;
+        mynlist = [];
+        for attr in myfinlist:
+            if (attr in safelist): pass;
+            else:
+                if ("." in attr):
+                    mysubattrstrs = myvalidator.mysplitWithDelimeter(attr, ".", 0);
+                    hasnvals = True;
+                    print(f"attr = {attr}");
+                    print(f"mysubattrstrs = {mysubattrstrs}");
+
+                    if (mysubattrstrs[0] not in mynlist): mynlist.append(mysubattrstrs[0]);
+                    #print(f"mynlist = {mynlist}");
+                    
+        if (hasnvals):
+            print(f"mynlist = {mynlist}");
+            
+            myfinruleslist = [item for item in myfinlist];
+            ndsnwlist = False;
+            for item in mynlist:
+                if (item not in myfinruleslist):
+                    if (ndsnwlist): pass;
+                    else: ndsnwlist = True;
+                    myfinruleslist.append(item);
+            if (ndsnwlist):
+                print("calling to_dict again!");
+                return self.__to_dict__(myattrs=myfinruleslist, exobjslist=exobjslist,
+                                        usesafelistonly=usesafelistonly, prefix=prefix);
+            else:
+                print("\noriginal rules myfinlist will be used!\n");
+                print(f"myfinlist = {myfinlist}");
+
+        
         #serialization does not care about the order
         #so handle everything that is safe before we even both to deal with the hard stuff
         mdict = {};
         for attr in myfinlist:
             if (attr in safelist): mdict[attr] = getattr(self, attr);
             else:
-                mval = getattr(self, attr);
-                if (mval == None): mdict[attr] = mval;
-                elif ((type(mval) in [list, tuple]) and myvalidator.isvaremptyornull(mval)):
-                    mdict[attr] = mval;
-                #else handle unsafe list in other loop below
+                if ("." in attr): pass;
+                else:
+                    mval = getattr(self, attr);
+                    if (mval == None): mdict[attr] = mval;
+                    elif ((type(mval) in [list, tuple]) and myvalidator.isvaremptyornull(mval)):
+                        mdict[attr] = mval;
+                    #else handle unsafe list in other loop below
         print(f"\nsafedict = {mdict}\n");
 
         
@@ -1043,71 +1091,99 @@ class mybase:
             for attr in myfinlist:
                 if (attr in safelist): pass;
                 else:
-                    mval = getattr(self, attr);
-                    if (mval == None): pass;
-                    elif ((type(mval) in [list, tuple]) and myvalidator.isvaremptyornull(mval)): pass;
+                    if ("." in attr): pass;#not handled here or above, but handled below.
                     else:
-                        #if on the exclusion list, exclude it; if not, add it to the dict.
-                        #isonexlist = (False if (myvalidator.isvaremptyornull(exobjslist)) else
-                        #              (mval in exobjslist));
-                        fulnm = (attr if (myvalidator.isvaremptyornull(prefix)) else
-                                 prefix + "." + attr);
-                        print("attr is in the unsafe list!");
-                        print(f"attr = {attr}");
-                        print(f"fulnm = {fulnm}");
-                        
-                        isonexlist = (False if (myvalidator.isvaremptyornull(exobjslist)) else
-                                      (fulnm in exobjslist));
-                        if (isonexlist or myvalidator.isvaremptyornull(exobjslist)): pass;
+                        mval = getattr(self, attr);
+                        if (mval == None): pass;
+                        elif ((type(mval) in [list, tuple]) and myvalidator.isvaremptyornull(mval)):
+                            pass;
                         else:
-                            for exrule in exobjslist:
-                                print(f"exrule = {exrule}");
-                                ptinrule = ("." in exrule);
-                                attrinexrule = (exrule[exrule.rindex(".") + 1:] if (ptinrule) else
-                                                "" + exrule);
-                                print(f"attrinexrule = {attrinexrule}");
-
-                                if (attr == attrinexrule):
-                                    print("the attributes match!");
-
-                                    if (exrule == "*." + attr):
-                                        print("the rule excludes the attribute!");
-                                        isonexlist = True;
-                                        break;
-                        #isonexlist = False;
-                        
-                        print(f"isonexlist = {isonexlist}");
-                        print(f"calling class is {type(self).__name__}");
-                        
-                        if (isonexlist): pass;
-                        else:
-                            print("item is not excluded!");
-
-                            if (type(mval) in [list, tuple]):
-                                print("item is a list of unsafe objects!");
-
-                                #mybase.mcntr += 1;
-                                mdict[attr] = [item.__to_dict__(myattrs=myattrs, exobjslist=exobjslist,
-                                                                #exobjslist=[exitem for exitem in
-                                                                #            exobjslist].append(item),
-                                                            usesafelistonly=False, prefix=fulnm)
-                                                            for item in mval];
-                                #pass;
+                            #if on the exclusion list, exclude it; if not, add it to the dict.
+                            #isonexlist = (False if (myvalidator.isvaremptyornull(exobjslist)) else
+                            #              (mval in exobjslist));
+                            fulnm = (attr if (myvalidator.isvaremptyornull(prefix)) else
+                                    prefix + "." + attr);
+                            print("attr is in the unsafe list!");
+                            print(f"attr = {attr}");
+                            print(f"fulnm = {fulnm}");
+                            
+                            isonexlist = (False if (myvalidator.isvaremptyornull(exobjslist)) else
+                                        (fulnm in exobjslist));
+                            if (isonexlist or myvalidator.isvaremptyornull(exobjslist)): pass;
                             else:
-                                print("this is just an unsafe item!");
+                                for exrule in exobjslist:
+                                    print(f"exrule = {exrule}");
+                                    ptinrule = ("." in exrule);
+                                    attrinexrule = (exrule[exrule.rindex(".") + 1:] if (ptinrule) else
+                                                    "" + exrule);
+                                    print(f"attrinexrule = {attrinexrule}");
+
+                                    if (attr == attrinexrule):
+                                        print("the attributes match!");
+
+                                        if (exrule == "*." + attr):
+                                            print("the rule excludes the attribute!");
+                                            isonexlist = True;
+                                            break;
+                            #isonexlist = False;
+                            
+                            print(f"isonexlist = {isonexlist}");
+                            print(f"calling class is {type(self).__name__}");
+                            
+                            if (isonexlist): pass;
+                            else:
+                                print("item is not excluded!");
                                 
-                                #add the self object to the new exclusive object list
-                                #nwlist = ([] if (myvalidator.isvaremptyornull(exobjslist)) else
-                                #          [item for item in exobjslist]);
-                                #nwlist.append(mval);
-                                #print(f"nwlist = {nwlist}");
+                                #for the unsafe item that is not excluded,
+                                #do we have other special serialization rules that will apply to it?
+                                #if so, we cannot just use the myattrs list...
+                                #it will be on the myattrs list or on the myfinlist with .s in it
+                                otherruleslist = [item for item in myfinlist if "." in item];
                                 print(f"myattrs = {myattrs}");
+                                print(f"myfinlist = {myfinlist}");
+                                print(f"otherruleslist = {otherruleslist}");
                                 
-                                #mybase.mcntr += 1;
-                                mdict[attr] = mval.__to_dict__(myattrs=myattrs, exobjslist=exobjslist,
-                                                            usesafelistonly=False, prefix=fulnm);
-                            #raise ValueError("NOT DONE YET WITH THE UNSAFE LIST STUFF YET " +
-                            #                "4-24-2025 2 AM MST!");
+                                #if any of the otherrules start with our attr, then these rules apply
+                                #to our object...
+                                #if not, then safe to proceed
+                                nwattrslist = [myotrrule[len(attr) + 1:]
+                                               for myotrrule in otherruleslist
+                                               if myotrrule.startswith(attr + ".")];
+                                print(f"nwattrslist = {nwattrslist}");
+
+                                innwattrlist = (myattrs if (myvalidator.isvaremptyornull(otherruleslist))
+                                                else nwattrslist);
+                                print(f"innwattrlist = {innwattrlist}");
+                                #raise ValueError("NOT DONE YET!");
+
+                                if (type(mval) in [list, tuple]):
+                                    print("item is a list of unsafe objects!");
+
+                                    #mybase.mcntr += 1;
+                                    mdict[attr] = [item.__to_dict__(myattrs=innwattrlist,
+                                                                    exobjslist=exobjslist,
+                                                                    #exobjslist=[exitem for exitem in
+                                                                    #            exobjslist].append(
+                                                                    # item),
+                                                                usesafelistonly=False, prefix=fulnm)
+                                                                for item in mval];
+                                    #pass;
+                                else:
+                                    print("this is just an unsafe item!");
+                                    
+                                    #add the self object to the new exclusive object list
+                                    #nwlist = ([] if (myvalidator.isvaremptyornull(exobjslist)) else
+                                    #          [item for item in exobjslist]);
+                                    #nwlist.append(mval);
+                                    #print(f"nwlist = {nwlist}");
+                                    print(f"innwattrlist = {innwattrlist}");
+                                    
+                                    #mybase.mcntr += 1;
+                                    mdict[attr] = mval.__to_dict__(myattrs=innwattrlist,
+                                                                   exobjslist=exobjslist,
+                                                                usesafelistonly=False, prefix=fulnm);
+                                #raise ValueError("NOT DONE YET WITH THE UNSAFE LIST STUFF YET " +
+                                #                "4-24-2025 2 AM MST!");
         print(f"\nFINAL mdict = {mdict}\n");
         return mdict;
         
