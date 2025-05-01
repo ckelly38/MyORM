@@ -212,36 +212,45 @@ if (runlinkreftests):
       print();
 
 #after this build a better test and then do serialization.
-mysclslist = [Signup, Camper, Activity];
-for mycls in mysclslist:
-      for item in mycls.all:
-            print(item.__to_dict__());
-            
-            hasonlyrules = True;
-            myonlyrules = None;
-            try:
-                  myonlyrules = mycls.getSerializeOnlyRules();
-            except Exception as ex:
-                  hasonlyrules = False;
-            hasexrules = True;
-            myexrules = None;
-            try:
-                  myexrules = mycls.getExclusiveSerializeRules();
-            except Exception as ex:
-                  hasexrules = False;
-            if (hasonlyrules): print(f"item.only_rules = {myonlyrules}");
-            if (hasexrules): print(f"item.ex_rules = {myexrules}");
-      print("\nDONE WITH THE SERIALIZATION FOR " + mycls.__name__ + "!\n");
-      #mybase.mcntr = 0;
-#for item in Signup.all:
-#      print(item.__to_dict__());
-      #print(f"item.only_rules = {item.only_rules}");
-#      print(f"item.ex_rules = {item.ex_rules}");
-#print("\nDONE WITH THE SERIALIZATION FOR SIGNUPS!\n");
-#for item in Camper.all: print(item.__to_dict__());
-#print("\nDONE WITH THE SERIALIZATION FOR CAMPER!\n");
-#for item in Activity.all: print(item.__to_dict__());
-#print("\nDONE WITH THE SERIALIZATION FOR ACTIVITY!\n");
+runserializationtests = True;
+if (runserializationtests):
+      mysclslist = [Signup, Camper, Activity];
+      for mycls in mysclslist:
+            for item in mycls.all:
+                  print(item.__to_dict__());
+                  
+                  hasonlyrules = True;
+                  myonlyrules = None;
+                  try:
+                        myonlyrules = mycls.getSerializeOnlyRules();
+                  except Exception as ex:
+                        hasonlyrules = False;
+                  hasexrules = True;
+                  myexrules = None;
+                  try:
+                        myexrules = mycls.getExclusiveSerializeRules();
+                  except Exception as ex:
+                        hasexrules = False;
+                  if (hasonlyrules): print(f"item.only_rules = {myonlyrules}");
+                  if (hasexrules): print(f"item.ex_rules = {myexrules}");
+            print("\nDONE WITH THE SERIALIZATION FOR " + mycls.__name__ + "!\n");
+            #mybase.mcntr = 0;
+      #for item in Signup.all:
+      #      print(item.__to_dict__());
+            #print(f"item.only_rules = {item.only_rules}");
+      #      print(f"item.ex_rules = {item.ex_rules}");
+      #print("\nDONE WITH THE SERIALIZATION FOR SIGNUPS!\n");
+      #for item in Camper.all: print(item.__to_dict__());
+      #print("\nDONE WITH THE SERIALIZATION FOR CAMPER!\n");
+      #for item in Activity.all: print(item.__to_dict__());
+      #print("\nDONE WITH THE SERIALIZATION FOR ACTIVITY!\n");
+
+#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
+#need to attempt to create the data tables if have not already and save the new objects to it
+#if the ID is not assigned, let the DB put it on there....
+
+vcmpr.save();
 
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
@@ -855,7 +864,7 @@ print(myvalidator.genSQLSum("price", False));
 
 #each database has its own way to do custom procedures, so this program will not provide a generic way.
 #
-#WHAT I STILL NEED TO DO: 3-27-2025
+#WHAT I STILL NEED TO DO: 4-30-2025
 #-CREATE TABLE, INSERT INTO, UPDATE, DELETE, SELECT INTO, INSERT INTO SELECT
 #-LEFT JOIN, RIGHT JOIN, INNER JOIN, FULL JOIN, NATURAL JOIN, UNIONS
 #--note: some of these are different from LITE to normal SQL.
@@ -866,7 +875,6 @@ print(myvalidator.genSQLSum("price", False));
 #-figure out where to put the sql generator methods
 #-ways to save data, ways to add new data, ways to remove data, ways to update the data, (#2)
 #-and ways to remove tables (#3)
-#-ways to print out objects via serialization (#4) (currently doing stuff like this)
 #-ways to back up the database (#5)
 
 #some data types have the same names, but the parameters for max and min sizes depend on the variant.

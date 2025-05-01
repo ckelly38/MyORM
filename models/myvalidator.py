@@ -639,6 +639,98 @@ class myvalidator:
     @classmethod
     def genSortOrderByAscVal(cls, numcols, boolval): return [boolval for n in range(numcols)];
 
+    
+    #create table methods here
+
+    #NOT DONE YET WITH ALL OF THESE 4-30-2025 9:30 PM MST
+
+    #DOES NOT VALIDATE THE TABLE NAME, DOES NOT DEPEND ON IT, BUT THE OTHER createTable methods DO.
+    @classmethod
+    def genSQLCreateTable(cls, name, mycols, mulcolreqs, alltablereqs, onlyifnot=True):
+        #this command has a very specific order of generating these
+        #at least with constraints and primary keys
+        myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(name, "name");
+        myvalidator.varmustnotbeempty(mycols, "mycols");
+        print("\nINSIDE OF GEN CREATE TABLE METHOD():");
+        print(f"table name = {name}");
+        print("mycols = [");
+        numpkycols = 0;
+        for mc in mycols:
+            if (mc.isPrimaryKey()): numpkycols += 1;
+            print(mc);
+        print("]");
+        print(f"mulcolreqs = {mulcolreqs}");
+        print(f"alltablereqs = {alltablereqs}");
+        print(f"numpkycols = {numpkycols}");
+
+        myvalidator.valueMustBeInRange(numpkycols, 1, 0, True, False, "number_of_primary_key_cols");
+        
+        #the column name will be displayed on each line FIRST
+        #the data type of course will be displayed on each line SECOND
+        #if there is only one primary key, we display that on the column
+        #if an individual column is not-null or unique, etc. it goes on the col line
+        #
+        #be careful, we do not want to double up on the constraints lists...
+        #
+        #multi-col primary and foreign key and unique constraints should go second to last
+        #all table constraints and multi-column constraints should go last
+        
+        #mstr = "";
+        #for mc in mycols:
+        #    mstr += mc.getColName() + " " + mc.getDataType();
+            #now not sure about the order of the other stuff
+            #like AutoIncrement, primary_key, isnonnull, isunique, etc.
+            #server defaults and there even maybe other stuff that I completely missed.
+            #if col is a foreign key do we handle that at all here in this batch?
+        #    if (mc.isUnique()): mstr += "UNIQUE";
+        #    if (mc.isNonNull()): mstr += "NOT NULL";
+        #    if (mc.autoIncrements()): mstr += "*?AUTOINCREMENTS?*";#not sure what to do here...
+        #    if (mc.isPrimaryKey() and numpkycols == 1): mstr += "PRIMARY KEY";
+        #    if (mc.isForeignKey()): mstr += "*?FOREIGN KEY?*";
+            #also need some ,s in there and maybe a newline for formatting sake???.
+        #    print(f"NEW mstr = {mstr}");
+        #print(f"FINAL mstr = {mstr}");
+
+        #return "CREATE TABLE " + name + ("IF NOT EXISTS " if (onlyifnot) else "") + "(" + ? + ");";
+        raise ValueError("NOT DONE YET 4-30-2025 9:30 PM MST!");
+    
+    #depends on the table name
+    @classmethod
+    def genSQLCreateTableFromRef(cls, myclsref, onlyifnot=True):
+        myvalidator.varmustnotbenull(myclsref, "myclsref");
+        errmsg = "myclsref must be a subclass of mybase class and not mybase, but it was not!";
+        from mybase import mybase;#may need to change or get removed
+        if (issubclass(myclsref, mybase) and not myclsref == mybase): pass;
+        else: raise TypeError(errmsg);
+        return cls.genSQLCreateTable(myclsref.getTableName(), myclsref.getMyCols(),
+                                     myclsref.getMultiColumnConstraints(),
+                                     myclsref.getAllTableConstraints(), onlyifnot=onlyifnot);
+    
+    #depends on the table name
+    @classmethod
+    def genSQLCreateTableFromTableOrClassName(cls, name, isclsnm, onlyifnot=True):
+        #if name is classname get class ref from the name then call the other method
+        #look up the classname if valid or on the list;
+        #if it is not valid => error.
+        #this is a tablename
+        #we need to get the class name with the table name
+        #then we can get the reference...
+        #if not valid => error.
+        myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");
+        myvalidator.varmustbeboolean(isclsnm, "isclsnm");
+        
+        from mycol import mycol;#may need to change or get removed
+        myfuncref = (mycol.getMyClassRefFromString if (isclsnm) else mycol.getClassFromTableName);
+        return cls.genSQLCreateTableFromRef(myfuncref(name), onlyifnot=onlyifnot);
+    @classmethod
+    def genSQLCreateTableFromTableName(cls, name, onlyifnot=True):
+        return cls.genSQLCreateTableFromTableOrClassName(name, False, onlyifnot=onlyifnot);
+    @classmethod
+    def genSQLCreateTableFromClassName(cls, name, onlyifnot=True):
+        return cls.genSQLCreateTableFromTableOrClassName(name, True, onlyifnot=onlyifnot);
+    
+
 
     #SELECT whatval/tablenames.colnames/* FROM whereval/tablenames
     #SELECT DISTINCT whatval/table.colnames/* FROM whereval/tablenames

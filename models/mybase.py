@@ -1,7 +1,7 @@
 from mycol import mycol;
 from mycol import myvalidator;
 from myrefcol import myrefcol;
-from init import SQLVARIANT;
+from init import *;#SQLVARIANT, CURSON, CONN
 import traceback;
 class mybase:
     #mytablename = "basetablename";
@@ -698,6 +698,55 @@ class mybase:
         fincols = type(self).getMyColsFromClassOrParam(mycols);
         for mc in self.getMyColNames(fincols):
             print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
+
+
+    #database CRUD methods section may depend on which database itself you are using.
+
+    #NOT DONE YET WITH ALL OF THESE 4-30-2025 9:30 PM MST
+
+    #depends on the table name
+    #convenience method that calls the method in the myvalidator for generating the
+    #CREATE TABLE SQL query.
+    @classmethod
+    def genSQLCreateTableFromRef(cls, onlyifnot=True):
+        return myvalidator.genSQLCreateTable(cls.getTableName(), cls.getMyCols(),
+                                             cls.getMultiColumnConstraints(),
+                                             cls.getAllTableConstraints(), onlyifnot=onlyifnot);
+
+    @classmethod
+    def createTable(cls):
+        qry = cls.genSQLCreateTableFromRef(onlyifnot=False);
+        print(f"CREATE TABLE qry = {qry}");
+        raise ValueError("NOT DONE YET 4-30-2025 9:33 PM MST!");
+
+    @classmethod
+    def tableExists(cls):
+        #some databases do not support the PRAGMA command.
+        #in fact PRAGMA is only supported by SQL LITE. SQL has some other ways and it depends on the DB.
+        #however, if the SELECT fails, that means that the table does not exist.
+        #all databases and dialects of SQL support SELECT so, the SELECT command of SQL will be used.
+        qry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], False);
+        qry += " " + myvalidator.genSQLimit(1, offset=0);
+        print(f"TABLE EXISTS qry = {qry}");
+        
+        exists = True;
+        try:
+            res = CURSOR.execute(qry);
+            CONN.commit();
+        except Exception as ex:
+            #print(f"TABLE EXISTS qry = {qry}");
+            #traceback.print_exc();
+            exists = False;
+        return exists;
+
+    def save(self):
+        #if the table does not exist, create it first.
+        #if the table exists do nothing.
+        #then proceed to save the data.
+        print(f"INSIDE SAVE() for class {type(self).__name__}:");
+        if (type(self).tableExists()): pass;
+        else: type(self).createTable();
+        raise ValueError("NOT DONE YET 4-30-2025 9:33 PM MST!");
 
 
     #begin serialization and representation methods here
