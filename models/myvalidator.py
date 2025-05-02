@@ -675,6 +675,11 @@ class myvalidator:
         #
         #multi-col primary and foreign key and unique constraints should go second to last
         #all table constraints and multi-column constraints should go last
+
+        #https://www.w3schools.com/sql/sql_foreignkey.asp
+        #https://www.w3schools.com/sql/sql_primarykey.asp
+        #https://www.w3schools.com/sql/sql_autoincrement.asp
+        #https://www.w3schools.com/sql/sql_unique.asp
         
         #mstr = "";
         #for mc in mycols:
@@ -683,7 +688,7 @@ class myvalidator:
             #like AutoIncrement, primary_key, isnonnull, isunique, etc.
             #server defaults and there even maybe other stuff that I completely missed.
             #if col is a foreign key do we handle that at all here in this batch?
-        #    if (mc.isUnique()): mstr += "UNIQUE";
+        #    if (mc.isUnique()): mstr += "UNIQUE";#unique is also one that has different ways
         #    if (mc.isNonNull()): mstr += "NOT NULL";
         #    if (mc.autoIncrements()): mstr += "*?AUTOINCREMENTS?*";#not sure what to do here...
         #    if (mc.isPrimaryKey() and numpkycols == 1): mstr += "PRIMARY KEY";

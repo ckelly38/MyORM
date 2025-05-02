@@ -715,8 +715,15 @@ class mybase:
 
     @classmethod
     def createTable(cls):
+        #if the table exists and onlyifnot is False, then it will fail because the table already exists
+        #if the table exists and onlyifnot is True, then it will not create a new table,
+        #and essentially do nothing
+        #it may still fail due to another reason, but this is not my fault unless it is a bad query.
         qry = cls.genSQLCreateTableFromRef(onlyifnot=False);
         print(f"CREATE TABLE qry = {qry}");
+        
+        #res = CURSOR.execute(qry);
+        #CONN.commit();
         raise ValueError("NOT DONE YET 4-30-2025 9:33 PM MST!");
 
     @classmethod
@@ -743,6 +750,8 @@ class mybase:
         #if the table does not exist, create it first.
         #if the table exists do nothing.
         #then proceed to save the data.
+        #we may need to add new data onto the database, or update data if it is on the DB.
+        #depending on what we need to do, the commands could change.
         print(f"INSIDE SAVE() for class {type(self).__name__}:");
         if (type(self).tableExists()): pass;
         else: type(self).createTable();

@@ -250,6 +250,7 @@ if (runserializationtests):
 #need to attempt to create the data tables if have not already and save the new objects to it
 #if the ID is not assigned, let the DB put it on there....
 
+sa.save();
 vcmpr.save();
 
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
