@@ -507,40 +507,77 @@ class myvalidator:
     #SQL methods might get removed from the validator class
 
     @classmethod
-    def genUniqueOrCheckConstraint(cls, consnm, useunc, val):
-        myvalidator.varmustbeboolean(useunc, "useunc");
+    def genSQLConstraint(cls, consnm, constpnm, val):
+        if (myvalidator.isvaremptyornull(constpnm)):
+            return cls.genSQLConstraint(cls, consnm, "CHECK", val);
+        if (constpnm.isupper()): pass;
+        else: return cls.genSQLConstraint(consnm, constpnm.upper(), val);
+        if (constpnm in ["CHECK", "UNIQUE", "PRIMARY KEY"]): pass;
+        else: raise ValueError("invalid constraint type found and used here!");
+        usechck = (constpnm == "CHECK");
+
+        #myvalidator.varmustbeboolean(useunc, "useunc");
         if (myvalidator.isvaremptyornull(consnm)):
-            from mycol import mycol;#may need to change or get removed
-            pnm = ("un" if (useunc) else "ch") + "mulcols_";
-            fnm = pnm + str(mycol.incrementAndGetUniqueOrCheckConstraintCounterBy(useunc, 1));
-            return cls.genUniqueOrCheckConstraint(fnm, useunc, val);
+            if (constpnm in ["CHECK", "UNIQUE"]):
+                useunc = (not usechck);
+                from mycol import mycol;#may need to change or get removed
+                pnm = ("un" if (useunc) else "ch") + "mulcols_";
+                fnm = pnm + str(mycol.incrementAndGetUniqueOrCheckConstraintCounterBy(useunc, 1));
+                return cls.genSQLConstraint(fnm, constpnm, val);
+            else: myvalidator.varmustnotbeempty(consnm, "consnm");
         else: cls.stringMustContainOnlyAlnumCharsIncludingUnderscores(consnm, "the constraint name");
         finval = "";
-        if (useunc):
-            #for multi-columns only
+        if (usechck): finval = "" + val;#usecheck
+        else:#use anything other than check
             #colnames are assumed to be on the table, because if they are not,
             #then SQL ERROR RESULTS IMMEDIATELY,
             #but this method may not take into account the correct table class as the caller
             #so cannot verify
             myvalidator.varmustbethetypeandornull(val, list, True, "val");
-            if (myvalidator.isvaremptyornull(val) or len(val) < 2): return None;
+            if (myvalidator.isvaremptyornull(val) or len(val) < 1): return None;
             else:
                 for mcnm in val:
                     myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mcnm,
                                                                                     "the colname");
                 finval = (", ".join(val));
-        else: finval = "" + val;
-        return "CONSTRAINT " + consnm + " " + ("UNIQUE" if (useunc) else "CHECK") + "(" + finval + ")";
+        return "CONSTRAINT " + consnm + " " + constpnm + "(" + finval + ")";
     @classmethod
     def genUniqueConstraint(cls, consnm, colnames):
-        return cls.genUniqueOrCheckConstraint(consnm, True, colnames);
+        return cls.genSQLConstraint(consnm, "UNIQUE", colnames);
     @classmethod
     def genSQLUnique(cls, consnm, colnames): return cls.genUniqueConstraint(consnm, colnames);
     @classmethod
     def genCheckConstraint(cls, consnm, val):
-        return cls.genUniqueOrCheckConstraint(consnm, False, val);
+        return cls.genSQLConstraint(consnm, "CHECK", val);
     @classmethod
     def genSQLCheck(cls, consnm, val): return cls.genCheckConstraint(consnm, val);
+    @classmethod
+    def genSQLPrimaryKeyConstraint(cls, consnm, colnames):
+        return cls.genSQLConstraint(consnm, "PRIMARY KEY", colnames);
+    
+    #NOT DONE YET 5-3-2025 3:35 AM MST
+
+    #this method does not assume that the foreign class has already been initialized
+    #however, it is assumed that when CREATE TABLE is run that at least one object already exists
+    @classmethod
+    def genSQLForeignKeyConstraint(cls, consnm, colnm, ftblnm, refcolnames):
+        #this method assumes that the colnm and recolnames and ref table name is valid.
+        #we can still verify the formats and stuff of them...
+        #myretstr = "CONSTRAINT " + consnm + " FOREIGN KEY(" + colnm + ") REFERENCES " + ftblnm + "(";
+        #return myretstr + (", ".join(refcolnames)) + ")";
+        raise ValueError("NOT DONE YET WITH THE FKEY CONSTRAINTS HERE NOW 5-3-2025 3:30 AM MST!");
+    #this convenience method assumes that the foreign class has already been initialized here.
+    #that assumption is only made if the foreign table name is not provided.
+    @classmethod
+    def genSQLForeignKeyConstraintFromColObj(cls, consnm, mcolobj, ftblnm=None):
+        myvalidator.varmustnotbenull(mcolobj, "mcolobj");
+        finftblnm = None;
+        if (myvalidator.isvaremptyornull(ftblnm)):
+            fclsref = type(mcolobj).getMyClassRefFromString(mcolobj.getForeignClass());
+            finftblnm = fclsref.getTableName();
+        else: finftblnm = ftblnm;
+        return cls.genSQLForeignKeyConstraint(consnm, mcolobj.getColName(), finftblnm,
+                                              mcolobj.getForeignColNames());
 
     #DOES NOT VALIDATE THE TABLE NAME, DOES NOT DEPEND ON IT, BUT THE OTHER LENGTH METHODS DO.
     @classmethod
@@ -645,6 +682,8 @@ class myvalidator:
     #NOT DONE YET WITH ALL OF THESE 4-30-2025 9:30 PM MST
 
     #DOES NOT VALIDATE THE TABLE NAME, DOES NOT DEPEND ON IT, BUT THE OTHER createTable methods DO.
+    #HOWEVER, THIS METHOD ASSUMES THAT ALL MODEL CLASSES HAVE BEEN INITIALIZED OR
+    #SETUP BEFORE THIS RUNS.
     @classmethod
     def genSQLCreateTable(cls, name, mycols, mulcolreqs, alltablereqs, onlyifnot=True):
         #this command has a very specific order of generating these
@@ -675,27 +714,69 @@ class myvalidator:
         #
         #multi-col primary and foreign key and unique constraints should go second to last
         #all table constraints and multi-column constraints should go last
+        #genUniqueConstraint(cls, consnm, colnames) could come in handy
 
         #https://www.w3schools.com/sql/sql_foreignkey.asp
         #https://www.w3schools.com/sql/sql_primarykey.asp
         #https://www.w3schools.com/sql/sql_autoincrement.asp
         #https://www.w3schools.com/sql/sql_unique.asp
         
-        #mstr = "";
-        #for mc in mycols:
-        #    mstr += mc.getColName() + " " + mc.getDataType();
+        #what if we have the situation where the thing only has foreign keys and the primary key
+        #is composed of said foreign keys?
+        #what order do we put the keys in?
+
+        mstr = "";
+        for n in range(len(mycols)):
+            mc = mycols[n];
+            mstr += mc.getColName() + " " + mc.getDataType();
             #now not sure about the order of the other stuff
             #like AutoIncrement, primary_key, isnonnull, isunique, etc.
             #server defaults and there even maybe other stuff that I completely missed.
             #if col is a foreign key do we handle that at all here in this batch?
+            
+            #auto_increment is different or not supported this way on some DBs like ORACLE.
+            if (mc.autoIncrements()): mstr += " AUTO_INCREMENT";
+            
+        #    if (mc.isPrimaryKey() and numpkycols == 1): mstr += " PRIMARY KEY";
+            if (mc.isNonNull()): mstr += " NOT NULL";
         #    if (mc.isUnique()): mstr += "UNIQUE";#unique is also one that has different ways
-        #    if (mc.isNonNull()): mstr += "NOT NULL";
-        #    if (mc.autoIncrements()): mstr += "*?AUTOINCREMENTS?*";#not sure what to do here...
-        #    if (mc.isPrimaryKey() and numpkycols == 1): mstr += "PRIMARY KEY";
         #    if (mc.isForeignKey()): mstr += "*?FOREIGN KEY?*";
             #also need some ,s in there and maybe a newline for formatting sake???.
-        #    print(f"NEW mstr = {mstr}");
-        #print(f"FINAL mstr = {mstr}");
+            if (n + 1 < len(mycols)): mstr += ", ";
+            print(f"\nNEW mstr = {mstr}");
+        print("\nAFTER FIRST LOOP:")
+        print(f"mstr = {mstr}");
+        
+        for n in range(len(mycols)):
+            mc = mycols[n];
+            if (mc.isUnique()):
+                mcnm = "" + mc.getColName();
+                nwconstnm = "individualcol" + mcnm + "uniqueconstraint";
+                mstr += ", " + myvalidator.genUniqueConstraint(nwconstnm, [mcnm]);
+                print(f"\nNEW mstr = {mstr}");
+        print("\nAFTER SECOND LOOP:")
+        print(f"mstr = {mstr}");
+        
+        #now need to get all of the primary key columns and then make the pky constraint.
+        from mybase import mybase;
+        pkycols = mybase.getMyPrimaryKeyCols(mycols);
+        mstr += ", ";
+        mstr += myvalidator.genSQLPrimaryKeyConstraint("pkyfor" + name, mybase.getMyColNames(pkycols));
+        
+        #now get the foreign keys
+        #if the foreign table name is provided, the assumption that all classes have been initialized
+        #is not made, instead the assumption that that name is correct and that the foreign col names
+        #are on that given foreign table name
+        #
+        #since the foreign table names are not stored in the mycol object class, but rather the
+        #foreign class name is, we are forced to assume that all classes have been initialized.
+        #that is before this method runs. unless there are no foreign keys on the column
+        #or the foreign table names are stored in the mycol object class.
+        #genSQLForeignKeyConstraintFromColObj(cls, consnm, mcolobj, ftblnm=None)
+
+        #now handle the other contraints...
+        #
+        print(f"\nFINAL mstr = {mstr}");
 
         #return "CREATE TABLE " + name + ("IF NOT EXISTS " if (onlyifnot) else "") + "(" + ? + ");";
         raise ValueError("NOT DONE YET 4-30-2025 9:30 PM MST!");

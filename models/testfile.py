@@ -212,7 +212,7 @@ if (runlinkreftests):
       print();
 
 #after this build a better test and then do serialization.
-runserializationtests = True;
+runserializationtests = False;
 if (runserializationtests):
       mysclslist = [Signup, Camper, Activity];
       for mycls in mysclslist:
@@ -249,6 +249,12 @@ if (runserializationtests):
 
 #need to attempt to create the data tables if have not already and save the new objects to it
 #if the ID is not assigned, let the DB put it on there....
+
+#test create table query only here
+mysclslist = [Signup, Camper, Activity];
+for mycls in mysclslist:
+      print(f"Gen CREATE TABLE command for class ({mycls.__name__})!");
+      print(mycls.genSQLCreateTableFromRef(onlyifnot=True));
 
 sa.save();
 vcmpr.save();
