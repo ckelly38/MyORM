@@ -719,6 +719,11 @@ class mybase:
         #if the table exists and onlyifnot is True, then it will not create a new table,
         #and essentially do nothing
         #it may still fail due to another reason, but this is not my fault unless it is a bad query.
+        
+        #for mc in mytempcols:
+        #    mc.primaryKeyInformationMustBeValid(type(self));
+        #    mc.foreignKeyInformationMustBeValid(self);
+        
         qry = cls.genSQLCreateTableFromRef(onlyifnot=False);
         print(f"CREATE TABLE qry = {qry}");
         
@@ -1335,8 +1340,9 @@ class mybase:
     @classmethod
     def getIndividualColumnConstraintsOrColsWithConstraints(cls, useclist, mycols=None):
         myvalidator.varmustbeboolean(useclist, "useclist");
-        return [(mc.constraints if (useclist) else mc) for mc in cls.getMyColsFromClassOrParam(mycols)
-                if not myvalidator.isvaremptyornull(mc.constraints)];
+        return [(mc.getConstraints() if (useclist) else mc)
+                for mc in cls.getMyColsFromClassOrParam(mycols)
+                if not myvalidator.isvaremptyornull(mc.getConstraints())];
     @classmethod
     def getIndividualColumnConstraints(cls, mycols=None):
         return cls.getIndividualColumnConstraintsOrColsWithConstraints(True, mycols);
@@ -1461,6 +1467,10 @@ class mybase:
     def varMustBePresentOnTableMain(cls, varnm="varnm"):
         return cls.varMustBePresentOnTable(None, varnm);
 
+    
+    #possible bug found 5-4-2025 12:29 AM maybe we can return null if the name is not found?
+    #if the name is not present, what should we do? should we return null for the name or error out?
+
     @classmethod
     def getNameOrValueOfVarIfPresentOnTable(cls, usename, ilist=None, varnm="varnm"):
         myvalidator.varmustbeboolean(usename, "usename");
@@ -1501,9 +1511,13 @@ class mybase:
     def getExclusiveSerializeRules(cls):
         return cls.getValueOfVarIfPresentOnTableMain("allexrules");
 
+
+    #possible bug found 5-4-2025 12:29 AM possibly storing duplicate data here...
+
     @classmethod
     def getAndSetMultiColumnConstraints(cls):
         mlist = cls.getMultiColumnConstraints();
+        #possible bug here: if a multiargs variable already exists, then why set it again?
         setattr(cls, "mymulticolargs", mlist);
 
     @classmethod

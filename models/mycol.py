@@ -344,11 +344,41 @@ class mycol:
         
         #self._value = value;
         self.setDefaultValue(defaultvalue);
-        self.constraints = constraints;
+        self.setConstraints(constraints);
         print("DONE WITH MYCOL CONSTRUCTOR!");
     
     def getDefaultValueKeyNameForDataTypeObj(self, tpobj):
         return myvalidator.getDefaultValueKeyNameForDataTypeObj(tpobj, self);
+
+    def getConstraints(self): return self._constraints;
+
+    def setConstraints(self, mlist):
+        if (myvalidator.isvaremptyornull(mlist)): pass;
+        else:
+            for mval in mlist:
+                myvalidator.stringMustHaveAtMinNumChars(mval, 1, "mval");
+                if (myvalidator.isConstraintValid(mval)): pass;
+                else: raise ValueError("the constraint must be valid, but it was not!");
+        self._constraints = mlist;
+    
+    def addConstraint(self, mval):
+        if (myvalidator.isvaremptyornull(mval)): pass;
+        else:
+            if (myvalidator.isConstraintValid(mval)): pass;
+            else: raise ValueError("the constraint must be valid, but it was not!");
+
+            #now add it to the constraints list.
+            #get the current list for this, create an exact copy of it, then add this to the new list
+            retlist = None;
+            if (self.getConstraints() == None): retlist = [mval];
+            else:
+                retlist = ["" + cnst for cnst in self.getConstraints()];
+                retlist.append(mval);
+            self.setConstraints(retlist);
+            return retlist;
+    def addAConstraint(self, mval): self.addConstraint(mval);
+
+    constraints = property(getConstraints, setConstraints);
 
     def getDataType(self): return self._datatype;
 
@@ -484,6 +514,7 @@ class mycol:
     defaultvalue = property(getDefaultValue, setDefaultValue);
 
     def getColName(self): return self._colname;
+    def getColumnName(self): return self.getColName();
 
     def setColName(self, val):
         #the colname must be unique on each table
@@ -493,6 +524,8 @@ class mycol:
         #myvalidator.varmustbethetypeonly(val, str, "val");
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(val, "val");
         self._colname = val;
+    
+    def setColumnName(self, val): self.setColName(val);
     
     colname = property(getColName, setColName);
 
@@ -914,6 +947,11 @@ class mycol:
         return self.doesOrGetObjectThatHasTheForeignKeyValues(True, fcobj);
     def doesForeignKeyValuesExistOnObjectsList(self, fcobj=None):
         return self.doesOrGetObjectThatHasTheForeignKeyValues(False, fcobj);
+
+    #problem found on 5-4-2025 2:22 AM MST...
+    #NEED A METHOD HERE TO VERIFY THE FOREIGN KEY INFORMATION AFTER ALL CLASSES HAVE BEEN SETUP
+    #BUT DOES NOT REQUIRE A DATA OBJECT IE THIS USES COLUMN INFORMATION ONLY...
+
 
     def foreignKeyInformationMustBeValid(self, fcobj=None):
         #this method takes in the calling class's object and the current column object

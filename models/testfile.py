@@ -251,7 +251,7 @@ if (runserializationtests):
 #if the ID is not assigned, let the DB put it on there....
 
 #test create table query only here
-mysclslist = [Signup, Camper, Activity];
+mysclslist = [MyModelWithCompPrimaryKey, Signup, Camper, Activity];
 for mycls in mysclslist:
       print(f"Gen CREATE TABLE command for class ({mycls.__name__})!");
       print(mycls.genSQLCreateTableFromRef(onlyifnot=True));

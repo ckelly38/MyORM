@@ -506,6 +506,59 @@ class myvalidator:
     
     #SQL methods might get removed from the validator class
 
+    #will raise a value error if the constraint is not valid unless it is empty or null
+    #in that case it will return false if it is valid it will return true;
+    @classmethod
+    def isConstraintValid(cls, mval):
+        if (myvalidator.isvaremptyornull(mval)): return False;
+        else:
+            #the constraint must be in the following format:
+            #CONSTRAINT name TYPE(value)
+            #0123456789012345678901234567
+            #0         1         2
+            #the only valid constraint types are: PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK
+            #the name cannot include spaces newlines tabs etc and
+            #is only alphanumeric with underscores.
+            ivfmterrmsg = "the constraint value was not in the correct format! ";
+            ivfmterrmsg += "It must be in: 'CONSTRAINT name TYPE(value)' format!";
+            #print(f"mval = {mval}");
+            
+            if (mval.index("CONSTRAINT ") == 0): pass;
+            else: raise ValueError(ivfmterrmsg);
+            #the name starts at index 11 and ends at an indeterminate value, but the next space
+            spci = -1;
+            for i in range(11, len(mval)):
+                if (mval[i] == ' '):
+                    spci = i;
+                    break;
+            if (spci < 12): raise ValueError(ivfmterrmsg);
+            mynmstr = mval[11:spci];
+            #print(f"mynmstr = {mynmstr}");
+
+            try:
+                myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mynmstr, "mynmstr");
+            except Exception as ex:
+                #add the ex as the cause of this value error and then raise that.
+                raise ValueError(ivfmterrmsg) from ex;
+            #name is valid
+            #type starts after the space index and goes to the first (
+            opi = mval.index("(");
+            if (12 < opi): pass;
+            else: raise ValueError(ivfmterrmsg);
+            tpstr = mval[spci + 1:opi];
+            #print(f"tpstr = {tpstr}");
+
+            if (tpstr in ["PRIMARY KEY", "FOREIGN KEY", "UNIQUE", "CHECK"]): pass;
+            else: raise ValueError(ivfmterrmsg);
+            if (mval[len(mval) - 1] == ')'): pass;
+            else: raise ValueError(ivfmterrmsg);
+            #cannot error check the value itself here, but constraint is in the correct format
+            #or appears to be...
+            #we can still check the value somewhat using a leveling algorithmn
+            #but we are pretty confident that it is in the correct format
+            #?;
+            return True;
+
     @classmethod
     def genSQLConstraint(cls, consnm, constpnm, val):
         if (myvalidator.isvaremptyornull(constpnm)):
@@ -555,29 +608,43 @@ class myvalidator:
     def genSQLPrimaryKeyConstraint(cls, consnm, colnames):
         return cls.genSQLConstraint(consnm, "PRIMARY KEY", colnames);
     
-    #NOT DONE YET 5-3-2025 3:35 AM MST
-
     #this method does not assume that the foreign class has already been initialized
     #however, it is assumed that when CREATE TABLE is run that at least one object already exists
     @classmethod
     def genSQLForeignKeyConstraint(cls, consnm, colnm, ftblnm, refcolnames):
         #this method assumes that the colnm and recolnames and ref table name is valid.
         #we can still verify the formats and stuff of them...
-        #myretstr = "CONSTRAINT " + consnm + " FOREIGN KEY(" + colnm + ") REFERENCES " + ftblnm + "(";
-        #return myretstr + (", ".join(refcolnames)) + ")";
-        raise ValueError("NOT DONE YET WITH THE FKEY CONSTRAINTS HERE NOW 5-3-2025 3:30 AM MST!");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(consnm, "consnm");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(colnm, "colnm");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(ftblnm, "ftblnm");
+        if (myvalidator.isvaremptyornull(refcolnames) or len(refcolnames) < 1): return None;
+        else:
+            for mcnm in refcolnames:
+                myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mcnm,
+                                                                                "the ref colname");
+        myretstr = "CONSTRAINT " + consnm + " FOREIGN KEY(" + colnm + ") REFERENCES " + ftblnm + "(";
+        return myretstr + (", ".join(refcolnames)) + ")";
+        #raise ValueError("NOT DONE YET WITH THE FKEY CONSTRAINTS HERE NOW 5-3-2025 3:30 AM MST!");
     #this convenience method assumes that the foreign class has already been initialized here.
     #that assumption is only made if the foreign table name is not provided.
     @classmethod
     def genSQLForeignKeyConstraintFromColObj(cls, consnm, mcolobj, ftblnm=None):
         myvalidator.varmustnotbenull(mcolobj, "mcolobj");
         finftblnm = None;
+        fcolnms = mcolobj.getForeignColNames();
         if (myvalidator.isvaremptyornull(ftblnm)):
             fclsref = type(mcolobj).getMyClassRefFromString(mcolobj.getForeignClass());
             finftblnm = fclsref.getTableName();
+            allfcols = fclsref.getMyCols();
+            if (fclsref.areGivenColNamesOnTable(fcolnms, mycols=allfcols)): pass;
+            else:
+                allfcolnames = fclsref.getMyColNames(mycols=allfcols);
+                raise ValueError("at least one of the foreign column names (" + str(fcolnms) +
+                                 ") was not on the foreign table with class name (" +
+                                 fclsref.__name__ + ")! Its column names are (" +
+                                 str(allfcolnames) + ")!");
         else: finftblnm = ftblnm;
-        return cls.genSQLForeignKeyConstraint(consnm, mcolobj.getColName(), finftblnm,
-                                              mcolobj.getForeignColNames());
+        return cls.genSQLForeignKeyConstraint(consnm, mcolobj.getColName(), finftblnm, fcolnms);
 
     #DOES NOT VALIDATE THE TABLE NAME, DOES NOT DEPEND ON IT, BUT THE OTHER LENGTH METHODS DO.
     @classmethod
@@ -725,8 +792,10 @@ class myvalidator:
         #is composed of said foreign keys?
         #what order do we put the keys in?
 
-        mstr = "";
+        #mstr = "";
+        mstrs = [];
         for n in range(len(mycols)):
+            mstr = "";
             mc = mycols[n];
             mstr += mc.getColName() + " " + mc.getDataType();
             #now not sure about the order of the other stuff
@@ -741,28 +810,47 @@ class myvalidator:
             if (mc.isNonNull()): mstr += " NOT NULL";
         #    if (mc.isUnique()): mstr += "UNIQUE";#unique is also one that has different ways
         #    if (mc.isForeignKey()): mstr += "*?FOREIGN KEY?*";
+            mstrs.append(mstr);
             #also need some ,s in there and maybe a newline for formatting sake???.
-            if (n + 1 < len(mycols)): mstr += ", ";
-            print(f"\nNEW mstr = {mstr}");
+            #if (n + 1 < len(mycols)): mstr += ", ";
+            #print(f"\nNEW mstrs = {mstrs}");
         print("\nAFTER FIRST LOOP:")
-        print(f"mstr = {mstr}");
+        print(f"mstrs = {mstrs}");
         
         for n in range(len(mycols)):
             mc = mycols[n];
             if (mc.isUnique()):
                 mcnm = "" + mc.getColName();
                 nwconstnm = "individualcol" + mcnm + "uniqueconstraint";
-                mstr += ", " + myvalidator.genUniqueConstraint(nwconstnm, [mcnm]);
-                print(f"\nNEW mstr = {mstr}");
+                nwuconst = myvalidator.genUniqueConstraint(nwconstnm, [mcnm]);
+                #mstr += ", " + nwuconst;
+                mstr = nwuconst;
+                mstrs.append(mstr);
+                mc.addConstraint(nwuconst);
+                #print(f"\nNEW mstrs = {mstrs}");
         print("\nAFTER SECOND LOOP:")
-        print(f"mstr = {mstr}");
+        print(f"mstrs = {mstrs}");
         
         #now need to get all of the primary key columns and then make the pky constraint.
         from mybase import mybase;
         pkycols = mybase.getMyPrimaryKeyCols(mycols);
-        mstr += ", ";
-        mstr += myvalidator.genSQLPrimaryKeyConstraint("pkyfor" + name, mybase.getMyColNames(pkycols));
+        #mstr += ", ";
+        nwpkyconst = myvalidator.genSQLPrimaryKeyConstraint("pkyfor" + name,
+                                                            mybase.getMyColNames(pkycols));
+        #mstr += nwpkyconst;
+        mstrs.append(nwpkyconst);
+        print("\nAFTER THE PRIMARY KEY:")
+        print(f"mstrs = {mstrs}");
         
+        #add this to the table here as a multi-col constraint or an individual column constraint
+        #but there can only be one primary key constraint on the table.
+        if (1 < numpkycols):
+            #this is a multi-column primary key constraint
+            raise ValueError("NOT SURE WHICH COLUMN TO ADD THE CONSTRAINT TO!");
+        else:
+            #this is an individual column primary key constraint
+            mc.addConstraint(nwpkyconst);
+
         #now get the foreign keys
         #if the foreign table name is provided, the assumption that all classes have been initialized
         #is not made, instead the assumption that that name is correct and that the foreign col names
@@ -773,12 +861,30 @@ class myvalidator:
         #that is before this method runs. unless there are no foreign keys on the column
         #or the foreign table names are stored in the mycol object class.
         #genSQLForeignKeyConstraintFromColObj(cls, consnm, mcolobj, ftblnm=None)
+        for mc in mycols:
+            if (mc.isForeignKey()):
+                consnm = "fkeyreqsforcol" + mc.getColName();
+                nwfkycolconst = myvalidator.genSQLForeignKeyConstraintFromColObj(consnm, mc);
+                #mstr += ", " + nwfkycolconst;
+                mstrs.append(nwfkycolconst);
+                mc.addConstraint(nwfkycolconst);
+                #print(f"\nNEW mstr = {mstr}");
+        print("\nAFTER THIRD LOOP:")
+        print(f"mstrs = {mstrs}");
 
         #now handle the other contraints...
-        #
-        print(f"\nFINAL mstr = {mstr}");
+        #the original constraint lists have changed since it was printed as have the objects
+        #so if we have already included it or them on the mstrs we do not want to include it
+        for mc in mycols:
+            if (myvalidator.isvaremptyornull(mc.getConstraints())): pass;
+            else:
+                for mval in mc.getConstraints():
+                    if (myvalidator.isConstraintValid(mval) and mval not in mstrs):
+                        mstrs.append(mval);
+        print(f"\nFINAL mstrs = {mstrs}");
 
-        #return "CREATE TABLE " + name + ("IF NOT EXISTS " if (onlyifnot) else "") + "(" + ? + ");";
+        retstr = "CREATE TABLE " + name + ("IF NOT EXISTS " if (onlyifnot) else "") + "(";
+        #return retstr + (", ".join(mstrs)) + ");";
         raise ValueError("NOT DONE YET 4-30-2025 9:30 PM MST!");
     
     #depends on the table name
