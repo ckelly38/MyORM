@@ -58,7 +58,7 @@ class mybase:
         if (hasattr(cls, "all")): pass;
         else: setattr(cls, "all", None);
 
-        print(f"DONE WITH THE SETUP METHOD FOR {cls.__name__}!\n");
+        print(f"DONE WITH THE SETUP PART A METHOD FOR {cls.__name__}!\n");
     
     #depends on the all list existing and being set for all of the classes that is a subclass of mybase
     #and not mybase before this runs.
@@ -67,6 +67,7 @@ class mybase:
     def setupPartB(cls, calledinmain=False):
         myvalidator.varmustbeboolean(calledinmain, "calledinmain");
         if (issubclass(cls, mybase) and not (cls == mybase)):
+            print(f"BEGIN THE SETUP PART B METHOD FOR {cls.__name__}!\n");
             for myrefcolobj in cls.getMyRefCols():
                 mynwattrnm = myrefcolobj.getListColName();
                 myrefclsnm = myrefcolobj.getRefClassColName();
@@ -89,8 +90,20 @@ class mybase:
                     mval = getattr(cls, mynwattrnm);
                     if (mval == myrefclsref.all): callset = False;
                 if (callset): setattr(cls, mynwattrnm, myrefclsref.all);
+            print(f"DONE WITH THE SETUP PART B METHOD FOR {cls.__name__}!\n");
     @classmethod
     def updateAllLinkRefsForMyClass(cls): cls.setupPartB(True);
+
+    @classmethod
+    def setupPartC(cls):
+        if (issubclass(cls, mybase) and not (cls == mybase)):
+            print(f"BEGIN THE SETUP PART C METHOD FOR {cls.__name__}!\n");
+            for mc in cls.getMyCols():
+                mc.primaryKeyInformationMustBeValid(cls);
+                if (mc.isForeignKey()):
+                    if (mc.foreignKeyInformationMustBeValid(fcobj=None, usenoclassobj=True)): pass;
+                    else: raise ValueError("the foreign key column information must be valid!");
+            print(f"DONE WITH THE SETUP PART C METHOD FOR {cls.__name__}!\n");
 
     @classmethod
     def setupMain(cls):
@@ -107,7 +120,9 @@ class mybase:
             #therefore it must be done in a separate loop after all of partA has finished running.
 
             for mclsref in mlist:
-                if (issubclass(mclsref, mybase) and not (mclsref == mybase)): mclsref.setupPartB(True);
+                if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
+                    mclsref.setupPartB(True);
+                    mclsref.setupPartC();
         mycol.setRanSetup(not isempty);
 
     def __init__(self, colnames=None, colvalues=None):
@@ -145,7 +160,7 @@ class mybase:
         
         for mc in mytempcols:
             mc.primaryKeyInformationMustBeValid(type(self));
-            mc.foreignKeyInformationMustBeValid(self);
+            mc.foreignKeyInformationMustBeValid(fcobj=self, usenoclassobj=False);
 
         print("\nDONE VERIFYING THE FOREIGN AND PRIMARY KEY INFORMATION IN BASE CLASS CONSTRUCTOR!");
         
@@ -720,9 +735,9 @@ class mybase:
         #and essentially do nothing
         #it may still fail due to another reason, but this is not my fault unless it is a bad query.
         
-        #for mc in mytempcols:
-        #    mc.primaryKeyInformationMustBeValid(type(self));
-        #    mc.foreignKeyInformationMustBeValid(self);
+        for mc in cls.getMyCols():
+            mc.primaryKeyInformationMustBeValid(cls);
+            mc.foreignKeyInformationMustBeValid(fcobj=None, usenoclassobj=True);
         
         qry = cls.genSQLCreateTableFromRef(onlyifnot=False);
         print(f"CREATE TABLE qry = {qry}");
@@ -757,9 +772,33 @@ class mybase:
         #then proceed to save the data.
         #we may need to add new data onto the database, or update data if it is on the DB.
         #depending on what we need to do, the commands could change.
+        #may want to backup the OLD data before we do this.
+        #may want to run a backup of NEW data after we do this.
         print(f"INSIDE SAVE() for class {type(self).__name__}:");
+        
+        fkydataerrmsg = "the foreign key data is wrong, the columns were found, ";
+        fkydataerrmsg += "but no object was found with the given values!";
+        for mc in type(self).getMyCols():
+            mc.primaryKeyInformationMustBeValid(type(self));
+            mc.foreignKeyInformationMustBeValid(fcobj=self, usenoclassobj=False);
+            if (mc.isForeignKey()):
+               if (mc.doesForeignKeyValuesExistOnObjectsList(self)): pass;
+               else: raise ValueError(fkydataerrmsg);
+
+        #may want to run a backup of the OLD DATA ON THE DB here
+        #?
+
         if (type(self).tableExists()): pass;
         else: type(self).createTable();
+
+        #need to determine the proper SQL command to execute here...
+        #since the object contains the new data already, in order to update it:
+        #we need to know a value of the data or have a way to get the row specifically uniquely.
+        #maybe by an ID.
+
+        #may want to run a backup of the NEW DATA ON THE DB here
+        #?
+
         raise ValueError("NOT DONE YET 4-30-2025 9:33 PM MST!");
 
 
@@ -1513,6 +1552,13 @@ class mybase:
 
 
     #possible bug found 5-4-2025 12:29 AM possibly storing duplicate data here...
+
+    #possible bug found 5-4-2025 12:29 AM MISSING METHOD
+    #NEED TO MAKE A METHOD TO ADD OR REMOVE A MULTI-COLUMN CONSTRAINT...
+    #ONE OTHER THING, THIS METHOD MAY BE DEPENDENT ON HOW AND WHEN THE TABLE WAS CREATED...
+    #REMOVING THESE CONSTRAINTS CAN HAVE NASTY CONSEQUENCES AND SO CAN ADDING THEM
+    #AFTER THE TABLE WAS CREATED.
+
 
     @classmethod
     def getAndSetMultiColumnConstraints(cls):

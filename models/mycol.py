@@ -782,8 +782,6 @@ class mycol:
     isforeignkey = property(getIsForeignKey, setIsForeignKey);
 
     
-    #NOT DONE YET ENFORCING FOREIGN KEY DATA TYPES bug found 3-29-2025 3:26 AM
-
     #these methods for getting the foreign key information and then checking it
     #take in a context object called fcobj
     #
@@ -796,11 +794,14 @@ class mycol:
     #however, this should not be relied on as being correct.
     #because the mycol object is a class attribute to many classes that extend mybase class.
 
-    def genForeignKeyDataObjectInfo(self, fcobj=None):
+    def genForeignKeyDataObjectInfo(self, fcobj=None, usenoclassobj=False):
+        myvalidator.varmustbeboolean(usenoclassobj, "usenoclassobj");
         if (fcobj == None):
-            cntxt = self.getContext();
-            myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
-            return self.genForeignKeyDataObjectInfo(cntxt);
+            if (usenoclassobj): pass;
+            else:
+                cntxt = self.getContext();
+                myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
+                return self.genForeignKeyDataObjectInfo(cntxt);
 
         print("\nGET FOREIGN KEY DATA OBJECT METHOD NOW:");
         print(f"self.isforeignkey = {self.isforeignkey}");
@@ -820,7 +821,8 @@ class mycol:
                 #self is the column object
                 #fcobj is the calling object that contains that column (so this is the real self).
                 #foreign class is the string name of the foreign class.
-                myvalidator.varmustnotbenull(fcobj, "fcobj");
+                if (usenoclassobj): pass;
+                else: myvalidator.varmustnotbenull(fcobj, "fcobj");
                 myclsref = mycol.getMyClassRefFromString(self.foreignClass);
                 print(f"myclsref = {myclsref}");
 
@@ -847,6 +849,10 @@ class mycol:
                         "mcolobjs": mcolobjs};
         raise ValueError("the col must be a foreign key, but it was not!");
 
+    
+    #NOT DONE YET ENFORCING FOREIGN KEY DATA TYPES bug found 3-29-2025 3:26 AM
+    #
+    #NOT SURE WHEN THIS METHOD BELOW SHOULD BE RUN...
     
     #this checks to see if the values for the foreign key column (self) on the containing object (fcobj)
     #is on the foreign key reference class list of objects for that class.
@@ -948,12 +954,8 @@ class mycol:
     def doesForeignKeyValuesExistOnObjectsList(self, fcobj=None):
         return self.doesOrGetObjectThatHasTheForeignKeyValues(False, fcobj);
 
-    #problem found on 5-4-2025 2:22 AM MST...
-    #NEED A METHOD HERE TO VERIFY THE FOREIGN KEY INFORMATION AFTER ALL CLASSES HAVE BEEN SETUP
-    #BUT DOES NOT REQUIRE A DATA OBJECT IE THIS USES COLUMN INFORMATION ONLY...
-
-
-    def foreignKeyInformationMustBeValid(self, fcobj=None):
+    
+    def foreignKeyInformationMustBeValid(self, fcobj=None, usenoclassobj=True):
         #this method takes in the calling class's object and the current column object
         #the goal of this method is to make sure that the foreign key information is valid
         #it will look at the list of cols given and make sure that they are unique (handled by set)
@@ -962,11 +964,22 @@ class mycol:
         #it will make sure that the referring class has a valid primary key
         #it will make sure that the column names on the link from the calling object
         #are on the referring class and has the unique data enforced.
+        #
+        #this method only checks the columns and does not check the values used for the foreign key
+        #and sees if a corresponding object exists that is the
+        #doesForeignKeyValuesExistOnObjectsList(self, fcobj=None) that does that.
+        #
+        #we do not call that in here either, due to a timing issue as the above requires the objects to
+        #actually exist in memory with the links more or less, AND the current method is actually
+        #called before that had a chance to be true.
 
+        myvalidator.varmustbeboolean(usenoclassobj, "usenoclassobj");
         if (fcobj == None):
-            cntxt = self.getContext();
-            myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
-            return self.foreignKeyInformationMustBeValid(cntxt);
+            if (usenoclassobj): pass;
+            else:
+                cntxt = self.getContext();
+                myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
+                return self.foreignKeyInformationMustBeValid(fcobj=cntxt);
         
         #has is foreign key
         print("\nBEGIN FOREIGN KEY VALIDATION METHOD NOW:");
@@ -989,7 +1002,8 @@ class mycol:
                 print("the calling object is fcobj which is the class instance that has the column!");
                 print(f"fcobj = {fcobj}");
                 
-                myfcoldatainfoobj = self.genForeignKeyDataObjectInfo(fcobj);
+                myfcoldatainfoobj = self.genForeignKeyDataObjectInfo(fcobj=fcobj,
+                                                                     usenoclassobj=usenoclassobj);
                 print();
                 print(f"myfcoldatainfoobj = {myfcoldatainfoobj}");
                 print();
@@ -999,7 +1013,8 @@ class mycol:
                 myfccolnames = myfcoldatainfoobj["myfccolnames"];
                 mycolis = myfcoldatainfoobj["mycolis"];
                 mcolobjs = myfcoldatainfoobj["mcolobjs"];
-                myvalidator.varmustnotbenull(fcobj, "fcobj");
+                if (usenoclassobj): pass;
+                else: myvalidator.varmustnotbenull(fcobj, "fcobj");
                 myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
                 #names referenced by the foreign key
                 print(f"self.foreignColNames = {self.foreignColNames}");
@@ -1078,6 +1093,9 @@ class mycol:
 
                     myvalidator.listMustContainUniqueValuesOnly(pkycolnames, "pkycolnames");
                     isvalid = False;
+                    merrmsgpta = "the foreign key column";
+                    merrmsgptb = ("" if (fcobj == None) else " on class(" + type(fcobj).__name__ + ")");
+                    merrmsgptc = " must refer to unique data!";
                     if (len(self.foreignColNames) == 1):
                         mc = mcolobjs[0];
                         isvalid = (mc.isunique or (len(pkycols) == 1 and mc.isprimarykey));
@@ -1119,9 +1137,7 @@ class mycol:
                                             isvalid = True;
                                             break;
                     if isvalid: pass;
-                    else:
-                        raise ValueError("the foreign key column on class(" + type(fcobj).__name__ +
-                                         ") must refer to unique data!");
+                    else: raise ValueError(merrmsgpta + merrmsgptb + merrmsgptc);
         else:
             if (self.foreignClass == None): pass;
             else: self.setForeignClass(None);
