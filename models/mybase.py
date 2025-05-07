@@ -67,7 +67,7 @@ class mybase:
     def setupPartB(cls, calledinmain=False):
         myvalidator.varmustbeboolean(calledinmain, "calledinmain");
         if (issubclass(cls, mybase) and not (cls == mybase)):
-            print(f"BEGIN THE SETUP PART B METHOD FOR {cls.__name__}!\n");
+            #print(f"BEGIN THE SETUP PART B METHOD FOR {cls.__name__}!\n");
             for myrefcolobj in cls.getMyRefCols():
                 mynwattrnm = myrefcolobj.getListColName();
                 myrefclsnm = myrefcolobj.getRefClassColName();
@@ -90,7 +90,7 @@ class mybase:
                     mval = getattr(cls, mynwattrnm);
                     if (mval == myrefclsref.all): callset = False;
                 if (callset): setattr(cls, mynwattrnm, myrefclsref.all);
-            print(f"DONE WITH THE SETUP PART B METHOD FOR {cls.__name__}!\n");
+            #print(f"DONE WITH THE SETUP PART B METHOD FOR {cls.__name__}!\n");
     @classmethod
     def updateAllLinkRefsForMyClass(cls): cls.setupPartB(True);
 
@@ -1515,7 +1515,9 @@ class mybase:
         myvalidator.varmustbeboolean(usename, "usename");
         myresobj = cls.getValObjectIfPresent(ilist, varnm);
         if (myvalidator.isvaremptyornull(myresobj)):
-            raise AttributeError("the table must have a(n) " + varnm + " in it!");
+            #if (usename): return None;
+            #else:
+                raise AttributeError("the table must have a(n) " + varnm + " in it!");
         else: return myresobj[("name" if usename else "value")];
     @classmethod
     def getNameOrValueOfVarIfPresentOnTableMain(cls, usename, varnm="varnm"):
@@ -1540,6 +1542,12 @@ class mybase:
     @classmethod
     def getMultiColumnConstraints(cls):
         return cls.getValueOfVarIfPresentOnTableMain("multi_column_constraints_list");
+    
+
+    #most serialization methods are here
+
+    #the two immediately below are convenience methods based on the above functions
+
     #this gets the rules that the user has defined in their class which extends mybase class
     #in the event that the user did not define it, it throws an attribute error
     #this does not get all attributes that will be serialized
@@ -1551,20 +1559,6 @@ class mybase:
         return cls.getValueOfVarIfPresentOnTableMain("allexrules");
 
 
-    #possible bug found 5-4-2025 12:29 AM possibly storing duplicate data here...
-
-    #possible bug found 5-4-2025 12:29 AM MISSING METHOD
-    #NEED TO MAKE A METHOD TO ADD OR REMOVE A MULTI-COLUMN CONSTRAINT...
-    #ONE OTHER THING, THIS METHOD MAY BE DEPENDENT ON HOW AND WHEN THE TABLE WAS CREATED...
-    #REMOVING THESE CONSTRAINTS CAN HAVE NASTY CONSEQUENCES AND SO CAN ADDING THEM
-    #AFTER THE TABLE WAS CREATED.
-
-
-    @classmethod
-    def getAndSetMultiColumnConstraints(cls):
-        mlist = cls.getMultiColumnConstraints();
-        #possible bug here: if a multiargs variable already exists, then why set it again?
-        setattr(cls, "mymulticolargs", mlist);
 
     @classmethod
     def getOtherKnownSafeAttributesOnTheClass(cls):
@@ -1652,6 +1646,91 @@ class mybase:
         serlist = cls.getKnownAttributeNamesOnTheClassForSerialization();
         if (myvalidator.isvaremptyornull(serlist)): return alllist;
         else: return [item for item in alllist if item not in serlist];
+
+
+    #constraint methods here
+
+    @classmethod
+    def getAndSetMultiColumnConstraints(cls):
+        mlist = None;
+        try:
+            mlist = cls.getMultiColumnConstraints();
+        except Exception as ex:
+            setattr(cls, "mymulticolargs", mlist);
+    
+
+    #possible bug found 5-4-2025 12:29 AM MISSING METHOD
+    #NEED TO MAKE A METHOD TO ADD OR REMOVE A MULTI-COLUMN CONSTRAINT...
+    #ONE OTHER THING, THIS METHOD MAY BE DEPENDENT ON HOW AND WHEN THE TABLE WAS CREATED...
+    #REMOVING THESE CONSTRAINTS CAN HAVE NASTY CONSEQUENCES AND SO CAN ADDING THEM
+    #AFTER THE TABLE WAS CREATED.
+
+    #NOT DONE YET HERE 5-6-2025 6:56 PM MST
+
+    @classmethod
+    def addOrRemoveMultiColumnConstraint(cls, mval, useadd):
+        if (myvalidator.isvaremptyornull(mval)): pass;
+        else:
+            #if the table already exists on the DB, then we have a problem...
+            #as changing the constraints may cause serious needs
+            #alter table command is not always supported and varies significantly...
+            #if the constraint is already present on the list of constraints, then do not add it
+            myvalidator.varmustbethetypeonly(mval, str, "mval");
+            mlist = cls.getAndSetMultiColumnConstraints();
+            isonlist = (False if (myvalidator.isvaremptyornull(mlist)) else (mval in mlist));
+            if (isonlist): pass;
+            else:
+                if (cls.tableExists()):
+                    #if (useadd):
+                    #    ?;
+                    #else:
+                    #    ?;
+                    raise ValueError("NEED TO DO A LOT HERE TO ADD THE CONSTRAINT SINCE THE " +
+                                    "TABLE ALREADY EXISTS!");
+                else:
+                    #safe to add it...
+                    #get the attribute name
+                    #get the old value (mlist)
+                    #add the new value to the old value...
+                    nlist = None;
+                    if (useadd):
+                        nlist = ([mval] if (myvalidator.isvaremptyornull(mlist)) else
+                                 ([item for item in mlist] if (mval in mlist) else
+                                  [item for item in mlist].append(mval)));
+                    else:
+                        premex = False;
+                        if (myvalidator.isvaremptyornull(mlist)):
+                            if (mlist == None): pass;
+                            else: nlist = [];
+                            premex = True;
+                        else:
+                            if (mval in mlist): pass;
+                            else: premex = True;
+                            nlist = [item for item in mlist if not item == mval];
+                        if (premex):
+                            print("WARNING: you attempted to remove mval = " + mval +
+                                  ", but it was not on the list!");
+                            traceback.print_stack();
+                    setattr(cls, cls.getNameOfVarIfPresentOnTableMain("multi_column_constraints_list"),
+                            nlist);
+    #add a multi-column constraint convenience methods here
+    @classmethod
+    def addMultiColumnConstraint(cls, mval): cls.addOrRemoveMultiColumnConstraint(mval, True);
+    @classmethod
+    def addMultiColConstraint(cls, mval): cls.addMultiColumnConstraint(mval);
+    @classmethod
+    def addAMultiColConstraint(cls, mval): cls.addMultiColumnConstraint(mval);
+    @classmethod
+    def addAMultiColumnConstraint(cls, mval): cls.addMultiColumnConstraint(mval);
+    #remove a multi-column constraint convenience methods here
+    @classmethod
+    def removeMultiColumnConstraint(cls, mval): cls.addOrRemoveMultiColumnConstraint(mval, False);
+    @classmethod
+    def removeMultiColConstraint(cls, mval): cls.removeMultiColumnConstraint(mval);
+    @classmethod
+    def removeAMultiColConstraint(cls, mval): cls.removeMultiColumnConstraint(mval);
+    @classmethod
+    def removeAMultiColumnConstraint(cls, mval): cls.removeMultiColumnConstraint(mval);
 
     @classmethod
     def getAllTableConstraints(cls, fetchnow=False):

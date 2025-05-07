@@ -347,8 +347,39 @@ class mycol:
         self.setConstraints(constraints);
         print("DONE WITH MYCOL CONSTRUCTOR!");
     
-    def getDefaultValueKeyNameForDataTypeObj(self, tpobj):
-        return myvalidator.getDefaultValueKeyNameForDataTypeObj(tpobj, self);
+    @classmethod
+    def genFKeyDict(cls, fclsnm=None, objname=None, refcolnms=None):
+        isfkey = True;
+        errmsg = "you provided referenced column names, therefore you must provide the class name, ";
+        errmsg += "but you did not!";
+        if (myvalidator.isvaremptyornull(refcolnms)):
+            if (myvalidator.isvaremptyornull(fclsnm)):
+                isfkey = False;
+                if (myvalidator.isvaremptyornull(objname)): pass;
+                else: return cls.genFKeyDict(fclsnm=fclsnm, objname=None, refcolnms=refcolnms);
+            else: return cls.genFKeyDict(fclsnm=None, objname=objname, refcolnms=refcolnms);
+        else:
+            if (myvalidator.isvaremptyornull(fclsnm)): raise ValueError(errmsg);
+            #else: pass;#valid
+        return {"isfkey": isfkey, "classname": fclsnm, "objectname": objname, "refcolnames": refcolnms};
+
+    @classmethod
+    def newColFromFKeyDict(cls, colname, datatype, defaultvalue, isprimarykey=False, isnonnull=None,
+                           isunique=None, issigned=None, autoincrements=False, fkeydict=None,
+                           constraints=None):
+        if (myvalidator.isvaremptyornull(fkeydict)):
+            return cls.newColFromFKeyDict(colname, datatype, defaultvalue, isprimarykey=isprimarykey,
+                                          isnonnull=isnonnull, isunique=isunique, issigned=issigned,
+                                          autoincrements=autoincrements, fkeydict=cls.genFKeyDict(),
+                                          constraints=constraints);
+        return mycol(colname, datatype, defaultvalue, isprimarykey=isprimarykey, isnonnull=isnonnull,
+                     isunique=isunique, issigned=issigned, autoincrements=autoincrements,
+                     isforeignkey=fkeydict["isfkey"], foreignClass=fkeydict["classname"],
+                     foreignColNames=fkeydict["refcolnames"], foreignObjectName=fkeydict["objectname"],
+                     constraints=constraints);
+
+
+    #non-constructor methods are below this point
 
     def getConstraints(self): return self._constraints;
 
@@ -361,6 +392,18 @@ class mycol:
                 else: raise ValueError("the constraint must be valid, but it was not!");
         self._constraints = mlist;
     
+    
+    #NEED TO ADD A REMOVE CONSTRAINT METHOD
+    #BUT THESE METHODS ARE ALSO SOMEWHAT DEPENDENT ON IF THE TABLE EXISTS IN THE DB.
+    #-if we go via class name stored on the mycol object (first we need to store it),
+    #second we need to be aware that there might be a timing issue
+    #where the class may not be fully initialized yet
+    #-if we go via context object, there is the problem where the context can easily be changed
+    #therefore due to this being a class attribute it is considdered not reliable,
+    #but is a good indicator that the classes may already be fully initialized if not null.
+    #
+    #NOT DONE YET 5-6-2025 9:57 PM MST
+
     def addConstraint(self, mval):
         if (myvalidator.isvaremptyornull(mval)): pass;
         else:
@@ -376,9 +419,12 @@ class mycol:
                 retlist.append(mval);
             self.setConstraints(retlist);
             return retlist;
-    def addAConstraint(self, mval): self.addConstraint(mval);
+    def addAConstraint(self, mval): return self.addConstraint(mval);
 
     constraints = property(getConstraints, setConstraints);
+
+    def getDefaultValueKeyNameForDataTypeObj(self, tpobj):
+        return myvalidator.getDefaultValueKeyNameForDataTypeObj(tpobj, self);
 
     def getDataType(self): return self._datatype;
 
@@ -925,12 +971,16 @@ class mycol:
                 #to this foreign class.
                 #
                 valfcrefcol = fcobj.getValueForColName(self.getColName());
+                print(f"colname = {self.getColName()}");
                 print(f"valfcrefcol = {valfcrefcol}");
+                #val is either a list or a number
                 
                 for mobj in myclsref.all:
                     print(f"mobj = {mobj}");
 
                     clvals = [mobj.getValueForColName(mc.getColName()) for mc in mcolobjs];
+                    print(f"clvals = {clvals}");
+
                     ismatch = True;
                     for n in range(len(mcolobjs)):
                         mc = mcolobjs[n];
@@ -940,10 +990,12 @@ class mycol:
                         if (mc.getColName() == self.foreignColNames[n]): pass;
                         else: raise ValueError("the column names must match, but they did not!");
 
-                        if (valfcrefcol[n] == clvals[n]): pass;
+                        ismatch = ((type(valfcrefcol) == list and (valfcrefcol[n] == clvals[n])) or
+                                   ((not (type(valfcrefcol) == list)) and (valfcrefcol == clvals[n])));
+                        if (ismatch): pass;
                         else:
                             print("not a match!");
-                            ismatch = False;
+                            #ismatch = False;
                             break;
                     print(f"ismatch = {ismatch}");
                     

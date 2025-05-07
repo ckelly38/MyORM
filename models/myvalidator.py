@@ -846,7 +846,9 @@ class myvalidator:
         #but there can only be one primary key constraint on the table.
         if (1 < numpkycols):
             #this is a multi-column primary key constraint
-            raise ValueError("NOT SURE WHICH COLUMN TO ADD THE CONSTRAINT TO!");
+            from mycol import mycol;
+            myclsref = mycol.getClassFromTableName(name);
+            myclsref.addMultiColumnConstraint(nwpkyconst);
         else:
             #this is an individual column primary key constraint
             mc.addConstraint(nwpkyconst);
@@ -884,8 +886,7 @@ class myvalidator:
         print(f"\nFINAL mstrs = {mstrs}");
 
         retstr = "CREATE TABLE " + name + ("IF NOT EXISTS " if (onlyifnot) else "") + "(";
-        #return retstr + (", ".join(mstrs)) + ");";
-        raise ValueError("NOT DONE YET 4-30-2025 9:30 PM MST!");
+        return retstr + (", ".join(mstrs)) + ");";
     
     #depends on the table name
     @classmethod
