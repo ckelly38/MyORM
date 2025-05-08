@@ -256,6 +256,8 @@ for mycls in mysclslist:
       print(f"Gen CREATE TABLE command for class ({mycls.__name__})!");
       print(mycls.genSQLCreateTableFromRef(onlyifnot=True));
 
+print("attempting to save data!\n");
+
 sa.save();
 vcmpr.save();
 

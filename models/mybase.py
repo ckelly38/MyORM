@@ -99,6 +99,7 @@ class mybase:
         if (issubclass(cls, mybase) and not (cls == mybase)):
             print(f"BEGIN THE SETUP PART C METHOD FOR {cls.__name__}!\n");
             for mc in cls.getMyCols():
+                mc.setContainingClassName(cls.__name__);
                 mc.primaryKeyInformationMustBeValid(cls);
                 if (mc.isForeignKey()):
                     if (mc.foreignKeyInformationMustBeValid(fcobj=None, usenoclassobj=True)): pass;
@@ -159,6 +160,9 @@ class mybase:
         print("\nNOW VERIFYING THE FOREIGN AND PRIMARY KEY INFORMATION IN BASE CLASS CONSTRUCTOR:\n");
         
         for mc in mytempcols:
+            #mc.setContainingClassName(type(self).__name__);
+            myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(
+                mc.getContainingClassName(), "containing class name");
             mc.primaryKeyInformationMustBeValid(type(self));
             mc.foreignKeyInformationMustBeValid(fcobj=self, usenoclassobj=False);
 
@@ -713,6 +717,12 @@ class mybase:
         fincols = type(self).getMyColsFromClassOrParam(mycols);
         for mc in self.getMyColNames(fincols):
             print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
+    
+    def genValsTupleForColNames(self, colnames):
+        #get a list of values for colnames then return tuple of it
+        myvalidator.varmustnotbeempty(colnames, "colnames");
+        return tuple([self.getValueForColName(cnm) for cnm in colnames]);
+
 
 
     #database CRUD methods section may depend on which database itself you are using.
@@ -723,10 +733,11 @@ class mybase:
     #convenience method that calls the method in the myvalidator for generating the
     #CREATE TABLE SQL query.
     @classmethod
-    def genSQLCreateTableFromRef(cls, onlyifnot=True):
+    def genSQLCreateTableFromRef(cls, onlyifnot=True, isinctable=True):
         return myvalidator.genSQLCreateTable(cls.getTableName(), cls.getMyCols(),
                                              cls.getMultiColumnConstraints(),
-                                             cls.getAllTableConstraints(), onlyifnot=onlyifnot);
+                                             cls.getAllTableConstraints(), onlyifnot=onlyifnot,
+                                             isinctable=isinctable);
 
     @classmethod
     def createTable(cls):
@@ -739,12 +750,14 @@ class mybase:
             mc.primaryKeyInformationMustBeValid(cls);
             mc.foreignKeyInformationMustBeValid(fcobj=None, usenoclassobj=True);
         
-        qry = cls.genSQLCreateTableFromRef(onlyifnot=False);
+        qry = cls.genSQLCreateTableFromRef(onlyifnot=False, isinctable=True);
         print(f"CREATE TABLE qry = {qry}");
         
-        #res = CURSOR.execute(qry);
-        #CONN.commit();
-        raise ValueError("NOT DONE YET 4-30-2025 9:33 PM MST!");
+        #this either failed because the table already exists or fails for some other reason
+        #the user should be informed because it means there is a problem with the user's program
+        res = CURSOR.execute(qry);
+        CONN.commit();
+        return True;
 
     @classmethod
     def tableExists(cls):
@@ -758,7 +771,7 @@ class mybase:
         
         exists = True;
         try:
-            res = CURSOR.execute(qry);
+            res = CURSOR.execute(qry).fetchall();
             CONN.commit();
         except Exception as ex:
             #print(f"TABLE EXISTS qry = {qry}");
@@ -766,7 +779,31 @@ class mybase:
             exists = False;
         return exists;
 
-    def save(self):
+    #NOT DONE YET MAYBE THIS SHOULD BE A CLASS METHOD 5-8-2025 12:04 AM MST
+
+    def backupDB(self):
+        raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
+
+    #NOT DONE YET AND NOT WELL TESTED YET 5-8-2025 4:21 AM MST
+
+    #possible bug found: no access to old values or not storing the old values...
+    #if we are not storing the old values, then when we try to run update, we do not really
+    #have access to what we need especially when we change everything.
+    #
+    #for example: assume a person has an ID, a first name, and a last name
+    #let us assume a major problem occured or that this person committed something illegal
+    #so they got a new ID number, a new first name, and a new last name
+    #
+    #but the DB still has all of the old information in there.
+    #if the class does not store the old values somehow, we cannot get access to it to change it.
+    #
+    #so either we store a previous version of the values...
+    #or we insert or update the new values immediately when set is called in the column class.
+    #the only problem with the other is what happens if the attribute does not exist?
+    #what happens if it does, but was added on setup not when a value was set?
+    #it seems storing a previous version of the values is a better solution.
+
+    def save(self, runbkbfr=False, runbkaftr=False):
         #if the table does not exist, create it first.
         #if the table exists do nothing.
         #then proceed to save the data.
@@ -775,7 +812,9 @@ class mybase:
         #may want to backup the OLD data before we do this.
         #may want to run a backup of NEW data after we do this.
         print(f"INSIDE SAVE() for class {type(self).__name__}:");
-        
+        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");        
+
         fkydataerrmsg = "the foreign key data is wrong, the columns were found, ";
         fkydataerrmsg += "but no object was found with the given values!";
         for mc in type(self).getMyCols():
@@ -786,7 +825,7 @@ class mybase:
                else: raise ValueError(fkydataerrmsg);
 
         #may want to run a backup of the OLD DATA ON THE DB here
-        #?
+        if (runbkbfr): self.backupDB();
 
         if (type(self).tableExists()): pass;
         else: type(self).createTable();
@@ -795,9 +834,58 @@ class mybase:
         #since the object contains the new data already, in order to update it:
         #we need to know a value of the data or have a way to get the row specifically uniquely.
         #maybe by an ID.
+        
+        useupdate = False;
+        if (useupdate):
+            #get the data uniquely then generate the update DB command
+            #UPDATE tablename SET colnamea = newvalue, colnameb = newvalue, ...
+            # WHERE colnamea = oldvalue; (or just use the primary key to access it).
+            print("we are updating the data here now!");
+            
+            mcnms = type(self).getMyColNames();#not sure if this is correct
+            #if we are using the primary key arbitrarily, what should we use when one or all of the
+            #primary key columns are being updated?
+            #A: We should use a UNIQUE key col assuming it is not being updated.
+            #What if all unique column data is being updated including the primary key?
+            #if we do not have access to what the old value was: we are screwed.
+            #wrval = ?;#primarykey col = ?;
+            #if the primary key is composed of multiple columns then all of their values will need
+            #to be pulled here in order.
+            #upqry = myvalidator.genSQLUpdate(type(self).getTableName(), mcnms, wrval, nvals=None);
+            #print(f"UPDATE QUERY upqry = {upqry}");
+
+            #if the pkycolnames are not included in the colnames that got modified, then add them here
+            #mvals = self.genValsTupleForColNames(mcnms);
+            #print(f"mvals = {mvals}");
+
+            #res = CURSOR.execute(upqry, mvals).fetchone();
+            #CONN.commit();
+            
+            #print("data successfully updated on the DB!");
+
+            raise ValueError("NOT DONE YET 4-30-2025 9:33 PM MST!");
+        else:
+            #we are putting the data on the DB for the first time generate the INSERT INTO command
+            #INSERT INTO tablename (colnamea, colnameb, ...) VALUES (values_tuple);
+            #however when calling the cursor method we need ?s in for the values and a values tuple
+            #to be past in. The number of ?s will match the number of colnames given...
+            
+            print("putting the data on the table for the first time!");
+            
+            mcnms = type(self).getMyColNames();#not sure if this is correct
+            nwvqry = myvalidator.genSQLInsertInto(type(self).getTableName(), mcnms, vals=None);
+            print(f"SAVE QUERY nwvqry = {nwvqry}");
+
+            mvals = self.genValsTupleForColNames(mcnms);
+            print(f"mvals = {mvals}");
+
+            res = CURSOR.execute(nwvqry, mvals).fetchone();
+            CONN.commit();
+
+            print("data successfully added onto the DB!");
 
         #may want to run a backup of the NEW DATA ON THE DB here
-        #?
+        if (runbkaftr): self.backupDB();
 
         raise ValueError("NOT DONE YET 4-30-2025 9:33 PM MST!");
 
@@ -1678,7 +1766,7 @@ class mybase:
             myvalidator.varmustbethetypeonly(mval, str, "mval");
             mlist = cls.getAndSetMultiColumnConstraints();
             isonlist = (False if (myvalidator.isvaremptyornull(mlist)) else (mval in mlist));
-            if (isonlist): pass;
+            if (isonlist == useadd): pass;
             else:
                 if (cls.tableExists()):
                     #if (useadd):

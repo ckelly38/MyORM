@@ -1,8 +1,9 @@
 from myvalidator import myvalidator;
 import sys;
 import inspect;
-from init import SQLVARIANT;
+import traceback;
 import functools;
+from init import SQLVARIANT;
 class mycol:
     #everything to init will need to be removed to solve an import problem between
     #this and the sql generator
@@ -341,6 +342,7 @@ class mycol:
 
         self.setContext(None);
         self.setMyClassRefs(None);
+        self.setContainingClassName(None);
         
         #self._value = value;
         self.setDefaultValue(defaultvalue);
@@ -381,6 +383,70 @@ class mycol:
 
     #non-constructor methods are below this point
 
+    #if you want to do mycolobj.value, then the context must be set correctly:
+    #
+    #you must first call mycolobj.setContext or setContainer(containerobj);
+    #with the container object.
+    #for example if you have a tstclassobj that is an instance of a subclass of the mybase class,
+    #then you can use this as the context object.
+    #this will of course contain columns like ID for example.
+    #tstclassobj.myidcol.setContext(tstclassobj);
+    #then you can use the value like so:
+    #print(tstclassobj.myidcol.value);#calls the get
+    #tstclassobj.myidcol.value = newval;#calls the set
+    #because now the value property has the context it needs.
+    #the get and set value methods actually call it on the object.
+    #so the get and set value methods must be an instance of a subclass of the mybase class.
+    #
+    #context should not be relied on and these methods are strongly subjective to it.
+    #the context is set in the mybase constructor, but it can be overridden by the user.
+    #because the cols are class attributes, one cannot assume the context is correct.
+
+    def getContext(self): return self._context;
+    def getContainer(self): return self.getContext();
+
+    def setContext(self, val): self._context = val;
+    def setContainer(self, val): self.setContext(val);
+
+    context = property(getContext, setContext);
+
+    def getValue(self, mobj):
+        myvalidator.varmustnotbenull(mobj, "mobj (aka the context object)");
+        from mybase import mybase;
+        if (issubclass(type(mobj), mybase)): return mobj.getValueForColName(self.getColName());
+        else: raise ValueError("mobj must be a subclass of mybase class!");
+
+    def setValue(self, mobj, val):
+        myvalidator.varmustnotbenull(mobj, "mobj (aka the context object)");
+        from mybase import mybase;
+        if (issubclass(type(mobj), mybase)): mobj.setValueForColName(self.getColName(), val, self);
+        else: raise ValueError("mobj must be a subclass of mybase class!");
+
+    def getValueFromContext(self): return self.getValue(self.getContext());
+
+    def setValueFromContext(self, val): self.setValue(self.getContext(), val);
+
+    value = property(getValueFromContext, setValueFromContext);
+
+    def getContainingClassNameFromSelf(self): return self._containingclassname;
+    def getContainingClassNameFromContext(self):
+        cntxt = self.getContext();
+        return (None if (cntxt == None) else cntxt.__class__.__name__);
+    def getContainingClassName(self, usecntxt=False):
+        myvalidator.varmustbeboolean(usecntxt, "usecntxt");
+        if (usecntxt): return self.getContainingClassNameFromContext();
+        else: return self.getContainingClassNameFromSelf();
+
+    def setContainingClassName(self, mval):
+        #mval can be empty or null or it must follow the requirements...
+        if (myvalidator.isvaremptyornull(mval)): pass;
+        else:
+            mvnm = "the containing class name";
+            myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mval, mvnm);
+        self._containingclassname = mval;
+
+    containingclassname = property(getContainingClassName, setContainingClassName);
+
     def getConstraints(self): return self._constraints;
 
     def setConstraints(self, mlist):
@@ -404,24 +470,92 @@ class mycol:
     #
     #NOT DONE YET 5-6-2025 9:57 PM MST
 
-    def addConstraint(self, mval):
+    def addOrRemoveConstraint(self, mval, useadd, isinctable=False):
+        myvalidator.varmustbeboolean(useadd, "useadd");
         if (myvalidator.isvaremptyornull(mval)): pass;
         else:
             if (myvalidator.isConstraintValid(mval)): pass;
             else: raise ValueError("the constraint must be valid, but it was not!");
 
-            #now add it to the constraints list.
-            #get the current list for this, create an exact copy of it, then add this to the new list
-            retlist = None;
-            if (self.getConstraints() == None): retlist = [mval];
+            #exit if no work needs to be done
+            mlist = self.getConstraints();
+            isonlist = (False if (myvalidator.isvaremptyornull(mlist)) else (mval in mlist));
+            if (useadd == isonlist):
+                #no work is true;
+                if (useadd): pass;
+                else:
+                    premex = True;
+                    if (premex):
+                        print("WARNING: you attempted to remove mval = " + mval +
+                                ", but it was not on the list!");
+                        traceback.print_stack();
+                return None;
+        
+
+            callset = True;
+            myclsref = None;
+            usecntxt = False;
+            #get the class ref from the context object if usecntxt is true
+            #get the class ref from class name stored on mycol here if false
+            mycntxt = self.getContext();
+            if (usecntxt):
+                if (mycntxt == None): usecntxt = False;
+            if (usecntxt): myclsref = mycntxt.__class__;
+            else: myclsref = mycol.getMyClassRefFromString(self.getContainingClassNameFromSelf());
+            if (not isinctable and myclsref.tableExists()):
+                #if it is not on our list and not called from createTable,
+                #then we assume it is not on the DB.
+                #if (useadd):
+                #    ?;
+                #else:
+                #    ?;
+                print(f"mval = {mval}");
+                print(f"self.getConstraints() = {self.getConstraints()}");
+                raise ValueError("NEED TO DO A LOT HERE TO ADD THE CONSTRAINT SINCE THE " +
+                                 "TABLE ALREADY EXISTS!");
             else:
-                retlist = ["" + cnst for cnst in self.getConstraints()];
-                retlist.append(mval);
-            self.setConstraints(retlist);
-            return retlist;
-    def addAConstraint(self, mval): return self.addConstraint(mval);
+                #now add or remove it to or from the constraints list.
+                #get the current list for this, create an exact copy of it,
+                #then add this to the new list
+                retlist = None;
+                premex = False;
+                if (mlist == None):
+                    if (useadd): retlist = [mval];
+                    else: raise ValueError("this should have already been taken care of above!");
+                    #    callset = False;#no need to call set...
+                    #    premex = True;
+                else:
+                    if (useadd):
+                        retlist = ["" + cnst for cnst in mlist];
+                        if (mval not in retlist): retlist.append(mval);
+                        else:
+                            #callset = False;
+                            raise ValueError("this should have already been taken care of above!");
+                    else:
+                        if (myvalidator.isvaremptyornull(mlist)):
+                            #retlist = [];
+                            #premex = True;
+                            raise ValueError("this should have already been taken care of above!");
+                        else:
+                            retlist = ["" + cnst for cnst in mlist if not cnst == mval];
+                            if (mval not in mlist):
+                                #premex = True;
+                                raise ValueError("this should have already been taken care of above!");
+                if (premex):
+                    print("WARNING: you attempted to remove mval = " + mval +
+                            ", but it was not on the list!");
+                    traceback.print_stack();
+            if (callset): self.setConstraints(retlist);
+    def addConstraint(self, mval, isinctable=False):
+        self.addOrRemoveConstraint(mval, True, isinctable=isinctable);
+    def addAConstraint(self, mval, isinctable=False): self.addConstraint(mval, isinctable=isinctable);
+    def removeConstraint(self, mval, isinctable=False):
+        self.addOrRemoveConstraint(mval, False, isinctable=False);
+    def removeAConstraint(self, mval, isinctable=False):
+        self.removeConstraint(mval, isinctable=isinctable);
 
     constraints = property(getConstraints, setConstraints);
+
 
     def getDefaultValueKeyNameForDataTypeObj(self, tpobj):
         return myvalidator.getDefaultValueKeyNameForDataTypeObj(tpobj, self);
@@ -583,52 +717,6 @@ class mycol:
         self._foreignobjectname = val;
 
     foreignobjectname = property(getForeignObjectName, setForeignObjectName);
-
-    
-    #if you want to do mycolobj.value, then the context must be set correctly:
-    #
-    #you must first call mycolobj.setContext or setContainer(containerobj);
-    #with the container object.
-    #for example if you have a tstclassobj that is an instance of a subclass of the mybase class,
-    #then you can use this as the context object.
-    #this will of course contain columns like ID for example.
-    #tstclassobj.myidcol.setContext(tstclassobj);
-    #then you can use the value like so:
-    #print(tstclassobj.myidcol.value);#calls the get
-    #tstclassobj.myidcol.value = newval;#calls the set
-    #because now the value property has the context it needs.
-    #the get and set value methods actually call it on the object.
-    #so the get and set value methods must be an instance of a subclass of the mybase class.
-    #
-    #context should not be relied on and these methods are strongly subjective to it.
-    #the context is set in the mybase constructor, but it can be overridden by the user.
-    #because the cols are class attributes, one cannot assume the context is correct.
-
-    def getContext(self): return self._context;
-    def getContainer(self): return self.getContext();
-
-    def setContext(self, val): self._context = val;
-    def setContainer(self, val): self.setContext(val);
-
-    context = property(getContext, setContext);
-
-    def getValue(self, mobj):
-        myvalidator.varmustnotbenull(mobj, "mobj (aka the context object)");
-        from mybase import mybase;
-        if (issubclass(type(mobj), mybase)): return mobj.getValueForColName(self.getColName());
-        else: raise ValueError("mobj must be a subclass of mybase class!");
-
-    def setValue(self, mobj, val):
-        myvalidator.varmustnotbenull(mobj, "mobj (aka the context object)");
-        from mybase import mybase;
-        if (issubclass(type(mobj), mybase)): mobj.setValueForColName(self.getColName(), val, self);
-        else: raise ValueError("mobj must be a subclass of mybase class!");
-
-    def getValueFromContext(self): return self.getValue(self.getContext());
-
-    def setValueFromContext(self, val): self.setValue(self.getContext(), val);
-
-    value = property(getValueFromContext, setValueFromContext);
 
 
     def getAutoIncrements(self): return self._autoincrements;
@@ -1211,6 +1299,7 @@ class mycol:
         mystr = f"<MyCol {self.colname} type: {self._datatype}";#" value: {self._value}"
         mystr += f" default: {self._defaultvalue} isprimarykey: {self.isprimarykey}";
         mystr += f" isnonnull: {self.isnonnull} isunique: {self.isunique} issigned: {self.issigned}";
+        mystr += f" containingclassname: {self.containingclassname}";
         mystr += f" autoincrements: {self.autoincrements} isforeignkey: {self.isforeignkey}";
         mystr += f" foreignClass: {self.foreignClass} foreignColNames: {self.foreignColNames}";
         mystr += f" foreignobjectname: {self.foreignobjectname} constraints: {self.constraints}";

@@ -752,10 +752,12 @@ class myvalidator:
     #HOWEVER, THIS METHOD ASSUMES THAT ALL MODEL CLASSES HAVE BEEN INITIALIZED OR
     #SETUP BEFORE THIS RUNS.
     @classmethod
-    def genSQLCreateTable(cls, name, mycols, mulcolreqs, alltablereqs, onlyifnot=True):
+    def genSQLCreateTable(cls, name, mycols, mulcolreqs, alltablereqs,
+                          onlyifnot=True, isinctable=False):
         #this command has a very specific order of generating these
         #at least with constraints and primary keys
         myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");
+        myvalidator.varmustbeboolean(isinctable, "isinctable");
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(name, "name");
         myvalidator.varmustnotbeempty(mycols, "mycols");
         print("\nINSIDE OF GEN CREATE TABLE METHOD():");
@@ -826,7 +828,7 @@ class myvalidator:
                 #mstr += ", " + nwuconst;
                 mstr = nwuconst;
                 mstrs.append(mstr);
-                mc.addConstraint(nwuconst);
+                mc.addConstraint(nwuconst, isinctable=isinctable);
                 #print(f"\nNEW mstrs = {mstrs}");
         print("\nAFTER SECOND LOOP:")
         print(f"mstrs = {mstrs}");
@@ -851,7 +853,7 @@ class myvalidator:
             myclsref.addMultiColumnConstraint(nwpkyconst);
         else:
             #this is an individual column primary key constraint
-            mc.addConstraint(nwpkyconst);
+            mc.addConstraint(nwpkyconst, isinctable=isinctable);
 
         #now get the foreign keys
         #if the foreign table name is provided, the assumption that all classes have been initialized
@@ -869,7 +871,7 @@ class myvalidator:
                 nwfkycolconst = myvalidator.genSQLForeignKeyConstraintFromColObj(consnm, mc);
                 #mstr += ", " + nwfkycolconst;
                 mstrs.append(nwfkycolconst);
-                mc.addConstraint(nwfkycolconst);
+                mc.addConstraint(nwfkycolconst, isinctable=isinctable);
                 #print(f"\nNEW mstr = {mstr}");
         print("\nAFTER THIRD LOOP:")
         print(f"mstrs = {mstrs}");
@@ -885,7 +887,7 @@ class myvalidator:
                         mstrs.append(mval);
         print(f"\nFINAL mstrs = {mstrs}");
 
-        retstr = "CREATE TABLE " + name + ("IF NOT EXISTS " if (onlyifnot) else "") + "(";
+        retstr = "CREATE TABLE " + name + (" IF NOT EXISTS " if (onlyifnot) else "") + "(";
         return retstr + (", ".join(mstrs)) + ");";
     
     #depends on the table name
@@ -923,6 +925,43 @@ class myvalidator:
     def genSQLCreateTableFromClassName(cls, name, onlyifnot=True):
         return cls.genSQLCreateTableFromTableOrClassName(name, True, onlyifnot=onlyifnot);
     
+    #NOT TESTED WELL YET AND NOT NECESSARILY DONE YET 5-8-2025 3:50 AM MST...
+
+    #possible bug found in the UPDATE and INSERT INTO command methods:
+    #the values if they are strings must include quotes of some kind, but probably will not...
+
+    @classmethod
+    def genSQLInsertInto(cls, mtname, colnames, vals=None):
+        #the colnames are all of the required col names at minimum,
+        #but if the column is say an integer primary key that autoincrements,
+        #then we do not need to provide the value here nor do we need to provide its name
+        #however, the values must correspond with the colnames...
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, "mtname");
+        mstr = "";
+        if (myvalidator.isvaremptyornull(vals)):
+            for n in range(len(colnames)):
+                mstr += "?";
+                if (n + 1 < len(colnames)): mstr += ", ";
+        else: mstr = (", ".join(vals));
+        return "INSERT INTO " + mtname + "(" + (", ".join(colnames)) + ") VALUES (" + mstr + ");";
+    @classmethod
+    def genSQLInsertIntoFromClsRef(cls, myclsref, vals=None):
+        return cls.genSQLInsertInto(myclsref.getTableName(), myclsref.getMyColNames(), vals);
+
+    @classmethod
+    def genSQLUpdate(cls, mtname, colnames, wrval, nvals=None):
+        #UPDATE tablename SET colnamea = ?, colnameb = ?, ... WHERE pkycolname = ?;
+        #UPDATE tablename SET colnamea = newvalue, colnameb = newvalue, ...
+            # WHERE colnamea = oldvalue; (or just use the primary key to access it).
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, "mtname");
+        myvalidator.stringHasAtMinNumChars(wrval, 1);
+        incnvals = (not myvalidator.isvaremptyornull(nvals));
+        if (incnvals): myvalidator.twoListsMustBeTheSameSize(colnames, nvals, "colnames", "nvals");
+        mstr = "";
+        for n in range(len(colnames)):
+            mstr += "" + colnames[n] + " = " + (nvals[n] if (incnvals) else "?");
+            if (n + 1 < len(colnames)): mstr += ", ";
+        return "UPDATE " + mtname + " SET " + mstr + " WHERE " + wrval + ";";
 
 
     #SELECT whatval/tablenames.colnames/* FROM whereval/tablenames
