@@ -925,6 +925,13 @@ class myvalidator:
     def genSQLCreateTableFromClassName(cls, name, onlyifnot=True):
         return cls.genSQLCreateTableFromTableOrClassName(name, True, onlyifnot=onlyifnot);
     
+    @classmethod
+    def genSQLDropTable(cls, tname, onlyifnot=False):
+        myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, "tname");
+        return "DROP TABLE " + ("IF EXISTS " if (onlyifnot) else "") + tname + ";";
+    
+
     #NOT TESTED WELL YET AND NOT NECESSARILY DONE YET 5-8-2025 3:50 AM MST...
 
     #possible bug found in the UPDATE and INSERT INTO command methods:
@@ -949,18 +956,23 @@ class myvalidator:
         return cls.genSQLInsertInto(myclsref.getTableName(), myclsref.getMyColNames(), vals);
 
     @classmethod
-    def genSQLUpdate(cls, mtname, colnames, wrval, nvals=None):
-        #UPDATE tablename SET colnamea = ?, colnameb = ?, ... WHERE pkycolname = ?;
-        #UPDATE tablename SET colnamea = newvalue, colnameb = newvalue, ...
-            # WHERE colnamea = oldvalue; (or just use the primary key to access it).
-        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, "mtname");
-        myvalidator.stringHasAtMinNumChars(wrval, 1);
+    def genColNameEqualsValString(cls, colnames, nvals=None):
         incnvals = (not myvalidator.isvaremptyornull(nvals));
         if (incnvals): myvalidator.twoListsMustBeTheSameSize(colnames, nvals, "colnames", "nvals");
         mstr = "";
         for n in range(len(colnames)):
             mstr += "" + colnames[n] + " = " + (nvals[n] if (incnvals) else "?");
             if (n + 1 < len(colnames)): mstr += ", ";
+        return mstr;
+
+    @classmethod
+    def genSQLUpdate(cls, mtname, colnames, wrval, nvals=None):
+        #UPDATE tablename SET colnamea = ?, colnameb = ?, ... WHERE pkycolname = ?;
+        #UPDATE tablename SET colnamea = newvalue, colnameb = newvalue, ...
+            # WHERE colnamea = oldvalue; (or just use the primary key to access it).
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, "mtname");
+        myvalidator.stringHasAtMinNumChars(wrval, 1);
+        mstr = cls.genColNameEqualsValString(colnames, nvals=nvals);
         return "UPDATE " + mtname + " SET " + mstr + " WHERE " + wrval + ";";
 
 

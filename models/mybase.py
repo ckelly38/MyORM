@@ -139,6 +139,8 @@ class mybase:
         print(f"colnames = {colnames}");
         print(f"colvalues = {colvalues}");
 
+        self.setLastSyncedValsDict(None);
+
         #for each column if it is a foreign key, now need to evaluate the class string
         #but need and the link col name
         #over here call the validation method for the new foreign key...
@@ -378,6 +380,10 @@ class mybase:
     def getValueForColName(self, clnm):
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
         return getattr(self, clnm + "_value");
+    def getValueForColumn(self, clnm): return self.getValueForColName(clnm);
+    def getValueForCol(self, clnm): return self.getValueForColName(clnm);
+    def getColValue(self, clnm): return self.getValueForColName(clnm);
+    def getColumnValue(self, clnm): return self.getValueForColName(clnm);
 
     def setValueForColName(self, clnm, valcl, mycolobj=None):
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
@@ -464,6 +470,37 @@ class mybase:
                 #myvalidator.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
             else: raise ValueError(errmsgpta + str(valcl) + errptbwithdata + errmsgptc);
         if (mycolobj.isforeignkey): mybase.updateAllForeignKeyObjectsForAllClasses();
+    def setValueForColumn(self, clnm, valcl, mycolobj=None):
+        self.setValueForColName(clnm, valcl, mycolobj=mycolobj);
+    def setValueForCol(self, clnm, valcl, mycolobj=None):
+        self.setValueForColName(clnm, valcl, mycolobj=mycolobj);
+    def setColValue(self, clnm, valcl, mycolobj=None):
+        self.setValueForColName(clnm, valcl, mycolobj=mycolobj);
+    def setColumnValue(self, clnm, valcl, mycolobj=None):
+        self.setValueForColName(clnm, valcl, mycolobj=mycolobj);
+    
+    def genValsListForColNames(self, colnames):
+        #get a list of values for colnames then return tuple of it
+        myvalidator.varmustnotbeempty(colnames, "colnames");
+        return [self.getValueForColName(cnm) for cnm in colnames];
+
+    def genValsTupleForColNames(self, colnames):
+        #get a list of values for colnames then return tuple of it
+        myvalidator.varmustnotbeempty(colnames, "colnames");
+        return tuple(self.genValsListForColNames(colnames));
+
+    def getLastSyncedValsDict(self): return self._lastsyncedvalsdict;
+
+    def setLastSyncedValsDict(self, mval): self._lastsyncedvalsdict = mval;
+
+    lastsyncedvalsdict = property(getLastSyncedValsDict, setLastSyncedValsDict);
+
+    def genSimpleValsDict(self, mycols=None):
+        mdict = {};
+        for ky in type(self).getValueColNames(mycols=mycols): mdict[ky] = getattr(self, ky);
+        return mdict;
+
+
 
     #returns None if not found instead of throwing an error
     @classmethod
@@ -718,11 +755,6 @@ class mybase:
         for mc in self.getMyColNames(fincols):
             print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
     
-    def genValsTupleForColNames(self, colnames):
-        #get a list of values for colnames then return tuple of it
-        myvalidator.varmustnotbeempty(colnames, "colnames");
-        return tuple([self.getValueForColName(cnm) for cnm in colnames]);
-
 
 
     #database CRUD methods section may depend on which database itself you are using.
@@ -751,12 +783,13 @@ class mybase:
             mc.foreignKeyInformationMustBeValid(fcobj=None, usenoclassobj=True);
         
         qry = cls.genSQLCreateTableFromRef(onlyifnot=False, isinctable=True);
-        print(f"CREATE TABLE qry = {qry}");
+        print(f"\nCREATE TABLE qry = {qry}\n");
         
         #this either failed because the table already exists or fails for some other reason
         #the user should be informed because it means there is a problem with the user's program
         res = CURSOR.execute(qry);
         CONN.commit();
+        print("created the table successfully!");
         return True;
 
     @classmethod
@@ -767,22 +800,58 @@ class mybase:
         #all databases and dialects of SQL support SELECT so, the SELECT command of SQL will be used.
         qry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], False);
         qry += " " + myvalidator.genSQLimit(1, offset=0);
-        print(f"TABLE EXISTS qry = {qry}");
+        print(f"\nTABLE EXISTS qry = {qry}\n");
         
         exists = True;
         try:
             res = CURSOR.execute(qry).fetchall();
             CONN.commit();
         except Exception as ex:
-            #print(f"TABLE EXISTS qry = {qry}");
+            #print(f"\nTABLE EXISTS qry = {qry}\n");
             #traceback.print_exc();
             exists = False;
         return exists;
 
+    @classmethod
+    def genSQLDropTableFromClass(cls, onlyifnot=False):
+        return myvalidator.genSQLDropTable(cls.getTableName(), onlyifnot=onlyifnot);
+
+    
     #NOT DONE YET MAYBE THIS SHOULD BE A CLASS METHOD 5-8-2025 12:04 AM MST
 
-    def backupDB(self):
+    @classmethod
+    def backupDB(cls):
         raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
+
+    @classmethod
+    def dropTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
+        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
+        if (runbkbfr): cls.backupDB();
+
+        qry = cls.genSQLDropTableFromClass(onlyifnot=onlyifnot);
+        print(f"\nDROP TABLE qry = {qry}\n");
+        
+        try:
+            res = CURSOR.execute(qry);
+            CONN.commit();
+        except Exception as ex:
+            #print(f"\nDROP TABLE qry = {qry}\n");
+            print("either table already does not exist, or problem connecting with the DB!");
+            traceback.print_exc();
+
+        print("deleted the table successfully!");
+
+        if (runbkaftr): cls.backupDB();
+    @classmethod
+    def deleteTable(cls, onlyifnot=False): cls.dropTable(onlyifnot=onlyifnot);
+    @classmethod
+    def delTable(cls, onlyifnot=False): cls.dropTable(onlyifnot=onlyifnot);
+    @classmethod
+    def removeTable(cls, onlyifnot=False): cls.dropTable(onlyifnot=onlyifnot);
+    @classmethod
+    def remTable(cls, onlyifnot=False): cls.dropTable(onlyifnot=onlyifnot);
+
 
     #NOT DONE YET AND NOT WELL TESTED YET 5-8-2025 4:21 AM MST
 
@@ -802,7 +871,22 @@ class mybase:
     #the only problem with the other is what happens if the attribute does not exist?
     #what happens if it does, but was added on setup not when a value was set?
     #it seems storing a previous version of the values is a better solution.
+    #
+    #currently implemented solution is to store the old values (last synced values)
+    #but there is an issue of this not being accurate on start up...
+    #due to syncing not set to automatically run yet.
 
+    #this either saves or updates the DB
+    #this method determines which of two SQL commands to execute here
+    #INSERT INTO tname (colnamea, colnameb, ...) VALUES (?, ...);
+    #OR
+    #UPDATE tname SET colname = ?, ... WHERE pkycolname = ?, ...
+    #oldvalues for the primary key cols are used to look up the row in the DB
+    #which are pulled from the last synced values 
+    #the values before that are the new values.
+    #Of course a values tuple (generated by the program) will be passed in along with the command.
+    #in order to decide what to do, the program needs the last synced values for each object to
+    #be stored in each object (results in duplicate data, but updates are faster and more convenient)
     def save(self, runbkbfr=False, runbkaftr=False):
         #if the table does not exist, create it first.
         #if the table exists do nothing.
@@ -811,7 +895,7 @@ class mybase:
         #depending on what we need to do, the commands could change.
         #may want to backup the OLD data before we do this.
         #may want to run a backup of NEW data after we do this.
-        print(f"INSIDE SAVE() for class {type(self).__name__}:");
+        print("\nBEGIN SAVE():\n");
         myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
         myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");        
 
@@ -824,46 +908,87 @@ class mybase:
                if (mc.doesForeignKeyValuesExistOnObjectsList(self)): pass;
                else: raise ValueError(fkydataerrmsg);
 
-        #may want to run a backup of the OLD DATA ON THE DB here
-        if (runbkbfr): self.backupDB();
+        print(f"\nINSIDE SAVE() for class {type(self).__name__}:");
 
-        if (type(self).tableExists()): pass;
+        #may want to run a backup of the OLD DATA ON THE DB here
+        if (runbkbfr): type(self).backupDB();
+
+        texists = type(self).tableExists();
+        if (texists): pass;
         else: type(self).createTable();
+            
 
         #need to determine the proper SQL command to execute here...
         #since the object contains the new data already, in order to update it:
         #we need to know a value of the data or have a way to get the row specifically uniquely.
         #maybe by an ID.
+
+        #if the table exists, then we could do either update or add new data to it
+        #but if the table did not exist until create was called in this method,
+        #then adding new data only.
+
+        #if the lastsyncedvalsdict exists and is not None, then we have already put data on the DB
+        #for this object, so updating it not saving it.
+
+        prevvdict = self.getLastSyncedValsDict();
+        print(f"lastsyncedvalsdict = {prevvdict}");
+
+        useupdate = ((not (myvalidator.isvaremptyornull(prevvdict))) if (texists) else False);
         
-        useupdate = False;
         if (useupdate):
             #get the data uniquely then generate the update DB command
             #UPDATE tablename SET colnamea = newvalue, colnameb = newvalue, ...
             # WHERE colnamea = oldvalue; (or just use the primary key to access it).
             print("we are updating the data here now!");
-            
-            mcnms = type(self).getMyColNames();#not sure if this is correct
+
+            simpvdict = self.genSimpleValsDict(mycols=None);
+            print(f"simpvdict = {simpvdict}");
+
+            #the col names will be the same...
+            diffkys = [mky for mky in list(simpvdict.keys()) if not (simpvdict[mky] == prevvdict[mky])];
+            mcnms = [mky[0:mky.rindex("_value")] for mky in diffkys];
+            print(f"diffkys = {diffkys}");
+            print(f"mcnms = {mcnms}");
+
             #if we are using the primary key arbitrarily, what should we use when one or all of the
             #primary key columns are being updated?
             #A: We should use a UNIQUE key col assuming it is not being updated.
             #What if all unique column data is being updated including the primary key?
             #if we do not have access to what the old value was: we are screwed.
-            #wrval = ?;#primarykey col = ?;
+            #if we do just use the old primary key or one unique key col to access the data
+            #if we have to provide multiple values we can.
+
+            pkycolnms = type(self).getMyColNames(type(self).getMyPrimaryKeyCols());
+            wrval = myvalidator.genColNameEqualsValString(pkycolnms, nvals=None);#primarykey col = ?;
+            print(f"pkycolnms = {pkycolnms}");
+            print(f"wrval = {wrval}");
+            
             #if the primary key is composed of multiple columns then all of their values will need
             #to be pulled here in order.
-            #upqry = myvalidator.genSQLUpdate(type(self).getTableName(), mcnms, wrval, nvals=None);
-            #print(f"UPDATE QUERY upqry = {upqry}");
+            upqry = myvalidator.genSQLUpdate(type(self).getTableName(), mcnms, wrval, nvals=None);
+            print(f"\nUPDATE QUERY upqry = {upqry}");
 
             #if the pkycolnames are not included in the colnames that got modified, then add them here
-            #mvals = self.genValsTupleForColNames(mcnms);
-            #print(f"mvals = {mvals}");
+            tmpvalslist = self.genValsListForColNames(mcnms);
+            oldpkyvalslist = [prevvdict[pkclnm + "_value"] for pkclnm in pkycolnms];
+            mvalslist = myvalidator.combineTwoLists(tmpvalslist, oldpkyvalslist);
+            mvals = tuple(mvalslist);
+            print(f"tmpvalslist = {tmpvalslist}");
+            print(f"oldpkyvalslist = {oldpkyvalslist}");
+            print(f"mvalslist = {mvalslist}");
+            print(f"mvals = {mvals}\n");
 
-            #res = CURSOR.execute(upqry, mvals).fetchone();
-            #CONN.commit();
+            res = CURSOR.execute(upqry, mvals).fetchone();
+            CONN.commit();
+
+            print(f"res = {res}");#not sure why does not always give an answer...
+            if (res == None): pass;
+            else: print(dir(res));
             
-            #print("data successfully updated on the DB!");
+            print("\ndata successfully updated on the DB!\n");
 
-            raise ValueError("NOT DONE YET 4-30-2025 9:33 PM MST!");
+            print(f"simpvdict = {simpvdict}");
+            self.setLastSyncedValsDict(simpvdict);
         else:
             #we are putting the data on the DB for the first time generate the INSERT INTO command
             #INSERT INTO tablename (colnamea, colnameb, ...) VALUES (values_tuple);
@@ -874,20 +999,36 @@ class mybase:
             
             mcnms = type(self).getMyColNames();#not sure if this is correct
             nwvqry = myvalidator.genSQLInsertInto(type(self).getTableName(), mcnms, vals=None);
-            print(f"SAVE QUERY nwvqry = {nwvqry}");
+            print(f"\nSAVE QUERY nwvqry = {nwvqry}");
 
             mvals = self.genValsTupleForColNames(mcnms);
-            print(f"mvals = {mvals}");
+            print(f"mvals = {mvals}\n");
 
-            res = CURSOR.execute(nwvqry, mvals).fetchone();
+            res = CURSOR.execute(nwvqry, mvals).fetchone();#
             CONN.commit();
 
-            print("data successfully added onto the DB!");
+            print(f"res = {res}");#not sure why does not always give an answer...
+            if (res == None): pass;
+            else: print(dir(res));
+
+            print("\ndata successfully added onto the DB!\n");
+
+            #create a last synced vals dict...
+            #add onto previous vals on DB or the last synced vals
+            #the values are from the the get it...
+            #and if the result provided values they should be set here and included in this.
+            #(GETTING THE VALUES FROM THE DB RESULTS IS NOT DONE YET 5-9-2025 3 AM MST...!)
+            #?
+            mdict = self.genSimpleValsDict(mycols=None);
+            #no idea on the other values????
+            #?
+            print(f"mdict = {mdict}");
+            self.setLastSyncedValsDict(mdict);
 
         #may want to run a backup of the NEW DATA ON THE DB here
-        if (runbkaftr): self.backupDB();
+        if (runbkaftr): type(self).backupDB();
 
-        raise ValueError("NOT DONE YET 4-30-2025 9:33 PM MST!");
+        #raise ValueError("NOT DONE YET 4-30-2025 9:33 PM MST!");
 
 
     #begin serialization and representation methods here

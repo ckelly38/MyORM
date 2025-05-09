@@ -190,7 +190,10 @@ print();
 print("\nBEGIN CREATING SOME SIGNUPS HERE:\n");
 
 #add some signups here for the campers, and maybe IDs for the campers
-sa = Signup(["id", "time", "camper_id", "activity_id"], [1, 8, 1, 2]);
+sa = None;
+tstwithusrpid = False;
+if (tstwithusrpid): sa = Signup(["id", "time", "camper_id", "activity_id"], [1, 8, 1, 2]);
+else: sa = Signup(["time", "camper_id", "activity_id"], [8, 1, 2]);
 sb = Signup(["id", "time", "camper_id", "activity_id"], [2, 9, 2, 1]);
 sc = Signup(["id", "time", "camper_id", "activity_id"], [3, 9, 1, 1]);
 print();
@@ -250,16 +253,42 @@ if (runserializationtests):
 #need to attempt to create the data tables if have not already and save the new objects to it
 #if the ID is not assigned, let the DB put it on there....
 
+tstnotablesbfrcreatecmd = False;
+if (tstnotablesbfrcreatecmd):
+      for mycls in mysclslist: mycls.dropTable(onlyifnot=True);
+
 #test create table query only here
 mysclslist = [MyModelWithCompPrimaryKey, Signup, Camper, Activity];
 for mycls in mysclslist:
-      print(f"Gen CREATE TABLE command for class ({mycls.__name__})!");
-      print(mycls.genSQLCreateTableFromRef(onlyifnot=True));
+      print(f"\nGen CREATE TABLE command for class ({mycls.__name__})!");
+      print(mycls.genSQLCreateTableFromRef(onlyifnot=True, isinctable=True));
 
-print("attempting to save data!\n");
+#test remove all tables
+tstnotables = True;
+if (tstnotablesbfrcreatecmd): pass;
+else:
+      if (tstnotables):
+            for mycls in mysclslist: mycls.dropTable(onlyifnot=True);
+
+print("\nattempting to save data!\n");
+print(f"tstnotablesbfrcreatecmd = {tstnotablesbfrcreatecmd}");
+print(f"tstnotables = {tstnotables}");
+print("no tables with save test (if one or both of the above is true, then true): " +
+      f"{(tstnotablesbfrcreatecmd or tstnotables)}");
+print(f"tstwithusrpid = {tstwithusrpid}");
 
 sa.save();
-vcmpr.save();
+#vcmpr.save();
+
+#sa = Signup(["id", "time", "camper_id", "activity_id"], [1, 8, 1, 2]);
+sa.setValueForColumn("id", 4);
+sa.setValueForColumn("time", 11);
+sa.setValueForColumn("camper_id", 2);
+sa.setValueForColumn("activity_id", 1);
+
+print("\nattempting to update the data now!\n");
+
+sa.save();
 
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
