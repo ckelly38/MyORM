@@ -126,6 +126,10 @@ class mybase:
                     mclsref.setupPartC();
         mycol.setRanSetup(not isempty);
 
+
+    #possible bug here 5-10-2025 4 AM may have missed storing some data that the user needs in save()
+
+
     def __init__(self, colnames=None, colvalues=None):
         print("INSIDE BASE CLASS CONSTRUCTOR CALLING SETUP IF NEEDED FIRST!");
         #print(f"mycol.hasRunSetupYet() = {mycol.hasRunSetupYet()}");
@@ -136,8 +140,8 @@ class mybase:
         print(f"type(self) = {type(self)}");
         print(f"mytablename = {type(self).getTableName()}");
         print(f"mycolnames = {mycolnames}");
-        print(f"colnames = {colnames}");
-        print(f"colvalues = {colvalues}");
+        print(f"colnames = {colnames}");#user provided
+        print(f"colvalues = {colvalues}");#user provided
 
         self.setLastSyncedValsDict(None);
 
@@ -285,7 +289,7 @@ class mybase:
                     #computed default value
                     print(f"mynum = {mynum}");
 
-                    #they either all agree or the computed num holds the coorect value now
+                    #they either all agree or the computed num holds the correct value now
                     valcl = mynum;
                 else:
                     print("TYPE IS NOT AN INTEGER!");
@@ -294,6 +298,21 @@ class mybase:
             if (getfromdb): setattr(self, clnm + "_value", valcl);
             else: self.setValueForColName(clnm, valcl, mycolobj);
         
+        #possible bug here 5-10-2025 4 AM MST
+        #
+        #MAY NEED TO DO SOMETHING HERE TO STORE:
+        #THE USER PROVIDED COLUMN NAMES AND A LIST OF COL NAMES THAT THE USER WANTS TO GET DATA FROM
+        #THE DB FOR.
+        #
+        #THIS INFORMATION WILL BE USED TO GENERATE A LIST OF COLUMNS TO SAVE.
+        #THE COL NAMES THAT THE USER WANTS TO GET FROM THE DB ARE THE ONES TO EXCLUDE
+        #UNLESS EXPLICITLY PROVIDED.
+        #
+        #WHAT ABOUT THOSE THAT HAVE DEFAULT VALUES PROVIDED BY THE USER IN THE MYCOLS?
+        #I GUESS WE SHOULD INCLUDE THESE PROVIDED THE DEFAULT VALUES DO NOT FAIL ANY CONSTRAINTS.
+        #BUT IT MAY BE WISE TO SORT OUT WHAT THE USER PROVIDED EXPLICITLY VS WHAT WE ARE SURE THE USER
+        #WANTS TO GET FROM THE DB, VS STUFF THAT HAS DEFUALTS ON THE COLS PROVIDED BY THE USER.
+
         print("DONE ASSIGNING REMAINING COLUMNS WITH DEFAULT VALUES IN BASE CLASS CONSTRUCTOR!");
         
         #set the objects for the foreign key object cols here...
@@ -997,7 +1016,13 @@ class mybase:
             
             print("putting the data on the table for the first time!");
             
+            #if the user provided the col names in the constructor, we need it
+            #if the user set column values after, and not a value like None, but before calling save, 
+            #we need it
+
             mcnms = type(self).getMyColNames();#not sure if this is correct
+            print(f"colnames to be saved = mcnms = {mcnms}");
+            
             nwvqry = myvalidator.genSQLInsertInto(type(self).getTableName(), mcnms, vals=None);
             print(f"\nSAVE QUERY nwvqry = {nwvqry}");
 
@@ -1128,8 +1153,8 @@ class mybase:
                                 else:
                                     #if item is a list of unsafe objects, then what?
                                     #like for example signups in a different class like Activity
-                                    #if we just let it run it will be infinite, so we can try generating
-                                    #it ourselves, then...
+                                    #if we just let it run it will be infinite,
+                                    #so we can try generating it ourselves, then...
                                     if (type(mval) in [list, tuple]):
                                         mstr += "[";
                                         for k in range(len(mval)):
