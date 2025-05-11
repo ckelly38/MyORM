@@ -96,6 +96,31 @@ class myvalidator:
         else: raise ValueError("" + varnm + " must be a number, but it was not!");
 
     @classmethod
+    def varIsAListOfColNameStringsOrEmpty(cls, mval):
+        if (myvalidator.isvaremptyornull(mval)): pass;
+        else:
+            if (mval == list): pass;
+            else: return False;
+            for item in mval:
+                if (myvalidator.stringHasAtMinNumChars(item, 1)): pass;
+                else: return False;
+                if (myvalidator.stringContainsOnlyAlnumCharsIncludingUnderscores(item)): pass;
+                else: return False;
+        return True;
+
+    @classmethod
+    def varMustBeAListOfColNameStringsOrEmpty(cls, mval, varnm="varnm"):
+        if (myvalidator.isvaremptyornull(varnm)):
+            return cls.varMustBeAListOfColNameStringsOrEmpty(mval, "varnm");
+        if (myvalidator.isvaremptyornull(mval)): pass;
+        else:
+            myvalidator.varmustbethetypeonly(mval, list, varnm);
+            for item in mval:
+                myvalidator.stringMustHaveAtMinNumChars(item, 1, "item");
+                myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(item, "item");
+        return True;
+
+    @classmethod
     def isClass(clsnm, val): return (type(val) == type);
 
     @classmethod
@@ -796,6 +821,7 @@ class myvalidator:
 
         #mstr = "";
         mstrs = [];
+        from init import SQLVARIANT;
         for n in range(len(mycols)):
             mstr = "";
             mc = mycols[n];
@@ -805,18 +831,24 @@ class myvalidator:
             #server defaults and there even maybe other stuff that I completely missed.
             #if col is a foreign key do we handle that at all here in this batch?
             
+            if (mc.isPrimaryKey() and numpkycols == 1 and SQLVARIANT == "LITE"):
+                mstr += " PRIMARY KEY";
+
             #auto_increment is different or not supported this way on some DBs like ORACLE.
-            if (mc.autoIncrements()): mstr += " AUTO_INCREMENT";
-            
-        #    if (mc.isPrimaryKey() and numpkycols == 1): mstr += " PRIMARY KEY";
-            if (mc.isNonNull()): mstr += " NOT NULL";
+            if (mc.autoIncrements()):
+                if (SQLVARIANT == "LITE"): mstr += " AUTOINCREMENT";
+                else: mstr += " AUTO_INCREMENT";
+        
+            if (mc.isNonNull()): 
+                if (mc.autoIncrements()): pass;
+                else: mstr += " NOT NULL";
         #    if (mc.isUnique()): mstr += "UNIQUE";#unique is also one that has different ways
         #    if (mc.isForeignKey()): mstr += "*?FOREIGN KEY?*";
             mstrs.append(mstr);
             #also need some ,s in there and maybe a newline for formatting sake???.
             #if (n + 1 < len(mycols)): mstr += ", ";
             #print(f"\nNEW mstrs = {mstrs}");
-        print("\nAFTER FIRST LOOP:")
+        print("\nAFTER FIRST LOOP:");
         print(f"mstrs = {mstrs}");
         
         for n in range(len(mycols)):
@@ -830,30 +862,32 @@ class myvalidator:
                 mstrs.append(mstr);
                 mc.addConstraint(nwuconst, isinctable=isinctable);
                 #print(f"\nNEW mstrs = {mstrs}");
-        print("\nAFTER SECOND LOOP:")
+        print("\nAFTER SECOND LOOP:");
         print(f"mstrs = {mstrs}");
         
         #now need to get all of the primary key columns and then make the pky constraint.
-        from mybase import mybase;
-        pkycols = mybase.getMyPrimaryKeyCols(mycols);
-        #mstr += ", ";
-        nwpkyconst = myvalidator.genSQLPrimaryKeyConstraint("pkyfor" + name,
-                                                            mybase.getMyColNames(pkycols));
-        #mstr += nwpkyconst;
-        mstrs.append(nwpkyconst);
-        print("\nAFTER THE PRIMARY KEY:")
-        print(f"mstrs = {mstrs}");
-        
-        #add this to the table here as a multi-col constraint or an individual column constraint
-        #but there can only be one primary key constraint on the table.
-        if (1 < numpkycols):
-            #this is a multi-column primary key constraint
-            from mycol import mycol;
-            myclsref = mycol.getClassFromTableName(name);
-            myclsref.addMultiColumnConstraint(nwpkyconst);
+        if (numpkycols == 1 and SQLVARIANT == "LITE"): pass;
         else:
-            #this is an individual column primary key constraint
-            mc.addConstraint(nwpkyconst, isinctable=isinctable);
+            from mybase import mybase;
+            pkycols = mybase.getMyPrimaryKeyCols(mycols);
+            #mstr += ", ";
+            nwpkyconst = myvalidator.genSQLPrimaryKeyConstraint("pkyfor" + name,
+                                                                mybase.getMyColNames(pkycols));
+            #mstr += nwpkyconst;
+            mstrs.append(nwpkyconst);
+            print("\nAFTER THE PRIMARY KEY:");
+            print(f"mstrs = {mstrs}");
+            
+            #add this to the table here as a multi-col constraint or an individual column constraint
+            #but there can only be one primary key constraint on the table.
+            if (1 < numpkycols):
+                #this is a multi-column primary key constraint
+                from mycol import mycol;
+                myclsref = mycol.getClassFromTableName(name);
+                myclsref.addMultiColumnConstraint(nwpkyconst);
+            else:
+                #this is an individual column primary key constraint
+                mc.addConstraint(nwpkyconst, isinctable=isinctable);
 
         #now get the foreign keys
         #if the foreign table name is provided, the assumption that all classes have been initialized
@@ -873,7 +907,7 @@ class myvalidator:
                 mstrs.append(nwfkycolconst);
                 mc.addConstraint(nwfkycolconst, isinctable=isinctable);
                 #print(f"\nNEW mstr = {mstr}");
-        print("\nAFTER THIRD LOOP:")
+        print("\nAFTER THIRD LOOP:");
         print(f"mstrs = {mstrs}");
 
         #now handle the other contraints...

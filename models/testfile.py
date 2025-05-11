@@ -255,7 +255,7 @@ if (runserializationtests):
 
 tstnotablesbfrcreatecmd = False;
 if (tstnotablesbfrcreatecmd):
-      for mycls in mysclslist: mycls.dropTable(onlyifnot=True);
+      for mycls in mysclslist: mycls.dropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
 
 #test create table query only here
 mysclslist = [MyModelWithCompPrimaryKey, Signup, Camper, Activity];
@@ -268,7 +268,7 @@ tstnotables = True;
 if (tstnotablesbfrcreatecmd): pass;
 else:
       if (tstnotables):
-            for mycls in mysclslist: mycls.dropTable(onlyifnot=True);
+            for mycls in mysclslist: mycls.dropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
 
 print("\nattempting to save data!\n");
 print(f"tstnotablesbfrcreatecmd = {tstnotablesbfrcreatecmd}");
@@ -277,8 +277,8 @@ print("no tables with save test (if one or both of the above is true, then true)
       f"{(tstnotablesbfrcreatecmd or tstnotables)}");
 print(f"tstwithusrpid = {tstwithusrpid}");
 
-sa.save();
-#vcmpr.save();
+sa.save(runbkbfr=False, runbkaftr=False);
+#vcmpr.save(runbkbfr=False, runbkaftr=False);
 
 #sa = Signup(["id", "time", "camper_id", "activity_id"], [1, 8, 1, 2]);
 sa.setValueForColumn("id", 4);
@@ -288,7 +288,7 @@ sa.setValueForColumn("activity_id", 1);
 
 print("\nattempting to update the data now!\n");
 
-sa.save();
+sa.save(runbkbfr=False, runbkaftr=False);
 
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 

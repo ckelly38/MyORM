@@ -144,6 +144,7 @@ class mybase:
         print(f"colvalues = {colvalues}");#user provided
 
         self.setLastSyncedValsDict(None);
+        self.setUserProvidedColNames(colnames);
 
         #for each column if it is a foreign key, now need to evaluate the class string
         #but need and the link col name
@@ -211,6 +212,8 @@ class mybase:
         
         print("\nBEGIN ASSIGNING REMAINING COLUMNS WITH DEFAULT VALUES IN BASE CLASS CONSTRUCTOR:");
 
+        clvalsfromdb = [];
+        clvalsdftsused = [];
         for clnm in ocolnms:
             #the value is the default value for the type for the varaint
             #get the type object for that type for the variant
@@ -295,8 +298,14 @@ class mybase:
                     print("TYPE IS NOT AN INTEGER!");
                     valcl = (deftpvalcl if (defvaloncl == None) else defvaloncl);
             
-            if (getfromdb): setattr(self, clnm + "_value", valcl);
-            else: self.setValueForColName(clnm, valcl, mycolobj);
+            if (getfromdb):
+                clvalsfromdb.append(clnm);
+                setattr(self, clnm + "_value", valcl);
+            else:
+                clvalsdftsused.append(clnm);
+                self.setValueForColName(clnm, valcl, mycolobj);
+        self.setColNamesWithDefaultsUsed(clvalsdftsused);
+        self.setColNamesWithDBValsUsed(clvalsfromdb);
         
         #possible bug here 5-10-2025 4 AM MST
         #
@@ -508,19 +517,45 @@ class mybase:
         myvalidator.varmustnotbeempty(colnames, "colnames");
         return tuple(self.genValsListForColNames(colnames));
 
+    def genSimpleValsDict(self, mycols=None):
+        mdict = {};
+        for ky in type(self).getValueColNames(mycols=mycols): mdict[ky] = getattr(self, ky);
+        return mdict;
+    
+
+    #properties of the base class, but the self type should not be mybase
+
     def getLastSyncedValsDict(self): return self._lastsyncedvalsdict;
 
     def setLastSyncedValsDict(self, mval): self._lastsyncedvalsdict = mval;
 
     lastsyncedvalsdict = property(getLastSyncedValsDict, setLastSyncedValsDict);
 
-    def genSimpleValsDict(self, mycols=None):
-        mdict = {};
-        for ky in type(self).getValueColNames(mycols=mycols): mdict[ky] = getattr(self, ky);
-        return mdict;
+    def getUserProvidedColNames(self): return self._userprovidedcolnames;
 
+    def setUserProvidedColNames(self, mval):
+        myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, "userprovidedcolnames");
+        self._userprovidedcolnames = mval;
 
+    userprovidedcolnames = property(getUserProvidedColNames, setUserProvidedColNames);
 
+    def getColNamesWithDefaultsUsed(self): return self._colnmswdefaultsused;
+
+    def setColNamesWithDefaultsUsed(self, mval):
+        myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, "colnmswdefaultsused");
+        self._colnmswdefaultsused = mval;
+
+    colnmswdefaultsused = property(getColNamesWithDefaultsUsed, setColNamesWithDefaultsUsed);
+    
+    def getColNamesWithDBValsUsed(self): return self._colnmswdbvalsused;
+
+    def setColNamesWithDBValsUsed(self, mval):
+        myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, "colnmswdbvalsused");
+        self._colnmswdbvalsused = mval;
+
+    colnmswdbvalsused = property(getColNamesWithDBValsUsed, setColNamesWithDBValsUsed);
+
+    
     #returns None if not found instead of throwing an error
     @classmethod
     def getObjectFromGivenKeysAndValues(cls, mlist, keys, values):
@@ -817,7 +852,7 @@ class mybase:
         #in fact PRAGMA is only supported by SQL LITE. SQL has some other ways and it depends on the DB.
         #however, if the SELECT fails, that means that the table does not exist.
         #all databases and dialects of SQL support SELECT so, the SELECT command of SQL will be used.
-        qry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], False);
+        qry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
         qry += " " + myvalidator.genSQLimit(1, offset=0);
         print(f"\nTABLE EXISTS qry = {qry}\n");
         
@@ -831,9 +866,6 @@ class mybase:
             exists = False;
         return exists;
 
-    @classmethod
-    def genSQLDropTableFromClass(cls, onlyifnot=False):
-        return myvalidator.genSQLDropTable(cls.getTableName(), onlyifnot=onlyifnot);
 
     
     #NOT DONE YET MAYBE THIS SHOULD BE A CLASS METHOD 5-8-2025 12:04 AM MST
@@ -841,6 +873,10 @@ class mybase:
     @classmethod
     def backupDB(cls):
         raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
+    
+    @classmethod
+    def genSQLDropTableFromClass(cls, onlyifnot=False):
+        return myvalidator.genSQLDropTable(cls.getTableName(), onlyifnot=onlyifnot);
 
     @classmethod
     def dropTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
@@ -862,14 +898,26 @@ class mybase:
         print("deleted the table successfully!");
 
         if (runbkaftr): cls.backupDB();
+    
     @classmethod
-    def deleteTable(cls, onlyifnot=False): cls.dropTable(onlyifnot=onlyifnot);
+    def deleteTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
+        cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
-    def delTable(cls, onlyifnot=False): cls.dropTable(onlyifnot=onlyifnot);
+    def delTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
+        cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
-    def removeTable(cls, onlyifnot=False): cls.dropTable(onlyifnot=onlyifnot);
+    def removeTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
+        cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
-    def remTable(cls, onlyifnot=False): cls.dropTable(onlyifnot=onlyifnot);
+    def remTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
+        cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+    
+    
+    #provide a truncate table or clear table method
+    #however SQLite does not have a truncate table command
+    #this can be simulated with two commands though
+    #the command used to drop the table and the same command used to create the table
+    #will truncate it in LITE
 
 
     #NOT DONE YET AND NOT WELL TESTED YET 5-8-2025 4:21 AM MST
@@ -1000,9 +1048,9 @@ class mybase:
             res = CURSOR.execute(upqry, mvals).fetchone();
             CONN.commit();
 
-            print(f"res = {res}");#not sure why does not always give an answer...
-            if (res == None): pass;
-            else: print(dir(res));
+            #print(f"res = {res}");#not sure why does not always give an answer...
+            #if (res == None): pass;
+            #else: print(dir(res));
             
             print("\ndata successfully updated on the DB!\n");
 
@@ -1020,7 +1068,16 @@ class mybase:
             #if the user set column values after, and not a value like None, but before calling save, 
             #we need it
 
-            mcnms = type(self).getMyColNames();#not sure if this is correct
+            dbcolnames = self.getColNamesWithDBValsUsed();
+
+            print(f"userpcolnames = {self.getUserProvidedColNames()}");#list for sure includes these
+            print(f"dftcolnames = {self.getColNamesWithDefaultsUsed()}");#list may include these or not
+            print(f"dbcolnames = {dbcolnames}");#list for sure excludes these
+
+            allcolnames = type(self).getMyColNames();
+            print(f"allcolnames = {allcolnames}");
+
+            mcnms = [item for item in allcolnames if item not in dbcolnames];
             print(f"colnames to be saved = mcnms = {mcnms}");
             
             nwvqry = myvalidator.genSQLInsertInto(type(self).getTableName(), mcnms, vals=None);
@@ -1029,14 +1086,37 @@ class mybase:
             mvals = self.genValsTupleForColNames(mcnms);
             print(f"mvals = {mvals}\n");
 
-            res = CURSOR.execute(nwvqry, mvals).fetchone();#
+            res = CURSOR.execute(nwvqry, mvals).fetchone();#just if the save succeeded or not!
             CONN.commit();
 
-            print(f"res = {res}");#not sure why does not always give an answer...
-            if (res == None): pass;
-            else: print(dir(res));
+            print("\nthe new data was successfully added onto the DB!\n");
 
-            print("\ndata successfully added onto the DB!\n");
+            myselqry = myvalidator.genSelectAllOnlyOnTables([type(self).getTableName()],
+                                                            useseldistinct=False);
+            print(f"myselqry = {myselqry}");
+
+            myores = CURSOR.execute(myselqry).fetchall();
+            CONN.commit();
+
+            print(f"myores = {myores}");
+            #returns list of items in the order in which the colums were created in...
+            #the list also has the order in which the items were created in
+            #unless the query is different
+
+            finitem = myores[len(myores) - 1];
+            #cols are in allcols order...
+            finitemdict = {};
+            for n in range(len(finitem)):
+                clnm = allcolnames[n];
+                finitemdict[clnm + "_value"] = finitem[n];
+            print(f"finitemdict = {finitemdict}");
+
+            #need to get the values for the columns that were not passed in and set those
+            for clnm in allcolnames:
+                if (clnm in dbcolnames):
+                    self.setValueForCol(clnm, finitemdict[clnm + "_value"], mycolobj=None);
+
+            print("\ndata successfully added onto the DB and new object values were set!\n");
 
             #create a last synced vals dict...
             #add onto previous vals on DB or the last synced vals
