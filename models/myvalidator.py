@@ -505,7 +505,7 @@ class myvalidator:
             if (isonetable):
                 #still need to make sure all of the column names are on the table...
                 mclsref = mycol.getClassFromTableName(mtablenames[0]);
-                if (mclsref.areGivenColNamesOnTable(mcolnames, None)): pass;
+                if (mclsref.areGivenColNamesOnTable(mcolnames, mycols=None)): pass;
                 else:
                     raise ValueError("the col names were not found on the table class(" +
                                      mclsref.__name__ + ")");
@@ -519,7 +519,7 @@ class myvalidator:
                 mytempcls = mycol.getClassFromTableName(ctablename);
                 myvalidator.varmustnotbenull(mytempcls, "mytempcls");
                 #is col name on table...
-                if (mytempcls.areGivenColNamesOnTable([mcolnm], None)): pass;
+                if (mytempcls.areGivenColNamesOnTable([mcolnm], mycols=None)): pass;
                 else:
                     raise ValueError("the col names were not found on the table class(" +
                                      mytempcls.__name__ + ")");
@@ -684,7 +684,7 @@ class myvalidator:
         from mycol import mycol;#may need to change or get removed
         myclstablenameref = mycol.getClassFromTableName(mtablename);
         myvalidator.varmustnotbenull(myclstablenameref, "myclstablenameref");
-        if (myclstablenameref.areGivenColNamesOnTable([colname], None)):
+        if (myclstablenameref.areGivenColNamesOnTable([colname], mycols=None)):
             return cls.genSQLLength(colname);
         else: raise ValueError("the colname must be on the table!");
 
@@ -714,7 +714,7 @@ class myvalidator:
         from mycol import mycol;#may need to change or get removed
         myclstablenameref = mycol.getClassFromTableName(tablename);
         myvalidator.varmustnotbenull(myclstablenameref, "myclstablenameref");
-        if (myclstablenameref.areGivenColNamesOnTable([colname], None)): pass;
+        if (myclstablenameref.areGivenColNamesOnTable([colname], mycols=None)): pass;
         else: raise ValueError("the colname must be on the table!");
         return cls.genSQLMinOrMax(usemin, "" + (tablename + "." if singleinctname else "") + colname);
     @classmethod
@@ -753,7 +753,7 @@ class myvalidator:
                 myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tnm, "the tablename");
                 myclstablenameref = mycol.getClassFromTableName(tnm);
                 myvalidator.varmustnotbenull(myclstablenameref, "myclstablenameref");
-                if (myclstablenameref.areGivenColNamesOnTable([colnm], None)): pass;
+                if (myclstablenameref.areGivenColNamesOnTable([colnm], mycols=None)): pass;
                 else: raise ValueError("the colname must be on the table!");
                 
                 #include the table name if not single,
@@ -776,8 +776,11 @@ class myvalidator:
     #DOES NOT VALIDATE THE TABLE NAME, DOES NOT DEPEND ON IT, BUT THE OTHER createTable methods DO.
     #HOWEVER, THIS METHOD ASSUMES THAT ALL MODEL CLASSES HAVE BEEN INITIALIZED OR
     #SETUP BEFORE THIS RUNS.
+    #
+    #varstr is the SQL VARIANT.
+    #DEPENDS ON THE SQL VARIANT.
     @classmethod
-    def genSQLCreateTable(cls, name, mycols, mulcolreqs, alltablereqs,
+    def genSQLCreateTable(cls, name, varstr, mycols, mulcolreqs, alltablereqs,
                           onlyifnot=True, isinctable=False):
         #this command has a very specific order of generating these
         #at least with constraints and primary keys
@@ -785,6 +788,8 @@ class myvalidator:
         myvalidator.varmustbeboolean(isinctable, "isinctable");
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(name, "name");
         myvalidator.varmustnotbeempty(mycols, "mycols");
+        myvalidator.stringMustHaveAtMinNumChars(varstr, 1, "varstr");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(varstr, "varstr");
         print("\nINSIDE OF GEN CREATE TABLE METHOD():");
         print(f"table name = {name}");
         print("mycols = [");
@@ -821,7 +826,7 @@ class myvalidator:
 
         #mstr = "";
         mstrs = [];
-        from init import SQLVARIANT;
+        haveonepkycol = (numpkycols == 1 and varstr == "LITE");
         for n in range(len(mycols)):
             mstr = "";
             mc = mycols[n];
@@ -831,12 +836,11 @@ class myvalidator:
             #server defaults and there even maybe other stuff that I completely missed.
             #if col is a foreign key do we handle that at all here in this batch?
             
-            if (mc.isPrimaryKey() and numpkycols == 1 and SQLVARIANT == "LITE"):
-                mstr += " PRIMARY KEY";
+            if (mc.isPrimaryKey() and haveonepkycol): mstr += " PRIMARY KEY";
 
             #auto_increment is different or not supported this way on some DBs like ORACLE.
             if (mc.autoIncrements()):
-                if (SQLVARIANT == "LITE"): mstr += " AUTOINCREMENT";
+                if (varstr == "LITE"): mstr += " AUTOINCREMENT";
                 else: mstr += " AUTO_INCREMENT";
         
             if (mc.isNonNull()): 
@@ -866,7 +870,7 @@ class myvalidator:
         print(f"mstrs = {mstrs}");
         
         #now need to get all of the primary key columns and then make the pky constraint.
-        if (numpkycols == 1 and SQLVARIANT == "LITE"): pass;
+        if (haveonepkycol): pass;
         else:
             from mybase import mybase;
             pkycols = mybase.getMyPrimaryKeyCols(mycols);
@@ -925,20 +929,26 @@ class myvalidator:
         return retstr + (", ".join(mstrs)) + ");";
     
     #depends on the table name
+    #
+    #varstr is the SQL VARIANT.
+    #DEPENDS ON THE SQL VARIANT.
     @classmethod
-    def genSQLCreateTableFromRef(cls, myclsref, onlyifnot=True):
+    def genSQLCreateTableFromRef(cls, myclsref, varstr, onlyifnot=True):
         myvalidator.varmustnotbenull(myclsref, "myclsref");
         errmsg = "myclsref must be a subclass of mybase class and not mybase, but it was not!";
         from mybase import mybase;#may need to change or get removed
         if (issubclass(myclsref, mybase) and not myclsref == mybase): pass;
         else: raise TypeError(errmsg);
-        return cls.genSQLCreateTable(myclsref.getTableName(), myclsref.getMyCols(),
+        return cls.genSQLCreateTable(myclsref.getTableName(), varstr, myclsref.getMyCols(),
                                      myclsref.getMultiColumnConstraints(),
                                      myclsref.getAllTableConstraints(), onlyifnot=onlyifnot);
     
     #depends on the table name
+    #
+    #varstr is the SQL VARIANT.
+    #DEPENDS ON THE SQL VARIANT.
     @classmethod
-    def genSQLCreateTableFromTableOrClassName(cls, name, isclsnm, onlyifnot=True):
+    def genSQLCreateTableFromTableOrClassName(cls, name, varstr, isclsnm, onlyifnot=True):
         #if name is classname get class ref from the name then call the other method
         #look up the classname if valid or on the list;
         #if it is not valid => error.
@@ -951,24 +961,33 @@ class myvalidator:
         
         from mycol import mycol;#may need to change or get removed
         myfuncref = (mycol.getMyClassRefFromString if (isclsnm) else mycol.getClassFromTableName);
-        return cls.genSQLCreateTableFromRef(myfuncref(name), onlyifnot=onlyifnot);
+        return cls.genSQLCreateTableFromRef(myfuncref(name), varstr, onlyifnot=onlyifnot);
     @classmethod
-    def genSQLCreateTableFromTableName(cls, name, onlyifnot=True):
-        return cls.genSQLCreateTableFromTableOrClassName(name, False, onlyifnot=onlyifnot);
+    def genSQLCreateTableFromTableName(cls, name, varstr, onlyifnot=True):
+        return cls.genSQLCreateTableFromTableOrClassName(name, varstr, False, onlyifnot=onlyifnot);
     @classmethod
-    def genSQLCreateTableFromClassName(cls, name, onlyifnot=True):
-        return cls.genSQLCreateTableFromTableOrClassName(name, True, onlyifnot=onlyifnot);
+    def genSQLCreateTableFromClassName(cls, name, varstr, onlyifnot=True):
+        return cls.genSQLCreateTableFromTableOrClassName(name, varstr, True, onlyifnot=onlyifnot);
     
     @classmethod
     def genSQLDropTable(cls, tname, onlyifnot=False):
         myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, "tname");
         return "DROP TABLE " + ("IF EXISTS " if (onlyifnot) else "") + tname + ";";
+
+    #possible bug found here 5-13-2025 4:09 AM MST
+    #NOT SURE IF IT IS LEGAL TO ADD IF EXISTS TO THE QUERY
+    #NOT SURE IF TRUCATE TABLE IF EXISTS tname; IS LEGAL OR NOT.
+    #THERE IS NO EASY WAY TO TEST THIS BECAUSE SQLITE DOES NOT SUPPORT TRUNCATION.
+    @classmethod
+    def genSQLTruncateTable(cls, tname):
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, "tname");
+        return "TRUNCATE TABLE " + tname + ";";
     
 
     #NOT TESTED WELL YET AND NOT NECESSARILY DONE YET 5-8-2025 3:50 AM MST...
 
-    #possible bug found in the UPDATE and INSERT INTO command methods:
+    #possible bug found 5-8-2025 3:50 AM MST in the UPDATE and INSERT INTO command methods:
     #the values if they are strings must include quotes of some kind, but probably will not...
 
     @classmethod
@@ -1074,7 +1093,7 @@ class myvalidator:
             myvalidator.varmustnotbeempty(mcnm, "mcnm");
             myclstablenameref = mycol.getClassFromTableName(tnm);
             myvalidator.varmustnotbenull(myclstablenameref, "myclstablenameref");
-            if (myclstablenameref.areGivenColNamesOnTable([mcnm], None)):
+            if (myclstablenameref.areGivenColNamesOnTable([mcnm], mycols=None)):
                 mystr += "" + (tnm + "." if inctnm else "") + mcnm;
                 if (n + 1 < len(colnames)): mystr += ", ";
             else: raise ValueError(errmsgpta + mcnm + errmsgptb + myclstablenameref.__name__ + ")!");
@@ -1289,6 +1308,9 @@ class myvalidator:
                 #print(f"tmplist = {tmplist}");
                 for item in tmplist: retlist.append(mitem + "," + item);
             return retlist;
+
+
+    #MOST OF THE METHODS BELOW HERE DEPEND ON THE SQL VARIANT
 
 
     #https://www.w3schools.com/sql/sql_datatypes.asp
@@ -1535,6 +1557,8 @@ class myvalidator:
     #?
     #return ["?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?", "?",
     # "?", "?", "?", "?", "?"];
+    #
+    #varstr is the SQL VARIANT
     @classmethod
     def getValidSQLDataTypes(cls, varstr):
         #need some way to get the variant...
@@ -1727,6 +1751,8 @@ class myvalidator:
     #signed or unsigned are names of the ranges indicating that the issigned parameter determines
     #which range is actually used, but not actually affecting this here.
     #note: for number types like real which is only signed we use the default instead
+    #
+    #varstr is the SQL VARIANT
     @classmethod
     def getSQLDataTypesInfo(cls, varstr):
         #if type can be signed or unsigned
@@ -2049,7 +2075,6 @@ class myvalidator:
                 mykynm = ("signed" if (mycolobj.getIsSigned()) else "unsigned");
         else: mykynm = "values";
         #print(f"mykynm = {mykynm}");
-
         return mykynm;
 
     @classmethod
@@ -2069,6 +2094,8 @@ class myvalidator:
 
     #this method identifies all of the type names by variant that has
     #total number of digits and the number of digits after the decimal point
+    #
+    #varnm is the SQL VARIANT
     @classmethod
     def getAllDataTypesWithASetAmountOfDigitsAndAfterDecimalPoint(cls, varnm):
         #but not all floats on MYSQL one does one does not
@@ -2078,11 +2105,14 @@ class myvalidator:
 
     #what data types for the variants controls how many digits are allowed after the decimal point?
     #these only have one parameter. unlike the method above.
+    #
+    #varnm is the SQL VARIANT
     @classmethod
     def getAllDataTypesWithASetAmountOfDigitsAfterTheDecimalPointOnly(cls, varnm):
         return (["FLOAT"] if (varnm == "SQLSERVER") else
                 (["DATETIME", "TIMESTAMP", "TIME"] if (varnm == "MYSQL") else []));
 
+    #varnm is the SQL VARIANT
     @classmethod
     def getAllDataTypesWithAListAsTheParameter(cls, varnm):
         return (["ENUM", "SET"] if (varnm == "MYSQL") else []);
@@ -2091,6 +2121,8 @@ class myvalidator:
     #so maybe take nmax multiply by 8 for bit length IE actual length stored???
     #the BLOB(size)s on my sql are similar.
     #the BINARY(size)s on my sql are similar, but not sure on the max???.
+    #
+    #varstr is the SQL VARIANT
     @classmethod
     def getTypesThatHaveAByteRelatedLength(cls, varstr, tp="ALL"):
         if (varstr == "MYSQL"):
@@ -2122,6 +2154,8 @@ class myvalidator:
     #
     #for sql server anything with CHAR(n) n is the length (EXCLUDING THOSE WITH max OF COURSE)
     #same for char and varchar and text and bit on mysql size is length.
+    #
+    #varstr is the SQL VARIANT
     @classmethod
     def getTypesThatHaveLengthAsTheParam(cls, varstr):
         return (["CHAR", "VARCHAR", "NCHAR", "NVARCHAR"] if (varstr == "SQLSERVER") else
@@ -2130,6 +2164,8 @@ class myvalidator:
     #all INTs on mysql have the size parameter being the display width.
     #this does not effect how the value is stored at all.
     #"TINYINT", "SMALLINT", "MEDIUMINT", "INTEGER", "INT", "BIGINT"
+    #
+    #varstr is the SQL VARIANT
     @classmethod
     def getTypesThatHaveADisplayWidthParam(cls, varstr):
         return (["TINYINT", "SMALLINT", "MEDIUMINT", "INTEGER", "INT", "BIGINT"]
@@ -2215,8 +2251,7 @@ class myvalidator:
         valstrlen = len(valstr);
         if (valstrlen < numdgts):
             mystr = "";
-            for n in range(numdgts - valstrlen):
-                mystr += "0";
+            for n in range(numdgts - valstrlen): mystr += "0";
             return mystr + valstr;
         elif (valstrlen == numdgts): return valstr;
         else:
@@ -2897,7 +2932,7 @@ class myvalidator:
         else: return [];
 
     #val is the data type value
-    #varstr is the sql variant string
+    #varstr is the SQL VARIANT string
     @classmethod
     def isValidDataType(cls, val, varstr):
         #get data types for the specific variant
@@ -3168,6 +3203,7 @@ class myvalidator:
         myvalidator.objvarmusthavethesekeysonit(tobj, rkys, "tobj");
         return (myvalidator.isListAInListB(tobj[rkys[0]], tpnmslist) and len(tobj[rkys[1]]) == numps);
 
+    #varnm is the SQL VARIANT
     @classmethod
     def getDataTypesObjsFromTypeName(cls, fulltpnm, varnm):
         #or the ones that match that name...
@@ -3192,6 +3228,8 @@ class myvalidator:
     #are an exact match, then it will return this option.
     #otherwise it will return the first one found on the list. That list may have multiple.
     #in that case, the results of this method may be wrong.
+    #
+    #varnm is the SQL VARIANT
     @classmethod
     def getDataTypeObjectWithNameOnVariant(cls, fulltpnm, varnm):
         #get the list of objects for the variant
@@ -3236,6 +3274,7 @@ class myvalidator:
     #isnonnull is by default false to allow null as a value,
     #-however sometimes the user does not want null to be an option at all.
     #-Setting this to true ensures that.
+    #varstr is the SQL VARIANT
     @classmethod
     def isValueValidForDataType(cls, tpnm, val, varstr, useunsigned=True, isnonnull=False):
         myvalidator.varmustbeboolean(isnonnull, "isnonnull");

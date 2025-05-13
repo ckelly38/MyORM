@@ -1,4 +1,4 @@
-from init import CURSOR, CONN;
+from init import SQLVARIANT, CURSOR, CONN;
 from models import mycol;
 from mycol import myvalidator;
 #from myvalidator import myvalidator;
@@ -34,11 +34,12 @@ print();
 #values of the cols must get past into the constructor...
 tstobj = MyTestColsClass(["mynewcol", "myfkeyid"], [1, 1]);
 tstobjcols = tstobj.getMyCols();
+print(f"\nPRINTING THE COLS AND TABLE NAME TO VERIFY THAT THE VALUES WERE SET CORRECTLY:\n");
 print(tstobjcols);
 print(tstobj.getTableName());
-print("values for tstobj: via key name subscripted almost via getattr:");
+print("\nvalues for tstobj: via key name subscripted almost via getattr:");
 tstobj.printValuesForAllCols(tstobjcols);
-print("some values for tstobj printed out via property:");
+print("\nsome values for tstobj printed out via property:");
 print(f"tstobj.mynewcol_value = {tstobj.mynewcol_value}");
 print(f"tstobj.myfkeyid_value = {tstobj.myfkeyid_value}");
 #context will be set in the constructor unless the user overrides it
@@ -52,22 +53,19 @@ print(tstobj.mynewcol.value);#no error if context is tstobj
 #print(myvalidator.listMustContainUniqueValuesOnly(
 #    ["colnamea", "colnameb", "colnamea"], "nonucolnames"));#also errors out
 print(tstobj);
-print(f"tstobj.myotstobj = {tstobj.myotstobj}");
-print();
+print(f"\ntstobj.myotstobj = {tstobj.myotstobj}\n");
 #raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 print("\nBEGIN CREATING OUR NEW OBJECT HERE NOW:\n");
 
 tstobjb = MyOtherTestClass(["mynewcol", "myfkeyid"], [1, 1]);
-print(tstobjb.getMyCols());
-print(tstobjb.getTableName());
-print("values for tstobjb:");
+#print(f"\n{tstobjb.getMyCols()}");
+#print(tstobjb.getTableName());
+print("\nvalues for tstobjb:");
 tstobjb.printValuesForAllCols();
-print(tstobjb);
-print(f"tstobjb.mytstcolsobj = {tstobjb.mytstcolsobj}");
-print();
-print(f"tstobj.myotstobj = {tstobj.myotstobj}");
-print();
+print(f"\n{tstobjb}\n");
+print(f"tstobjb.mytstcolsobj = {tstobjb.mytstcolsobj}\n");
+print(f"\ntstobj.myotstobj = {tstobj.myotstobj}\n");
 
 #raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
@@ -136,7 +134,7 @@ print();
 
 #tstobjc = MyModelWithCompPrimaryKey();
 tstobjc = MyModelWithCompPrimaryKey.newBase([1, 1, 1]);
-print("values for tstobjc:");
+print("\nvalues for tstobjc:");
 tstobjc.printValuesForAllCols();
 print();
 
@@ -149,10 +147,10 @@ tstobjd = MyModelWithCompForeignKey.newBase([[1, 1], 1]);#uses alphabetic order
 #                                                             ("mycompfkcolval", [1, 1])]);
 #tstobjd = MyModelWithCompForeignKey.newBaseFromDataObj({"mynewcol": 1, "mycompfkcolval": [1, 1]});
 print(tstobjc);
-print("values for tstobjc:");
+print("\nvalues for tstobjc:");
 tstobjc.printValuesForAllCols();
-print(tstobjd);
-print("values for tstobjd:");
+print(f"\n{tstobjd}");
+print("\nvalues for tstobjd:");
 tstobjd.printValuesForAllCols();
 print();
 
@@ -161,13 +159,17 @@ for mfcl in tstobjd.getMyForeignKeyCols():
       print(mfcl.doesForeignKeyValuesExistOnObjectsList(tstobjd));
       print(mfcl.getObjectThatHasTheForeignKeyValues(tstobjd));
 
-print();
-print(mycol.getAllValidators());
-print(myvalidator.getAllValidators());
-for mv in myvalidator.getAllValidators():
-      if mv["classname"] not in [mcref.__name__ for mcref in mycol.getMyClassRefsMain(True)]:
-            raise ValueError("classname " + mv['classname'] + " not found on list of classes!");
-print();
+runvdtorstst = True;
+if (runvdtorstst):
+      print("\nBEGIN GETTING ALL VALIDATORS TESTS:\n");
+      print(mycol.getAllValidators());
+      print(myvalidator.getAllValidators());
+      #print(mycol.getMyClassRefsMain(False));
+      for mv in myvalidator.getAllValidators():
+            if mv["classname"] not in [mcref.__name__ for mcref in mycol.getMyClassRefsMain(False)]:
+                  raise ValueError("classname " + mv['classname'] + " not found on list of classes!");
+      print("\nDONE TESTING GET ALL VALIDATORS!\n");
+
 #mcmpr = Camper(["name", "age"], ["Sydney", 20]);#error invalid age out of 8 to 18 inclusive range
 #print(mcmpr);
 #omcmpr = Camper(["name", "age"], ["", 9]);#error name cannot be empty!
@@ -254,14 +256,17 @@ if (runserializationtests):
 #if the ID is not assigned, let the DB put it on there....
 
 tstnotablesbfrcreatecmd = False;
+mysclslist = [MyModelWithCompPrimaryKey, Signup, Camper, Activity];
 if (tstnotablesbfrcreatecmd):
       for mycls in mysclslist: mycls.dropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
 
 #test create table query only here
-mysclslist = [MyModelWithCompPrimaryKey, Signup, Camper, Activity];
-for mycls in mysclslist:
-      print(f"\nGen CREATE TABLE command for class ({mycls.__name__})!");
-      print(mycls.genSQLCreateTableFromRef(onlyifnot=True, isinctable=True));
+runtstctbleqry = False;
+if (runtstctbleqry):
+      varstr = "" + SQLVARIANT;
+      for mycls in mysclslist:
+            print(f"\nGen CREATE TABLE command for class ({mycls.__name__})!");
+            print(f"\n{mycls.genSQLCreateTableFromRef(varstr=varstr, onlyifnot=True, isinctable=True)}");
 
 #test remove all tables
 tstnotables = True;

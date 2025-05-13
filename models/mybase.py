@@ -1,7 +1,7 @@
 from mycol import mycol;
 from mycol import myvalidator;
 from myrefcol import myrefcol;
-from init import *;#SQLVARIANT, CURSON, CONN
+from init import *;#SQLVARIANT, CURSOR, CONN
 import traceback;
 class mybase:
     #mytablename = "basetablename";
@@ -127,9 +127,7 @@ class mybase:
         mycol.setRanSetup(not isempty);
 
 
-    #possible bug here 5-10-2025 4 AM may have missed storing some data that the user needs in save()
-
-
+    #DEPENDS ON THE SQL VARIANT
     def __init__(self, colnames=None, colvalues=None):
         print("INSIDE BASE CLASS CONSTRUCTOR CALLING SETUP IF NEEDED FIRST!");
         #print(f"mycol.hasRunSetupYet() = {mycol.hasRunSetupYet()}");
@@ -307,21 +305,6 @@ class mybase:
         self.setColNamesWithDefaultsUsed(clvalsdftsused);
         self.setColNamesWithDBValsUsed(clvalsfromdb);
         
-        #possible bug here 5-10-2025 4 AM MST
-        #
-        #MAY NEED TO DO SOMETHING HERE TO STORE:
-        #THE USER PROVIDED COLUMN NAMES AND A LIST OF COL NAMES THAT THE USER WANTS TO GET DATA FROM
-        #THE DB FOR.
-        #
-        #THIS INFORMATION WILL BE USED TO GENERATE A LIST OF COLUMNS TO SAVE.
-        #THE COL NAMES THAT THE USER WANTS TO GET FROM THE DB ARE THE ONES TO EXCLUDE
-        #UNLESS EXPLICITLY PROVIDED.
-        #
-        #WHAT ABOUT THOSE THAT HAVE DEFAULT VALUES PROVIDED BY THE USER IN THE MYCOLS?
-        #I GUESS WE SHOULD INCLUDE THESE PROVIDED THE DEFAULT VALUES DO NOT FAIL ANY CONSTRAINTS.
-        #BUT IT MAY BE WISE TO SORT OUT WHAT THE USER PROVIDED EXPLICITLY VS WHAT WE ARE SURE THE USER
-        #WANTS TO GET FROM THE DB, VS STUFF THAT HAS DEFUALTS ON THE COLS PROVIDED BY THE USER.
-
         print("DONE ASSIGNING REMAINING COLUMNS WITH DEFAULT VALUES IN BASE CLASS CONSTRUCTOR!");
         
         #set the objects for the foreign key object cols here...
@@ -339,8 +322,8 @@ class mybase:
 
         #update them all here...
         print();
-        mybase.updateAllForeignKeyObjectsForAllClasses();
-        mybase.updateAllLinkRefsForAllClasses();
+        type(self).updateAllForeignKeyObjectsForAllClasses(not mycol.hasRunSetupYet());
+        type(self).updateAllLinkRefsForAllClasses(not mycol.hasRunSetupYet());
 
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!\n");
@@ -413,6 +396,7 @@ class mybase:
     def getColValue(self, clnm): return self.getValueForColName(clnm);
     def getColumnValue(self, clnm): return self.getValueForColName(clnm);
 
+    #DEPENDS ON THE SQL VARIANT
     def setValueForColName(self, clnm, valcl, mycolobj=None):
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
         if (mycolobj == None):
@@ -497,7 +481,7 @@ class mybase:
                 #mycol.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
                 #myvalidator.runValidatorsByKeysForClass(type(self).__name__, self, [clnm]);
             else: raise ValueError(errmsgpta + str(valcl) + errptbwithdata + errmsgptc);
-        if (mycolobj.isforeignkey): mybase.updateAllForeignKeyObjectsForAllClasses();
+        if (mycolobj.isforeignkey): mybase.updateAllForeignKeyObjectsForAllClasses(False);
     def setValueForColumn(self, clnm, valcl, mycolobj=None):
         self.setValueForColName(clnm, valcl, mycolobj=mycolobj);
     def setValueForCol(self, clnm, valcl, mycolobj=None):
@@ -522,7 +506,9 @@ class mybase:
         for ky in type(self).getValueColNames(mycols=mycols): mdict[ky] = getattr(self, ky);
         return mdict;
     
-
+    
+    #possible bug here 5-13-2025 3:50 AM THESE PROPERTIES MAY NEED TO BE MOVED TO A DIFFERENT CLASS.
+    #
     #properties of the base class, but the self type should not be mybase
 
     def getLastSyncedValsDict(self): return self._lastsyncedvalsdict;
@@ -559,9 +545,9 @@ class mybase:
     #returns None if not found instead of throwing an error
     @classmethod
     def getObjectFromGivenKeysAndValues(cls, mlist, keys, values):
-        print(f"mlist = {mlist}");
-        print(f"keys = {keys}");
-        print(f"values = {values}");
+        #print(f"mlist = {mlist}");
+        #print(f"keys = {keys}");
+        #print(f"values = {values}");
 
         tperrmsg = "invalid data type found and used here for the values! There are multiple keys, ";
         tperrmsg += "so there must be multiple values!";
@@ -569,8 +555,8 @@ class mybase:
         else:
             klen = len(keys);
             isvalslist = (type(values) in [list, tuple]);
-            print(f"klen = {klen}");
-            print(f"isvalslist = {isvalslist}");
+            #print(f"klen = {klen}");
+            #print(f"isvalslist = {isvalslist}");
 
             if (klen == 1): pass;
             elif (1 < klen):
@@ -586,23 +572,23 @@ class mybase:
                 for n in range(klen):
                     mattr = keys[n];
                     mval = (values[n] if (isvalslist) else values);
-                    print(f"mattr = {mattr}");
-                    print(f"mval = {mval}");
+                    #print(f"mattr = {mattr}");
+                    #print(f"mval = {mval}");
 
                     if (hasattr(mobj, mattr + "_value")):
                         if (mval == getattr(mobj, mattr + "_value")): pass;
                         else:
-                            print("not found on this object moving on to the next one!");
+                            #print("not found on this object moving on to the next one!");
                             fndallvals = False;
                             break;
                     else: return None;
                 if (fndallvals): return mobj;
         
-            print("the object with those values for those columns was not found on the list!");
+            #print("the object with those values for those columns was not found on the list!");
             return None;
 
     def getForeignKeyObjectFromCol(self, mc):
-        print(f"mc = {mc}");
+        #print(f"mc = {mc}");
         myvalidator.varmustnotbenull(mc, "mc");
         #using the foreign key column information stored in the column,
         #we can get attributes like foreignClass="Camper", foreignColNames=["id"], and
@@ -626,7 +612,7 @@ class mybase:
         #stringContainsOnlyAlnumCharsIncludingUnderscores(cls, mstr)
         #fkyobjname from col
         if (type(self).needToCreateAnObjectForCol(mc)):
-            print("WE NEED TO CREATE AN OBJECT FOR THE COLUMN HERE!");
+            #print("WE NEED TO CREATE AN OBJECT FOR THE COLUMN HERE!");
             #fkyobjnmfromcl = mc.getForeignObjectName();
             #we depend on it, but do not need it here if not calling setattr
             #using the foreign class and the attributes and values specified in the column
@@ -639,9 +625,9 @@ class mybase:
                 #traceback.print_exc();
                 print(f"class name {mcnm} not found!");
                 return None;
-            print(f"GOT THE REFERENCE CLASS NAME {mcref.__name__}!");
-            print(f"foreign col names = {mc.getForeignColNames()}");
-            print(f"my col name = {mc.getColName()}");
+            #print(f"GOT THE REFERENCE CLASS NAME {mcref.__name__}!");
+            #print(f"foreign col names = {mc.getForeignColNames()}");
+            #print(f"my col name = {mc.getColName()}");
             mval = None;
             try:
                 mval = self.getValueForColName(mc.getColName());
@@ -724,10 +710,10 @@ class mybase:
 
     def getAndSetForeignKeyObjectsFromCols(self, mycols=None):
         mobjnms = self.getForeignKeyObjectNamesFromCols(mycols);
-        print(f"mobjnms = {mobjnms}");
+        #print(f"mobjnms = {mobjnms}");
 
         mobjs = self.getForeignKeyObjectsFromCols(mycols);
-        print(f"mobjs = {mobjs}");
+        #print(f"mobjs = {mobjs}");
 
         myvalidator.listMustContainUniqueValuesOnly(mobjnms, "mobjnms");
         myvalidator.twoArraysMustBeTheSameSize(mobjnms, mobjs);
@@ -735,8 +721,8 @@ class mybase:
         for n in range(len(mobjnms)):
             mobj = mobjs[n];
             mnm = mobjnms[n];
-            print(f"mobj = {mobj}");
-            print(f"mnm = {mnm}");
+            #print(f"mobj = {mobj}");
+            #print(f"mnm = {mnm}");
             
             #setattr(self, mnm, mobj);
             setattr(type(self), mnm, property(self.myObjectGet(mnm), self.myObjectSet(mnm)));
@@ -756,16 +742,15 @@ class mybase:
             #then set the private value
             
             
-            print("val of the new attribute should be the initial value!");
-            print(getattr(self, mnm));
-            #print(getattr(self, mnm).fget(self));
+            #print("val of the new attribute should be the initial value!");
+            #print(getattr(self, mnm));
+            #print(getattr(self, mnm).fget(self));#does not work now
             
-            print("now setting the value here.");
-            #getattr(self, mnm).fset(self, mobj);
+            #print("now setting the value here.");
+            #getattr(self, mnm).fset(self, mobj);#does not work now
             setattr(self, mnm, mobj);
-            print("val of the property should now be the object!");
-            print(getattr(self, mnm));
-            #raise ValueError("NOT DONE YET 4-15-2025 10:44 PM MST!");
+            #print("val of the property should now be the object!");
+            #print(getattr(self, mnm));
         return mobjs;
 
     #update all foreign key objects methods:
@@ -776,14 +761,15 @@ class mybase:
         if (issubclass(cls, mybase)):
             if (myvalidator.isvaremptyornull(cls.all)): pass;
             else:
-                print(f"\nBEGIN WORKING ON THOSE FOR {cls.__name__}!");
+                #print(f"\nBEGIN WORKING ON THOSE FOR {cls.__name__}!");
                 for mobj in cls.all: mobj.getAndSetForeignKeyObjectsFromCols(cls.getMyCols());
-                print(f"\nDONE WITH THOSE FOR {cls.__name__}!");
+                #print(f"\nDONE WITH THOSE FOR {cls.__name__}!");
 
     @classmethod
-    def updateAllForeignKeyObjectsForAllClasses(cls):
+    def updateAllForeignKeyObjectsForAllClasses(cls, ftchnw=False):
         print("\nUPDATING ALL OBJECT REFS FROM FOREIGN KEYS NOW:\n");
-        mlist = mycol.getMyClassRefsMain(True);
+        myvalidator.varmustbeboolean(ftchnw, "ftchnw");
+        mlist = mycol.getMyClassRefsMain(ftchnw);
         if (myvalidator.isvaremptyornull(mlist)): pass;
         else:
             for mclsref in mlist:
@@ -793,9 +779,10 @@ class mybase:
         print("DONE UPDATING ALL OBJECT REFS FROM FOREIGN KEYS NOW!");
 
     @classmethod
-    def updateAllLinkRefsForAllClasses(cls):
+    def updateAllLinkRefsForAllClasses(cls, ftchnw=False):
         print("\nUPDATING ALL LINK REFS FROM FOREIGN KEYS NOW:\n");
-        mlist = mycol.getMyClassRefsMain(True);
+        myvalidator.varmustbeboolean(ftchnw, "ftchnw");
+        mlist = mycol.getMyClassRefsMain(ftchnw);
         if (myvalidator.isvaremptyornull(mlist)): pass;
         else:
             for mclsref in mlist:
@@ -809,6 +796,10 @@ class mybase:
         for mc in self.getMyColNames(fincols):
             print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
     
+    
+    @classmethod
+    def getTableAndClassNameString(cls):
+        return "the table " + cls.getTableName() + " on class " + cls.__name__;
 
 
     #database CRUD methods section may depend on which database itself you are using.
@@ -818,13 +809,18 @@ class mybase:
     #depends on the table name
     #convenience method that calls the method in the myvalidator for generating the
     #CREATE TABLE SQL query.
+    #
+    #DEPENDS ON THE SQL VARIANT.
     @classmethod
-    def genSQLCreateTableFromRef(cls, onlyifnot=True, isinctable=True):
-        return myvalidator.genSQLCreateTable(cls.getTableName(), cls.getMyCols(),
+    def genSQLCreateTableFromRef(cls, varstr=None, onlyifnot=True, isinctable=True):
+        if (myvalidator.isvaremptyornull(varstr)):
+            return cls.genSQLCreateTableFromRef(varstr="" + SQLVARIANT, onlyifnot=onlyifnot,
+                                                isinctable=isinctable);
+        return myvalidator.genSQLCreateTable(cls.getTableName(), varstr, cls.getMyCols(),
                                              cls.getMultiColumnConstraints(),
                                              cls.getAllTableConstraints(), onlyifnot=onlyifnot,
                                              isinctable=isinctable);
-
+    #DEPENDS ON THE SQL VARIANT.
     @classmethod
     def createTable(cls):
         #if the table exists and onlyifnot is False, then it will fail because the table already exists
@@ -836,14 +832,14 @@ class mybase:
             mc.primaryKeyInformationMustBeValid(cls);
             mc.foreignKeyInformationMustBeValid(fcobj=None, usenoclassobj=True);
         
-        qry = cls.genSQLCreateTableFromRef(onlyifnot=False, isinctable=True);
+        qry = cls.genSQLCreateTableFromRef(varstr="" + SQLVARIANT, onlyifnot=False, isinctable=True);
         print(f"\nCREATE TABLE qry = {qry}\n");
         
         #this either failed because the table already exists or fails for some other reason
         #the user should be informed because it means there is a problem with the user's program
         res = CURSOR.execute(qry);
         CONN.commit();
-        print("created the table successfully!");
+        print("created " + cls.getTableAndClassNameString() + " on the DB successfully!\n");
         return True;
 
     @classmethod
@@ -884,6 +880,7 @@ class mybase:
         myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
         if (runbkbfr): cls.backupDB();
 
+        tnmonclsnmstr = "" + cls.getTableAndClassNameString();
         qry = cls.genSQLDropTableFromClass(onlyifnot=onlyifnot);
         print(f"\nDROP TABLE qry = {qry}\n");
         
@@ -892,10 +889,11 @@ class mybase:
             CONN.commit();
         except Exception as ex:
             #print(f"\nDROP TABLE qry = {qry}\n");
-            print("either table already does not exist, or problem connecting with the DB!");
+            print("either " + tnmonclsnmstr + " already does not exist, or problem " +
+                  "connecting with the DB!");
             traceback.print_exc();
 
-        print("deleted the table successfully!");
+        print("deleted " + tnmonclsnmstr + " on the DB successfully!\n");
 
         if (runbkaftr): cls.backupDB();
     
@@ -912,12 +910,53 @@ class mybase:
     def remTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
         cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     
-    
+
+    #possible bug found 5-13-2025
+    #ALSO NO EASY WAY TO SEE IF IT IS VALID OR NOT...
+    #SINCE SQLITE DOES NOT SUPPORT IT TO BEGIN WITH I CANNOT EASILY TEST IT EITHER.
+    #NOT SURE IF WE CAN ADD IF EXISTS to the query to make it:
+    #TRUNCATE TABLE IF EXISTS tname;
+    @classmethod
+    def genSQLTruncateTableFromRef(cls):
+        return myvalidator.genSQLTruncateTable(cls.getTableName());
+
     #provide a truncate table or clear table method
     #however SQLite does not have a truncate table command
     #this can be simulated with two commands though
     #the command used to drop the table and the same command used to create the table
     #will truncate it in LITE
+    #
+    #DEPENDS ON THE SQL VARIANT.
+    @classmethod
+    def truncateTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
+        myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");
+        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
+        varstr = "" + SQLVARIANT;
+        tnmandclsnmstr = "" + cls.getTableAndClassNameString();
+        errmsg = tnmandclsnmstr + " must exist in order for it to be truncated or cleared.";
+        if (cls.tableExists()):
+            if (runbkbfr): cls.backupDB();
+
+            truncqry = cls.genSQLTruncateTableFromRef();
+            print("\nbegin truncating the data on " + tnmandclsnmstr + " on the DB now!");
+
+            if (varstr == "LITE"):
+                cls.dropTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False);
+                cls.createTable();
+            else:
+                print(f"TRUNCATE TABLE truncqry = {truncqry}");
+
+                res = CURSOR.execute(truncqry);
+                CONN.commit();
+
+            print("truncated the data on " + tnmandclsnmstr + " on the DB successfully!\n");
+
+            if (runbkaftr): cls.backupDB();
+        else: 
+            if (onlyifnot): pass;
+            else: raise ValueError(errmsg);
+        return True;
 
 
     #NOT DONE YET AND NOT WELL TESTED YET 5-8-2025 4:21 AM MST
@@ -954,6 +993,8 @@ class mybase:
     #Of course a values tuple (generated by the program) will be passed in along with the command.
     #in order to decide what to do, the program needs the last synced values for each object to
     #be stored in each object (results in duplicate data, but updates are faster and more convenient)
+    #
+    #DEPENDS ON THE SQL VARIANT.
     def save(self, runbkbfr=False, runbkaftr=False):
         #if the table does not exist, create it first.
         #if the table exists do nothing.
@@ -1122,17 +1163,14 @@ class mybase:
             #add onto previous vals on DB or the last synced vals
             #the values are from the the get it...
             #and if the result provided values they should be set here and included in this.
-            #(GETTING THE VALUES FROM THE DB RESULTS IS NOT DONE YET 5-9-2025 3 AM MST...!)
-            #?
             mdict = self.genSimpleValsDict(mycols=None);
-            #no idea on the other values????
-            #?
             print(f"mdict = {mdict}");
             self.setLastSyncedValsDict(mdict);
 
         #may want to run a backup of the NEW DATA ON THE DB here
         if (runbkaftr): type(self).backupDB();
 
+        print("\nDONE WITH THE SAVE() NOW!\n");
         #raise ValueError("NOT DONE YET 4-30-2025 9:33 PM MST!");
 
 

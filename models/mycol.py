@@ -269,7 +269,7 @@ class mycol:
     def getMyClassRefFromString(cls, nmstr):
         #print(f"nmstr = {nmstr}");
         myvalidator.varmustnotbeempty(nmstr, "nmstr");
-        for mycls in cls.getMyClassRefsMain():
+        for mycls in cls.getMyClassRefsMain(False):
             #print(f"mycls = {mycls}");
             #print(f"mycls.__name__ = {mycls.__name__}");
             if (mycls.__name__ == nmstr): return mycls;
@@ -326,6 +326,7 @@ class mycol:
         #table level only, but in that case you do not want the isunique to be true on the
         #single column if it is not guranteed to be unique
 
+        self.setIsInitialized(False);
         self.setForeignClass(foreignClass);
         self.setForeignColNames(foreignColNames);
         self.setIsForeignKey(isforeignkey);
@@ -347,6 +348,7 @@ class mycol:
         #self._value = value;
         self.setDefaultValue(defaultvalue);
         self.setConstraints(constraints);
+        self.setIsInitialized(True);
         print("DONE WITH MYCOL CONSTRUCTOR!");
     
     @classmethod
@@ -401,6 +403,13 @@ class mycol:
     #context should not be relied on and these methods are strongly subjective to it.
     #the context is set in the mybase constructor, but it can be overridden by the user.
     #because the cols are class attributes, one cannot assume the context is correct.
+
+    def getIsInitialized(self): return self.__isinitialized;
+    def setIsInitialized(self, mval):
+        myvalidator.varmustbeboolean(mval, "mval");
+        self.__isinitialized = mval;
+    
+    _isinitialialized = property(getIsInitialized, setIsInitialized);
 
     def getContext(self): return self._context;
     def getContainer(self): return self.getContext();
@@ -799,8 +808,8 @@ class mycol:
             #then check to see if they are the same
             pkycolnames = myclsref.getMyColNames(pkycols);
             mrefallconstraints = myclsref.getAllTableConstraints();
-            print(f"pkycolnames = {pkycolnames}");
-            print(f"mrefallconstraints = {mrefallconstraints}");
+            #print(f"pkycolnames = {pkycolnames}");
+            #print(f"mrefallconstraints = {mrefallconstraints}");
             
             isvalid = False;
             if (myvalidator.isvaremptyornull(mrefallconstraints)): isvalid = False;
@@ -815,13 +824,13 @@ class mycol:
                 for mcond in mrefallconstraints:
                     if ("UNIQUE(" in mcond):
                         mcolstrincond = mcond[mcond.index("UNIQUE(") + 7: mcond.index(")")]; 
-                        print(f"mcolstrincond = {mcolstrincond}");
+                        #print(f"mcolstrincond = {mcolstrincond}");
                         
                         tempcolsarr = mcolstrincond.split(", ");
-                        print(f"tempcolsarr = {tempcolsarr}");
+                        #print(f"tempcolsarr = {tempcolsarr}");
 
                         if (myvalidator.areTwoListsTheSame(tempcolsarr, pkycolnames)):
-                            print("match found so valid!");
+                            #print("match found so valid!");
                             isvalid = True;
                             break;
             if isvalid: pass;
@@ -854,7 +863,7 @@ class mycol:
         #else: raise ValueError("val must be a class not an object!");
         self._foreignClass = val;
         from mybase import mybase;
-        mybase.updateAllForeignKeyObjectsForAllClasses();
+        mybase.updateAllForeignKeyObjectsForAllClasses(not self.getIsInitialized());
 
     foreignClass = property(getForeignClass, setForeignClass);
 
@@ -890,7 +899,7 @@ class mycol:
             myvalidator.listMustContainUniqueValuesOnly(val);
             self._foreignColNames = val;
         from mybase import mybase;
-        mybase.updateAllForeignKeyObjectsForAllClasses();
+        mybase.updateAllForeignKeyObjectsForAllClasses(not self.getIsInitialized());
 
     foreignColNames = property(getForeignColNames, setForeignColNames);
 
@@ -911,7 +920,7 @@ class mycol:
             else: self.setForeignColNames(None);
         self._isforeignkey = val;
         from mybase import mybase;
-        mybase.updateAllForeignKeyObjectsForAllClasses();
+        mybase.updateAllForeignKeyObjectsForAllClasses(not self.getIsInitialized());
 
     isforeignkey = property(getIsForeignKey, setIsForeignKey);
 
@@ -937,18 +946,18 @@ class mycol:
                 myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
                 return self.genForeignKeyDataObjectInfo(cntxt);
 
-        print("\nGET FOREIGN KEY DATA OBJECT METHOD NOW:");
-        print(f"self.isforeignkey = {self.isforeignkey}");
-        print(f"self.foreignColNames = {self.foreignColNames}");
-        print(f"self.foreignClass = {self.foreignClass}");
+        #print("\nGET FOREIGN KEY DATA OBJECT METHOD NOW:");
+        #print(f"self.isforeignkey = {self.isforeignkey}");
+        #print(f"self.foreignColNames = {self.foreignColNames}");
+        #print(f"self.foreignClass = {self.foreignClass}");
 
         if (self.isforeignkey):
             if (self.foreignClass == None or myvalidator.isvaremptyornull(self.foreignColNames)):
                 raise ValueError("the foreign key needs a reference class and a column name!");
             else:
-                print("self is the column object.");
-                print("the calling object is fcobj which is the class instance that has the column!");
-                print(f"fcobj = {fcobj}");
+                #print("self is the column object.");
+                #print("the calling object is fcobj which is the class instance that has the column!");
+                #print(f"fcobj = {fcobj}");
 
                 #check to see if the foreign key values on the column exist on the foreign key class
                 
@@ -958,29 +967,30 @@ class mycol:
                 if (usenoclassobj): pass;
                 else: myvalidator.varmustnotbenull(fcobj, "fcobj");
                 myclsref = mycol.getMyClassRefFromString(self.foreignClass);
-                print(f"myclsref = {myclsref}");
+                #print(f"myclsref = {myclsref}");
 
                 myfcols = myclsref.getMyCols();
                 myfccolnames = myclsref.getMyColNames(myfcols);
                 myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
                 #names referenced by the foreign key
-                print(f"self.foreignColNames = {self.foreignColNames}");
-                print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
+                #print(f"self.foreignColNames = {self.foreignColNames}");
+                #print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
                 
                 myvalidator.listMustContainUniqueValuesOnly(self.foreignColNames,
                                                             "self.foreignColNames");
 
                 mycolis = [myfccolnames.index(mclnm) for mclnm in self.foreignColNames];
-                print(f"mycolis = {mycolis}");
+                #print(f"mycolis = {mycolis}");
 
                 #now get that column object and check to see if the isunique is set to true?
                 #OR is primary key and the only primary key on that table?
                 mcolobjs = [myfcols[mycoli] for mycoli in mycolis];
-                print(f"mcolobjs = {mcolobjs}");
+                #print(f"mcolobjs = {mcolobjs}");
                 
                 return {"initcolobj": self, "initclassobj": fcobj, "fclassref": myclsref,
                         "myfcols": myfcols, "myfccolnames": myfccolnames, "mycolis": mycolis,
                         "mcolobjs": mcolobjs};
+        print(self);
         raise ValueError("the col must be a foreign key, but it was not!");
 
     
@@ -1007,19 +1017,20 @@ class mycol:
             myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
             return self.doesOrGetObjectThatHasTheForeignKeyValues(useget, cntxt);
 
-        print("BEGIN FOREIGN KEY DATA VALIDATION METHOD NOW:");
-        print(f"self.isforeignkey = {self.isforeignkey}");
-        print(f"self.foreignColNames = {self.foreignColNames}");
-        print(f"self.foreignClass = {self.foreignClass}");
-        print(f"self.getColName() = {self.getColName()}");
+        #print("BEGIN FOREIGN KEY DATA VALIDATION METHOD NOW:");
+        #print(f"self.isforeignkey = {self.isforeignkey}");
+        #print(f"self.foreignColNames = {self.foreignColNames}");
+        #print(f"self.foreignClass = {self.foreignClass}");
+        #print(f"self.getColName() = {self.getColName()}");
 
         if (self.isforeignkey):
             if (self.foreignClass == None or myvalidator.isvaremptyornull(self.foreignColNames)):
+                print(self);
                 raise ValueError("the foreign key needs a reference class and a column name!");
             else:
-                print("self is the column object.");
-                print("the calling object is fcobj which is the class instance that has the column!");
-                print(f"fcobj = {fcobj}");
+                #print("self is the column object.");
+                #print("the calling object is fcobj which is the class instance that has the column!");
+                #print(f"fcobj = {fcobj}");
 
                 #check to see if the foreign key values on the column exist on the foreign key class
                 
@@ -1027,9 +1038,7 @@ class mycol:
                 #fcobj is the calling object that contains that column (so this is the real self).
                 #foreign class is the string name of the foreign class.
                 myfcoldatainfoobj = self.genForeignKeyDataObjectInfo(fcobj);
-                print();
-                print(f"myfcoldatainfoobj = {myfcoldatainfoobj}");
-                print();
+                #print(f"\nmyfcoldatainfoobj = {myfcoldatainfoobj}\n");
 
                 myclsref = myfcoldatainfoobj["fclassref"];
                 myfcols = myfcoldatainfoobj["myfcols"];
@@ -1039,17 +1048,17 @@ class mycol:
                 myvalidator.varmustnotbenull(fcobj, "fcobj");
                 myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
                 #names referenced by the foreign key
-                print(f"self.foreignColNames = {self.foreignColNames}");
-                print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
+                #print(f"self.foreignColNames = {self.foreignColNames}");
+                #print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
                 
                 myvalidator.listMustContainUniqueValuesOnly(self.foreignColNames,
                                                             "self.foreignColNames");
 
-                print(f"mycolis = {mycolis}");
+                #print(f"mycolis = {mycolis}");
 
                 #now get that column object and check to see if the isunique is set to true?
                 #OR is primary key and the only primary key on that table?
-                print(f"mcolobjs = {mcolobjs}");
+                #print(f"mcolobjs = {mcolobjs}");
 
                 #need to get the values of each column from an object from
                 #the list of objects for that class
@@ -1059,33 +1068,38 @@ class mycol:
                 #to this foreign class.
                 #
                 valfcrefcol = fcobj.getValueForColName(self.getColName());
-                print(f"colname = {self.getColName()}");
-                print(f"valfcrefcol = {valfcrefcol}");
+                #print(f"colname = {self.getColName()}");
+                #print(f"valfcrefcol = {valfcrefcol}");
                 #val is either a list or a number
                 
                 for mobj in myclsref.all:
-                    print(f"mobj = {mobj}");
+                    #print(f"mobj = {mobj}");
 
                     clvals = [mobj.getValueForColName(mc.getColName()) for mc in mcolobjs];
-                    print(f"clvals = {clvals}");
+                    #print(f"clvals = {clvals}");
 
                     ismatch = True;
                     for n in range(len(mcolobjs)):
                         mc = mcolobjs[n];
-                        print(f"colnm = {mc.getColName()}");
-                        print(f"clval = {clvals[n]}");
+                        #print(f"colnm = {mc.getColName()}");
+                        #print(f"clval = {clvals[n]}");
 
                         if (mc.getColName() == self.foreignColNames[n]): pass;
-                        else: raise ValueError("the column names must match, but they did not!");
+                        else:
+                            print(f"self = {self}");
+                            print(f"mc = {mc}");
+                            print(f"mc.getColName() = {mc.getColName()}");
+                            print(f"self.foreignColNames[{n}] = {self.foreignColNames[n]}");
+                            raise ValueError("the column names must match, but they did not!");
 
                         ismatch = ((type(valfcrefcol) == list and (valfcrefcol[n] == clvals[n])) or
                                    ((not (type(valfcrefcol) == list)) and (valfcrefcol == clvals[n])));
                         if (ismatch): pass;
                         else:
-                            print("not a match!");
+                            #print("not a match!");
                             #ismatch = False;
                             break;
-                    print(f"ismatch = {ismatch}");
+                    #print(f"ismatch = {ismatch}");
                     
                     if (ismatch): return (mobj if (useget) else True);
         return (None if (useget) else False);
@@ -1122,13 +1136,16 @@ class mycol:
                 return self.foreignKeyInformationMustBeValid(fcobj=cntxt);
         
         #has is foreign key
-        print("\nBEGIN FOREIGN KEY VALIDATION METHOD NOW:");
-        print(f"self.isforeignkey = {self.isforeignkey}");
-        print(f"self.foreignColNames = {self.foreignColNames}");
-        print(f"self.foreignClass = {self.foreignClass}");
+        #print("\nBEGIN FOREIGN KEY VALIDATION METHOD NOW:");
+        #print(f"self.isforeignkey = {self.isforeignkey}");
+        #print(f"self.foreignColNames = {self.foreignColNames}");
+        #print(f"self.foreignClass = {self.foreignClass}");
         
         if (self.isforeignkey):
             if (self.foreignClass == None or myvalidator.isvaremptyornull(self.foreignColNames)):
+                print(f"self = {self}");
+                print(f"self.foreignClass = {self.foreignClass}");
+                print(f"self.foreignColNames = {self.foreignColNames}");
                 raise ValueError("the foreign key needs a reference class and a column name!");
             else:
                 #now make sure the column name is on the class as one
@@ -1138,15 +1155,13 @@ class mycol:
                 #self is the column object
                 #fcobj is the calling object that contains that column (so this is the real self).
                 #foreign class is the string name of the foreign class.
-                print("self is the column object.");
-                print("the calling object is fcobj which is the class instance that has the column!");
-                print(f"fcobj = {fcobj}");
+                #print("self is the column object.");
+                #print("the calling object is fcobj which is the class instance that has the column!");
+                #print(f"fcobj = {fcobj}");
                 
                 myfcoldatainfoobj = self.genForeignKeyDataObjectInfo(fcobj=fcobj,
                                                                      usenoclassobj=usenoclassobj);
-                print();
-                print(f"myfcoldatainfoobj = {myfcoldatainfoobj}");
-                print();
+                #print(f"\nmyfcoldatainfoobj = {myfcoldatainfoobj}\n");
 
                 myclsref = myfcoldatainfoobj["fclassref"];
                 myfcols = myfcoldatainfoobj["myfcols"];
@@ -1157,36 +1172,36 @@ class mycol:
                 else: myvalidator.varmustnotbenull(fcobj, "fcobj");
                 myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
                 #names referenced by the foreign key
-                print(f"self.foreignColNames = {self.foreignColNames}");
-                print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
+                #print(f"self.foreignColNames = {self.foreignColNames}");
+                #print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
                 
                 myvalidator.listMustContainUniqueValuesOnly(self.foreignColNames,
                                                             "self.foreignColNames");
 
-                print(f"mycolis = {mycolis}");
+                #print(f"mycolis = {mycolis}");
 
                 #now get that column object and check to see if the isunique is set to true?
                 #OR is primary key and the only primary key on that table?
-                print(f"mcolobjs = {mcolobjs}");
+                #print(f"mcolobjs = {mcolobjs}");
 
                 myfcdtps = [mc.getDataType() for mc in mcolobjs];
-                for mc in mcolobjs:
-                    print(f"mc = {mc}");
-                    print(f"mc.isunique = {mc.isunique}");
-                print(f"myfcols = {myfcols}");
+                #for mc in mcolobjs:
+                #    print(f"mc = {mc}");
+                #    print(f"mc.isunique = {mc.isunique}");
+                #print(f"myfcols = {myfcols}");
 
                 pkycols = myclsref.getMyPrimaryKeyCols(myfcols);
-                print(f"len(pkycols) = {len(pkycols)}");
+                #print(f"len(pkycols) = {len(pkycols)}");
 
                 #if is a multi-column foreign key, then multi-values and multiple types...
                 #we need to make sure that the foreign key column data types match here
                 #the data type value might be an array for multi-column data types
                 #the data type might be a string for single types or an array.
                 
-                print(f"self.datatype = {self.datatype}");
-                print(f"myfcdtps = {myfcdtps}");
-                print(type(myfcdtps));
-                print(type(self.datatype));
+                #print(f"self.datatype = {self.datatype}");
+                #print(f"myfcdtps = {myfcdtps}");
+                #print(type(myfcdtps));
+                #print(type(self.datatype));
 
                 if (1 < len(self.foreignColNames)):
                     myvalidator.varmustbethetypeonly(self.datatype, list, "self.datatype");
@@ -1196,30 +1211,43 @@ class mycol:
                         for i in range(len(self.foreignColNames)):
                             nm = self.foreignColNames[i];
                             dtp = self.datatype[i];
-                            print(f"nm = {nm}");
-                            print(f"dtp = {dtp}");
-                            print(f"mc.getColName() = {mc.getColName()}");
-                            print(f"mc.getDataType() = {mc.getDataType()}");
+                            #print(f"nm = {nm}");
+                            #print(f"dtp = {dtp}");
+                            #print(f"mc.getColName() = {mc.getColName()}");
+                            #print(f"mc.getDataType() = {mc.getDataType()}");
 
                             if (nm == mc.getColName()):
                                 if (dtp == mc.getDataType()):
                                     fndmatch = True;
                                     break;
                                 else:
+                                    print(f"mc = {mc}");
+                                    print(f"self = {self}");
+                                    print(f"nm = {nm}");
+                                    print(f"mc.getColName() = {mc.getColName()}");
+                                    print(f"dtp = {dtp}");
+                                    print(f"mc.getDataType() = {mc.getDataType()}");
                                     raise ValueError("the column names were the same, but the " +
                                                      "data types did not match for the foreign key!");
                         if (fndmatch): pass;
                         else:
+                            print(f"mc = {mc}");
+                            print(f"self = {self}");
                             raise ValueError("one of the column names were not found for the " +
                                              "foreign key!");
                 else:
                     if (self.datatype == myfcdtps[0]): pass;
-                    else: raise ValueError("the foreign key col data types must match!");
+                    else:
+                        print(f"self = {self}");
+                        print(f"mcolobjs = {mcolobjs}");
+                        print(f"self.datatype = {self.datatype}");
+                        print(f"myfcdtps[0] = {myfcdtps[0]}");
+                        raise ValueError("the foreign key col data types must match!");
 
                 
                 if (len(pkycols) < 1):
                     raise ValueError("each table must have at least one primary key, but the class(" +
-                                     myclsref.__name__ + ") did not!");
+                                     myclsref.__name__ + ") did not have one at all!");
                 else:
                     #if there is one column on the foreign key colnames, then if it is unique OR
                     #is the primary key, then it is valid
@@ -1228,8 +1256,8 @@ class mycol:
                     #-be inside of a UNIQUE constraint with those exact colnames no more no less.
                     #otherwise it is invalid.
                     pkycolnames = myclsref.getMyColNames(pkycols);
-                    print(f"pkycolnames = {pkycolnames}");
-                    print(f"self.foreignColNames = {self.foreignColNames}");
+                    #print(f"pkycolnames = {pkycolnames}");
+                    #print(f"self.foreignColNames = {self.foreignColNames}");
 
                     myvalidator.listMustContainUniqueValuesOnly(pkycolnames, "pkycolnames");
                     isvalid = False;
@@ -1251,7 +1279,7 @@ class mycol:
                             #get the colnames from inside of the unique constraint...
                             #then check to see if they are the same
                             mrefallconstraints = myclsref.getAllTableConstraints();
-                            print(f"mrefallconstraints = {mrefallconstraints}");
+                            #print(f"mrefallconstraints = {mrefallconstraints}");
 
                             if (myvalidator.isvaremptyornull(mrefallconstraints)): isvalid = False;
                             else:
@@ -1266,14 +1294,14 @@ class mycol:
                                     if ("UNIQUE(" in mcond):
                                         mcolstrincond = mcond[mcond.index("UNIQUE(") + 7:
                                                                         mcond.index(")")]; 
-                                        print(f"mcolstrincond = {mcolstrincond}");
+                                        #print(f"mcolstrincond = {mcolstrincond}");
                                         
                                         tempcolsarr = mcolstrincond.split(", ");
-                                        print(f"tempcolsarr = {tempcolsarr}");
+                                        #print(f"tempcolsarr = {tempcolsarr}");
 
                                         if (myvalidator.areTwoListsTheSame(tempcolsarr,
                                                                            self.foreignColNames)):
-                                            print("match found so valid!");
+                                            #print("match found so valid!");
                                             isvalid = True;
                                             break;
                     if isvalid: pass;
@@ -1283,7 +1311,7 @@ class mycol:
             else: self.setForeignClass(None);
             if (myvalidator.isvaremptyornull(self.foreignColNames)): pass;
             else: self.setForeignColNames(None);
-        print("DONE WITH FOREIGN KEY VALIDATION METHOD NOW!");
+        #print("DONE WITH FOREIGN KEY VALIDATION METHOD NOW!");
         return True;
 
     #can call in init
