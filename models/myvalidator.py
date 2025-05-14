@@ -422,6 +422,13 @@ class myvalidator:
             mystr += str(n % modval);
         return mystr;
 
+    @classmethod
+    def genListOfSameVals(cls, numvals, val): return [val for n in range(numvals)];
+    @classmethod
+    def genListOfBoolVals(cls, numbools, boolval):
+        myvalidator.varmustbeboolean(boolval, "boolval");
+        return cls.genListOfSameVals(numbools, boolval);
+    
 
     #convenience methods since the validators list (and all of these methods) reside in the mycol class
 
@@ -583,6 +590,15 @@ class myvalidator:
             #but we are pretty confident that it is in the correct format
             #?;
             return True;
+
+    @classmethod
+    def getNameFromConstraint(cls, cnst):
+        if (myvalidator.isConstraintValid(cnst)): pass;
+        else: raise ValueError("constraint (" + cnst + ") was not valid!");
+        nmstr = cnst[11:];
+        finnmstr = nmstr[0: nmstr.index(" ")];
+        return finnmstr;
+
 
     @classmethod
     def genSQLConstraint(cls, consnm, constpnm, val):
@@ -765,10 +781,24 @@ class myvalidator:
                 mystr += ((" ASC" if sorder[n] else " DESC") if incval else "");
                 if (n + 1 < len(colnames)): mystr += ", ";
             return basestr + mystr;
-    @classmethod
-    def genSortOrderByAscVal(cls, numcols, boolval): return [boolval for n in range(numcols)];
-
     
+    #ascending or descending all bool vals list of the same bool val
+    @classmethod
+    def genSortOrderByAscVal(cls, numcols, boolval): return cls.genListOfBoolVals(numcols, boolval);
+    
+    #this convenience method combines the two methods needed for order by more or less.
+    #
+    #takes in the col names, but only one bool val will be used for the direction and one table name
+    #however, if the SELECT statement this is attached to has multiple table names,
+    #we need to include the single table name on the order by part.
+    #if not, we mays still want to include the single table name. That is why the boolean is required.
+    @classmethod
+    def genOrderByOneTableOneVal(cls, colnames, tname, sinctname, boolval):
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, "tname");
+        sorder = cls.genSortOrderByAscVal(len(colnames), boolval);
+        return cls.genOrderBy(colnames, [tname], sinctname, sorder=sorder);
+    
+
     #create table methods here
 
     #NOT DONE YET WITH ALL OF THESE 4-30-2025 9:30 PM MST
@@ -975,20 +1005,47 @@ class myvalidator:
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, "tname");
         return "DROP TABLE " + ("IF EXISTS " if (onlyifnot) else "") + tname + ";";
 
-    #possible bug found here 5-13-2025 4:09 AM MST
-    #NOT SURE IF IT IS LEGAL TO ADD IF EXISTS TO THE QUERY
-    #NOT SURE IF TRUCATE TABLE IF EXISTS tname; IS LEGAL OR NOT.
-    #THERE IS NO EASY WAY TO TEST THIS BECAUSE SQLITE DOES NOT SUPPORT TRUNCATION.
+    #IF EXISTS IS NOT SUPPORTED ON THE TRUNCATE NOR IS IT SUPPORTED ON THE DELETE COMMANDS
     @classmethod
     def genSQLTruncateTable(cls, tname):
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, "tname");
         return "TRUNCATE TABLE " + tname + ";";
+
+    @classmethod
+    def genSQLDeleteNoWhere(cls, mtname):
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, "mtname");
+        return "DELETE FROM " + mtname;
+    @classmethod
+    def genSQLClearTable(cls, mtname): return cls.genSQLDeleteNoWhere(mtname);
+    
+    @classmethod
+    def genSQLDelete(cls, mtname, colnms):
+        myretstr = myvalidator.genSQLDeleteNoWhere(mtname) + " WHERE ";
+        return myretstr + myvalidator.genColNameEqualsValString(colnms, nvals=None);
     
 
     #NOT TESTED WELL YET AND NOT NECESSARILY DONE YET 5-8-2025 3:50 AM MST...
 
     #possible bug found 5-8-2025 3:50 AM MST in the UPDATE and INSERT INTO command methods:
     #the values if they are strings must include quotes of some kind, but probably will not...
+
+    @classmethod
+    def genColNameEqualsValOrQuestionString(cls, colnames, inccolnms, nvals=None):
+        myvalidator.varmustbeboolean(inccolnms, "inccolnms");
+        incnvals = (not myvalidator.isvaremptyornull(nvals));
+        if (incnvals): myvalidator.twoListsMustBeTheSameSize(colnames, nvals, "colnames", "nvals");
+        mstr = "";
+        for n in range(len(colnames)):
+            mstr += "" + (colnames[n] + " = " if (inccolnms) else "");
+            mstr += (nvals[n] if (incnvals) else "?");
+            if (n + 1 < len(colnames)): mstr += ", ";
+        return mstr;
+    @classmethod
+    def genColNameEqualsValString(cls, colnames, nvals=None):
+        return cls.genColNameEqualsValOrQuestionString(colnames, True, nvals=nvals);
+    @classmethod
+    def genQuestionString(cls, colnames):
+        return cls.genColNameEqualsValOrQuestionString(colnames, False, nvals=None);
 
     @classmethod
     def genSQLInsertInto(cls, mtname, colnames, vals=None):
@@ -998,25 +1055,12 @@ class myvalidator:
         #however, the values must correspond with the colnames...
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, "mtname");
         mstr = "";
-        if (myvalidator.isvaremptyornull(vals)):
-            for n in range(len(colnames)):
-                mstr += "?";
-                if (n + 1 < len(colnames)): mstr += ", ";
+        if (myvalidator.isvaremptyornull(vals)): mstr = cls.genQuestionString(colnames);
         else: mstr = (", ".join(vals));
         return "INSERT INTO " + mtname + "(" + (", ".join(colnames)) + ") VALUES (" + mstr + ");";
     @classmethod
     def genSQLInsertIntoFromClsRef(cls, myclsref, vals=None):
         return cls.genSQLInsertInto(myclsref.getTableName(), myclsref.getMyColNames(), vals);
-
-    @classmethod
-    def genColNameEqualsValString(cls, colnames, nvals=None):
-        incnvals = (not myvalidator.isvaremptyornull(nvals));
-        if (incnvals): myvalidator.twoListsMustBeTheSameSize(colnames, nvals, "colnames", "nvals");
-        mstr = "";
-        for n in range(len(colnames)):
-            mstr += "" + colnames[n] + " = " + (nvals[n] if (incnvals) else "?");
-            if (n + 1 < len(colnames)): mstr += ", ";
-        return mstr;
 
     @classmethod
     def genSQLUpdate(cls, mtname, colnames, wrval, nvals=None):

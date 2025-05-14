@@ -468,7 +468,7 @@ class mycol:
         self._constraints = mlist;
     
     
-    #NEED TO ADD A REMOVE CONSTRAINT METHOD
+    #NEED TO ADD A REMOVE CONSTRAINT METHOD problem found 5-6-2025 9:57 PM MST
     #BUT THESE METHODS ARE ALSO SOMEWHAT DEPENDENT ON IF THE TABLE EXISTS IN THE DB.
     #-if we go via class name stored on the mycol object (first we need to store it),
     #second we need to be aware that there might be a timing issue
@@ -480,6 +480,10 @@ class mycol:
     #NOT DONE YET 5-6-2025 9:57 PM MST
 
     def addOrRemoveConstraint(self, mval, useadd, isinctable=False):
+        print(f"mval = {mval}");
+        print(f"useadd = {useadd}");
+        print(f"isinctable = {isinctable}");
+
         myvalidator.varmustbeboolean(useadd, "useadd");
         if (myvalidator.isvaremptyornull(mval)): pass;
         else:
@@ -489,6 +493,9 @@ class mycol:
             #exit if no work needs to be done
             mlist = self.getConstraints();
             isonlist = (False if (myvalidator.isvaremptyornull(mlist)) else (mval in mlist));
+            print(f"mlist = {mlist}");
+            print(f"isonlist = {isonlist}");
+
             if (useadd == isonlist):
                 #no work is true;
                 if (useadd): pass;
@@ -511,7 +518,9 @@ class mycol:
                 if (mycntxt == None): usecntxt = False;
             if (usecntxt): myclsref = mycntxt.__class__;
             else: myclsref = mycol.getMyClassRefFromString(self.getContainingClassNameFromSelf());
-            if (not isinctable and myclsref.tableExists()):
+            #print(((not isinctable) and myclsref.tableExists()));
+
+            if ((not isinctable) and myclsref.tableExists()):
                 #if it is not on our list and not called from createTable,
                 #then we assume it is not on the DB.
                 #if (useadd):
@@ -559,9 +568,19 @@ class mycol:
         self.addOrRemoveConstraint(mval, True, isinctable=isinctable);
     def addAConstraint(self, mval, isinctable=False): self.addConstraint(mval, isinctable=isinctable);
     def removeConstraint(self, mval, isinctable=False):
-        self.addOrRemoveConstraint(mval, False, isinctable=False);
+        self.addOrRemoveConstraint(mval, False, isinctable=isinctable);
     def removeAConstraint(self, mval, isinctable=False):
         self.removeConstraint(mval, isinctable=isinctable);
+    
+    def getConstraintByName(self, mcnstnm):
+        mcnstsbynm = [cnst for cnst in self.getConstraints()
+                      if myvalidator.getNameFromConstraint(cnst) == mcnstnm];
+        return (None if (myvalidator.isvaremptyornull(mcnstsbynm)) else mcnstsbynm[0]);
+
+    def removeAConstraintByName(self, mcnstnm, isinctable=False):
+        self.removeAConstraint(self.getConstraintByName(mcnstnm), isinctable=isinctable);
+    def removeConstraintByName(self, mcnstnm, isinctable=False):
+        self.removeAConstraintByName(mcnstnm, isinctable=isinctable);
 
     constraints = property(getConstraints, setConstraints);
 
@@ -571,7 +590,7 @@ class mycol:
 
     def getDataType(self): return self._datatype;
 
-    #the problem with these two setters are they depend on the SQL variant
+    #the problem with these four setters are they depend on the SQL variant
     #they need some way inside this class to get the variant by calling a getter.
     #the variant may need to be passed in to the col
     #but the calling class should provide a way to get it?
@@ -585,7 +604,7 @@ class mycol:
         #if the list is empty or null, then assumed valid
         #if on the list, valid
         #if not on the list and list is not empty, then not valid.
-        varstr = SQLVARIANT;
+        varstr = "" + SQLVARIANT;
         mvtpslist = myvalidator.getSQLDataTypesInfo(varstr);
         mval = None;
         if (type(val) == list):
@@ -627,7 +646,7 @@ class mycol:
     #otherwise, we will error out if it does not match the required value
     #somehow get the tpobj from the type.
     def setIsSigned(self, val):
-        varstr = SQLVARIANT;
+        varstr = "" + SQLVARIANT;
         errmsg = "invalid value set for signed the type has a default and it is the opposite of this!";
         if (type(self.getDataType()) == list):
             if (val == None): self._issigned = False;
@@ -654,7 +673,7 @@ class mycol:
     #if isnonnull is set to None, then the default for the type will be used
     #else it must be true if the nonnull default is true, otherwise it can be either true or false
     def setIsNonNull(self, val):
-        varstr = SQLVARIANT;
+        varstr = "" + SQLVARIANT;
         errmsg = "invalid value set for nonnull the type has a default and it is the opposite of this!";
         if (type(self.getDataType()) == list):
             if (val == None): self._isnonnull = True;
@@ -681,7 +700,7 @@ class mycol:
         #if however the type is signed, and has two different ranges, then we will need to
         #pull the parameter value from the user.
         #myvalidator.isValueValidForDataType(tpnm, val, varstr, useunsigned, isnonnull);
-        varstr = SQLVARIANT;
+        varstr = "" + SQLVARIANT;
         valerrmsgptc = ") found and used here for the variant (" + varstr + ")!";
         if (val == None):
             if (type(self.getDataType()) == list): self._defaultvalue = None;

@@ -295,6 +295,64 @@ print("\nattempting to update the data now!\n");
 
 sa.save(runbkbfr=False, runbkaftr=False);
 
+#need to test saving values with strings missing quotes and with null values.
+#?;
+
+#check to see if there is a base class property access problem
+runbsclspropacsststs = False;
+if (runbsclspropacsststs):
+      print(f"sa last synced vals dict = {sa.getLastSyncedValsDict()}");#should be defined
+      print(f"sb last synced vals dict = {sb.getLastSyncedValsDict()}");#should not be defined
+      print(f"vcmpr last synced vals dict = {vcmpr.getLastSyncedValsDict()}");#should not be defined
+
+#need to sync the DB at the start...
+#?;
+
+#need to run a backup of data on the DB...
+#mybase.backupDB();
+
+#need to test deleting values or clearing entire DB tables...
+#myobj.deleteMyRowFromTable(self, onlyifnot=True, runbkbfr=False, runbkaftr=False);
+#mybasesubclass.deleteARowFromTable(colnms, colvals, onlyifnot=True, runbkbfr=False, runbkaftr=False);
+#mybasesubclass.clearTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
+#
+
+#still have a problem with multi-column and single column constraints adding or removing them
+#need a good test case, but as of yet do not have a great one 5-13-2025 9:11 PM MST
+#
+#remove the agecheck constraint from Camper
+#myvalidator.genSQLCheck("agecheck", "age >= 8 AND age <= 18")
+#
+#mybasesubclass.getMyColObjFromName(cls, mcnm, mycols=None);
+#
+#mycolobj.removeConstraint(self, mval, isinctable=False);
+#mycolobj.removeAConstraintByName(self, mcnstnm, isinctable=False);
+#mybasesubclass.removeAMultiColumnConstraintByName(cls, cnstnm);
+#
+runremsgcolcnsttst = True;
+if (runremsgcolcnsttst):
+      runtstnocmprtble = True;
+      if (runtstnocmprtble): pass;
+      else: Camper.createTable();#fails because not done yet
+      print("CAMPER CONSTRAINTS BEFORE:");
+      print(Camper.getMyColObjFromName("age", mycols=None).getConstraints());
+      Camper.getMyColObjFromName("age", mycols=None).removeAConstraintByName("agecheck",
+                                                                             isinctable=False);
+      print("CAMPER CONSTRAINTS AFTER:");
+      print(Camper.getMyColObjFromName("age", mycols=None).getConstraints());
+
+runremmulcolcnsttst = True;
+if (runremmulcolcnsttst):
+      #runtstnocmprtble = True;
+      #if (runtstnocmprtble): pass;
+      #else: Camper.createTable();#fails because not done yet
+      #print("CAMPER CONSTRAINTS BEFORE:");
+      #print(Camper.getMultiColumnConstraints());
+      #Camper.removeAMultiColumnConstraintByName(cnstnm);
+      #print("CAMPER CONSTRAINTS AFTER:");
+      #print(Camper.getMultiColumnConstraints());
+      pass;
+
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 print("IS VALUE IN RANGE OR STRING HAS AT MOST OR AT MIN AMOUNT OF CHARS TESTS:");
