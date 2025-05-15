@@ -968,7 +968,7 @@ class mybase:
             mdelcrowqry = type(self).genSQLDeleteFromRef(colnms=None);
             #pkeycola = ?, colb = ? ...
             #need to get the values for the primary key cols only.
-            mvals = self.genSimpleValsDict(mycols=mpkycols);
+            mvals = tuple(self.genValsListForColNames(type(self).getMyColNames(mpkycols)));
         
             print("\nbegin removing the row on " + tnmandclsnmstr + " from the DB now!");
             print(f"DELETE ROW mdelcrowqry = {mdelcrowqry}");
@@ -990,6 +990,62 @@ class mybase:
         myobj = cls.getObjectFromGivenKeysAndValues(cls.all, colnms, colvals);
         myvalidator.varmustnotbenull(myobj, "myobj");
         return myobj.deleteMyRowFromTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+
+
+    #despite implying that it would return it returns a list from the fetchall method on the DB.
+    #if the list is empty, you still get an empty list, but no item.
+    #otherwise the DB method throws an error.
+    #however the list will have either 1 or no items on it.
+    @classmethod
+    def getFirstOrLastItemOnTable(cls, usefirst):
+        pkycolnms = cls.getMyColNames(cls.getMyPrimaryKeyCols());
+        myselqry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
+        ordrbypt = myvalidator.genOrderByOneTableOneVal(pkycolnms, cls.getTableName(),
+                                                        False, usefirst);#singleinctname, boolval
+        #srdrvals = myvalidator.genSortOrderByAscVal(len(pkycolnms), False);
+        #ordrbypt = myvalidator.genOrderBy(pkycolnms, [cls.getTableName()], False, sorder=srdrvals);
+        limpt = myvalidator.genSQLimit(1, offset=0);
+        myfinselqry = myselqry + " " + ordrbypt + " " + limpt;
+        #print(srdrvals);
+        #print(f"myselqry = {myselqry}");
+        #print(f"ordrbypt = {ordrbypt}");
+        #print(f"limpt = {limpt}");
+        print(f"SELECT QUERY myfinselqry = {myfinselqry}");
+
+        myores = CURSOR.execute(myfinselqry).fetchall();
+        CONN.commit();
+        print("successfully got the item from the DB (stored in a list as the only item)!");
+        return myores;
+    @classmethod
+    def getFirstItemOnTable(cls): return cls.getFirstOrLastItemOnTable(True);
+    @classmethod
+    def getLastItemOnTable(cls): return cls.getFirstOrLastItemOnTable(False);
+
+    @classmethod
+    def getAllItemsOnTable(cls):
+        myselqry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
+        print(f"SELECT QUERY myselqry = {myselqry}");
+
+        myores = CURSOR.execute(myselqry).fetchall();
+        CONN.commit();
+        print("successfully got the items from the DB!");
+        return myores;
+
+    @classmethod
+    def printUniqueForeignKeyWarning(cls, pstack=True):
+        myfkycols = cls.getMyForeignKeyCols();
+        ufkycolnms = [fcol.getColName() for fcol in myfkycols if (fcol.getIsUnique())];
+        if (myvalidator.isvaremptyornull(ufkycolnms)): pass;
+        else:
+            print("WARNING: the following columns for the class " + cls.__name__ +
+                  f" have unique foreign keys: {ufkycolnms}");
+            print(mycol.getUniqueForeignKeyWarningMessage());
+            if (pstack):
+                traceback.print_stack();
+                print();
+            else:
+                print("NOTE: THE ABOVE WARNING MAY NOT BE RELATED TO THE ERROR! " +
+                      "CHECK THE TRACE BELOW:\n");
 
 
     #NOT DONE YET AND NOT WELL TESTED YET 5-8-2025 4:21 AM MST
@@ -1119,8 +1175,15 @@ class mybase:
             #print(f"oldpkyvalslist = {oldpkyvalslist}");
             print(f"mvals = {mvals}\n");
 
-            res = CURSOR.execute(upqry, mvals).fetchone();
-            CONN.commit();
+            res = None;
+            try:
+                res = CURSOR.execute(upqry, mvals).fetchone();#just if the update succeeded or not!
+                CONN.commit();
+            except Exception as ex:
+                print("----------------------------------------------------------------------------");
+                print("ERROR: UPDATE FAILED!\n");
+                type(self).printUniqueForeignKeyWarning(pstack=False);
+                raise ex;
             
             print("\ndata successfully updated on the DB!\n");
 
@@ -1155,30 +1218,21 @@ class mybase:
             mvals = self.genValsTupleForColNames(mcnms);
             print(f"mvals = {mvals}\n");
 
-            res = CURSOR.execute(nwvqry, mvals).fetchone();#just if the save succeeded or not!
-            CONN.commit();
+            res = None;
+            try:
+                res = CURSOR.execute(nwvqry, mvals).fetchone();#just if the save succeeded or not!
+                CONN.commit();
+            except Exception as ex:
+                print("----------------------------------------------------------------------------");
+                print("ERROR: SAVE FAILED!\n");
+                type(self).printUniqueForeignKeyWarning(pstack=False);
+                raise ex;
 
             print("\nthe new data was successfully added onto the DB!\n");
 
-            myselqry = myvalidator.genSelectAllOnlyOnTables([type(self).getTableName()],
-                                                            useseldistinct=False);
-            ordrbypt = myvalidator.genOrderByOneTableOneVal(pkycolnms, type(self).getTableName(),
-                                                            False, False);#singleinctname, boolval
-            #srdrvals = myvalidator.genSortOrderByAscVal(len(pkycolnms), False);
-            #ordrbypt = myvalidator.genOrderBy(pkycolnms, [type(self).getTableName()], False,
-            #                                  sorder=srdrvals);
-            limpt = myvalidator.genSQLimit(1, offset=0);
-            myfinselqry = myselqry + " " + ordrbypt + " " + limpt;
-            #print(srdrvals);
-            #print(f"myselqry = {myselqry}");
-            #print(f"ordrbypt = {ordrbypt}");
-            #print(f"limpt = {limpt}");
-            print(f"myfinselqry = {myfinselqry}");
-
-            myores = CURSOR.execute(myfinselqry).fetchall();
-            CONN.commit();
-
+            myores = type(self).getLastItemOnTable();
             print(f"myores = {myores}");
+
             #returns list of items in the order in which the colums were created in...
             #the list also has the order in which the items were created in
             #unless the query is different

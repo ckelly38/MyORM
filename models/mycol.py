@@ -12,6 +12,7 @@ class mycol:
     __ccconscntr__ = 0;
     __all_validators__ = None;
     __ransetup__= False;
+    __ufkyhandlermthd__ = "WARN";#can be ERROR, WARN, or DISABLED.
 
     #constraint counter methods
 
@@ -228,6 +229,43 @@ class mycol:
         myvalidator.varmustbeboolean(val);
         cls.__ransetup__ = val;
 
+    #warn the user about a unique foreign key problem
+    @classmethod
+    def getWarnUniqueFKey(cls): return cls.__ufkyhandlermthd__;
+    
+    @classmethod
+    def setWarnUniqueFKeyMethod(cls, val):
+        optslist = ["WARN", "ERROR", "DISABLED"];
+        if (val in optslist): cls.__ufkyhandlermthd__ = "" + val;
+        else:
+            raise ValueError("the handler method for unique foreign keys must be one of " + optslist +
+                             ", but it was not!");
+
+    @classmethod
+    def getUniqueForeignKeyWarningOrErrorMessage(cls, usewarn):
+        appwmsg = "\n\nThis will apply to all cols on this running instance of the program ";
+        appwmsg += "and may apply to all running instances on this machine.\n";
+
+        wmsg = "\nWARNING: Foreign Keys are not supposed to be unique, but they can be,\n";
+        wmsg += "but if they are unique when you have a table that refers to say ";
+        wmsg += "a unique person and an activity,\nthen the person's id may be repeated ";
+        wmsg += "if it is a foreign key!\nWhen you attempt to add this under these ";
+        wmsg += "settings, the unique constraint will fail!\n\nTo not see this warning either ";
+        wmsg += "set isForeignKey to be false, or set isUnique to be false, ";
+        wmsg += "or\ncall mycol.setWarnUniqueFKeyMethod('DISABLED') or 'ERROR' in your ";
+        wmsg += "models.py file or whereever you use the 'mycol' class first." + appwmsg;
+        
+        emsg = "foreign keys are not allowed to be unique!\nYou can ignore ";
+        emsg += "this error by setting mycol.setWarnUniqueFKeyMethod('DISABLED') ";
+        emsg += "or 'WARN'!" + appwmsg;
+        
+        return (wmsg if (usewarn) else emsg);
+    @classmethod
+    def getUniqueForeignKeyWarningMessage(cls):
+        return cls.getUniqueForeignKeyWarningOrErrorMessage(True);
+    @classmethod
+    def getUniqueForeignKeyErrorMessage(cls):
+        return cls.getUniqueForeignKeyWarningOrErrorMessage(False);
 
     #my class ref methods
 
@@ -761,6 +799,13 @@ class mycol:
 
     def setIsUnique(self, val):
         myvalidator.varmustbethetypeandornull(val, bool, True, "val");
+        if (self.getIsForeignKey() and val):
+            if (mycol.getWarnUniqueFKey() == "WARN"):
+                print(mycol.getUniqueForeignKeyWarningMessage());
+                traceback.print_stack();
+                print();
+            elif (mycol.getWarnUniqueFKey() == "ERROR"):
+                raise ValueError(mycol.getUniqueForeignKeyErrorMessage());
         self._isunique = val;
 
     isunique = property(getIsUnique, setIsUnique);

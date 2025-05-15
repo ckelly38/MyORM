@@ -284,6 +284,7 @@ print(f"tstwithusrpid = {tstwithusrpid}");
 
 sa.save(runbkbfr=False, runbkaftr=False);
 #vcmpr.save(runbkbfr=False, runbkaftr=False);
+sb.save(runbkbfr=False, runbkaftr=False);
 
 #sa = Signup(["id", "time", "camper_id", "activity_id"], [1, 8, 1, 2]);
 sa.setValueForColumn("id", 4);
@@ -312,10 +313,15 @@ if (runbsclspropacsststs):
 #mybase.backupDB();
 
 #need to test deleting values or clearing entire DB tables...
-#myobj.deleteMyRowFromTable(self, onlyifnot=True, runbkbfr=False, runbkaftr=False);
-#mybasesubclass.deleteARowFromTable(colnms, colvals, onlyifnot=True, runbkbfr=False, runbkaftr=False);
-#mybasesubclass.clearTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
-#
+rundeltests = True;
+if (rundeltests):
+      print(f"all items on the signups DB table are: {Signup.getAllItemsOnTable()}");
+      sa.deleteMyRowFromTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
+      #Signup.deleteARowFromTable(colnms, colvals, onlyifnot=True, runbkbfr=False, runbkaftr=False);
+      print(f"all items on the signups DB table are AFTER DELETING ONE: {Signup.getAllItemsOnTable()}");
+      Signup.clearTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
+      print("all items on the signups DB table are AFTER CLEARING THE TABLE: " +
+            f"{Signup.getAllItemsOnTable()}\n");
 
 #still have a problem with multi-column and single column constraints adding or removing them
 #need a good test case, but as of yet do not have a great one 5-13-2025 9:11 PM MST

@@ -3,6 +3,7 @@ from mybase import mycol;
 from mycol import myvalidator;
 from myrefcol import myrefcol;
 validates = mycol.validates;
+mycol.setWarnUniqueFKeyMethod('WARN');#user warning of a problem WARN, ERROR, or DISABLED.
 class MyTestColsClass(mybase):
     #def __init__(self):
         #print("INSIDE OF CONSTRUCTOR ON TEST CLASS A!");
@@ -16,7 +17,7 @@ class MyTestColsClass(mybase):
     #from testfile import MyOtherTestClass;
     myfkeyid = mycol(colname="myfkeyid", datatype="Integer",
                     defaultvalue=None, isprimarykey=False, isnonnull=True, issigned=False,
-                    isunique=True, autoincrements=False,
+                    isunique=False, autoincrements=False,
                     isforeignkey=True, foreignClass="MyOtherTestClass", foreignColNames=["mynewcol"],
                     foreignObjectName="myotstobj", constraints=None);# value=None,
     myothervar = 2;
@@ -39,7 +40,7 @@ class MyOtherTestClass(mybase):
                     isunique=True, autoincrements=True, constraints=None);# value=None,
     myfkeyid = mycol(colname="myfkeyid", datatype="Integer",
                     defaultvalue=None, isprimarykey=False, isnonnull=True, issigned=False,
-                    isunique=True, autoincrements=False,
+                    isunique=False, autoincrements=False,
                     isforeignkey=True, foreignClass="MyTestColsClass", foreignColNames=["mynewcol"],
                     foreignObjectName="mytstcolsobj", constraints=None);# value=None,
     mymulticolargs = None;
@@ -97,7 +98,7 @@ class MyModelWithCompForeignKey(mybase):
                     isunique=True, autoincrements=True, constraints=None);#value=None,
     mycompfkcolval = mycol(colname="mycompfkcolval", datatype=["Integer", "Integer"],
                     defaultvalue=None, isprimarykey=False, isnonnull=True,
-                    isunique=True, autoincrements=False, issigned=False,
+                    isunique=False, autoincrements=False, issigned=False,
                     isforeignkey=True, foreignClass="MyModelWithCompPrimaryKey",
                     foreignColNames=["mynewcola", "mynewcolb"],
                     foreignObjectName="mycomppkyobj", constraints=None);#, "mynewcolc"#, value=None,
@@ -305,11 +306,11 @@ class Signup(mybase):
     #activity_id = db.Column(db.Integer, db.ForeignKey("activities.id"));
     #
     camper_id = mycol(colname="camper_id", datatype="Integer", defaultvalue=None, isprimarykey=False,
-                      isnonnull=True, isunique=True, autoincrements=False, issigned=False,
+                      isnonnull=True, isunique=False, autoincrements=False, issigned=False,
                       isforeignkey=True, foreignClass="Camper", foreignColNames=["id"],
                       foreignObjectName="camper", constraints=None);
     activity_id = mycol(colname="activity_id", datatype="Integer", defaultvalue=None, isprimarykey=False,
-                        isnonnull=True, isunique=True, autoincrements=False, issigned=False,
+                        isnonnull=True, isunique=False, autoincrements=False, issigned=False,
                         isforeignkey=True, foreignClass="Activity", foreignColNames=["id"],
                         foreignObjectName="activity", constraints=None);
 
