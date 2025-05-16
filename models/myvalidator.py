@@ -1011,6 +1011,7 @@ class myvalidator:
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, "tname");
         return "TRUNCATE TABLE " + tname + ";";
 
+    #does not end with a semi-colon.
     @classmethod
     def genSQLDeleteNoWhere(cls, mtname):
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, "mtname");
@@ -1021,7 +1022,7 @@ class myvalidator:
     @classmethod
     def genSQLDelete(cls, mtname, colnms):
         myretstr = myvalidator.genSQLDeleteNoWhere(mtname) + " WHERE ";
-        return myretstr + myvalidator.genColNameEqualsValString(colnms, nvals=None);
+        return myretstr + myvalidator.genColNameEqualsValString(colnms, nvals=None) + ";";
     
 
     #NOT TESTED WELL YET AND NOT NECESSARILY DONE YET 5-8-2025 3:50 AM MST...

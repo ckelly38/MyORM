@@ -937,7 +937,7 @@ class mybase:
         if (cls.tableExists()):
             if (runbkbfr): cls.backupDB();
 
-            truncqry = cls.genSQLDeleteNoWhereFromRef();
+            truncqry = cls.genSQLDeleteNoWhereFromRef() + ";";
             print("\nbegin truncating the data on " + tnmandclsnmstr + " on the DB now!");
             print(f"TRUNCATE TABLE truncqry = {truncqry}");
 

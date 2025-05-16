@@ -302,8 +302,8 @@ sa.save(runbkbfr=False, runbkaftr=False);
 #check to see if there is a base class property access problem
 runbsclspropacsststs = False;
 if (runbsclspropacsststs):
-      print(f"sa last synced vals dict = {sa.getLastSyncedValsDict()}");#should be defined
-      print(f"sb last synced vals dict = {sb.getLastSyncedValsDict()}");#should not be defined
+      print(f"sa last synced vals dict = {sa.getLastSyncedValsDict()}");#defined if saved else not
+      print(f"sb last synced vals dict = {sb.getLastSyncedValsDict()}");
       print(f"vcmpr last synced vals dict = {vcmpr.getLastSyncedValsDict()}");#should not be defined
 
 #need to sync the DB at the start...
@@ -316,8 +316,9 @@ if (runbsclspropacsststs):
 rundeltests = True;
 if (rundeltests):
       print(f"all items on the signups DB table are: {Signup.getAllItemsOnTable()}");
-      sa.deleteMyRowFromTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
-      #Signup.deleteARowFromTable(colnms, colvals, onlyifnot=True, runbkbfr=False, runbkaftr=False);
+      #sa.deleteMyRowFromTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
+      Signup.deleteARowFromTable(Signup.getMyColNames(Signup.getMyPrimaryKeyCols()), [4],
+            onlyifnot=True, runbkbfr=False, runbkaftr=False);
       print(f"all items on the signups DB table are AFTER DELETING ONE: {Signup.getAllItemsOnTable()}");
       Signup.clearTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
       print("all items on the signups DB table are AFTER CLEARING THE TABLE: " +
