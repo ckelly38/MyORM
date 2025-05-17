@@ -841,25 +841,27 @@ class mybase:
         return True;
 
     @classmethod
-    def tableExists(cls):
+    def tableExists(cls, pqry=True):
         #some databases do not support the PRAGMA command.
         #in fact PRAGMA is only supported by SQL LITE. SQL has some other ways and it depends on the DB.
         #however, if the SELECT fails, that means that the table does not exist.
         #all databases and dialects of SQL support SELECT so, the SELECT command of SQL will be used.
+        myvalidator.varmustbeboolean(pqry, "pqry");
         qry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
         qry += " " + myvalidator.genSQLimit(1, offset=0);
-        print(f"\nTABLE EXISTS qry = {qry}\n");
+        if (pqry): print(f"\nTABLE EXISTS qry = {qry}\n");
         
         exists = True;
         try:
             res = CURSOR.execute(qry).fetchall();
             CONN.commit();
         except Exception as ex:
-            #print(f"\nTABLE EXISTS qry = {qry}\n");
+            #if (pqry): print(f"\nTABLE EXISTS qry = {qry}\n");
             #traceback.print_exc();
             exists = False;
         
-        print(f"\nTHE TABLE " + ("EXISTS" if (exists) else "DOES NOT EXIST") + " ON THE DB!\n");
+        if (pqry):
+            print(f"\nTHE TABLE " + ("EXISTS" if (exists) else "DOES NOT EXIST") + " ON THE DB!\n");
 
         return exists;
 
@@ -869,6 +871,76 @@ class mybase:
 
     @classmethod
     def backupDB(cls):
+        #the backup entails everything that is on the DB...
+        #may need a new location set...
+        #we want to create a list of the SQL commands run
+        #we want all of the data on the DB...
+        #we also need to know the sequence of the backups like a date and time stamp...
+        #
+        #maybe what triggered it? User, or adding, removeing or changing a constraint,
+        #or adding, deleting, or changing column names or other column properties,
+        #or saving, updating data, or deleting data (row or rows),
+        #or deleting, adding, or changing tables (like the name, constraints)
+        #
+        #USER, constraint, table, data
+        #
+        #what if there are multiple differences? like data, constraints, tables
+        #(in this case, it would have been triggered by the USER)
+        #adding and dropping contsraints after the table exists
+        #causes a problem for saving the data later on (needs backed up immediately).
+        #
+        #most changes you make are readily apparent execpt one: renaming of existing tables or cols.
+        #since the data only file will include the classname and the tablename,
+        #this will be apparent there that is unless you changed the class name too.
+        #
+        #if you did not change the class name, but changed the table name,
+        #you can tell in the file that you just changed the table name
+        #
+        #if you changed both the class name and the table name, among other changes,
+        #then it will look like an entirely different table (when comparing these, so be careful).
+        #
+        #we need to know where to save the different types of files.
+        #
+        #we need to make the following files:
+        #-a python script to execute
+        #-an SQL file of commands to execute
+        #-a data only file
+        #
+        #we need to select all from all tables that this program knows of...
+        mtblclses = [mclsref for mclsref in mycol.getMyClassRefsMain(ftchnw=False)
+                     if (issubclass(mclsref, mybase) and not (mclsref == mybase))];
+
+        mtexistsdata = [];
+        mdataforalltbls = [];
+        ctblstmnts = [];
+        for mclsref in mtblclses:
+            texists = mclsref.tableExists(pqry=False);
+            #run the select all query here...
+            if (texists):
+                mitemlist = mclsref.getAllItemsOnTable(pqry=False);
+                mdataforalltbls.append(mitemlist);
+                ctblqry = mclsref.genSQLCreateTableFromRef(varstr="" + SQLVARIANT, onlyifnot=False,
+                                                           isinctable=True);#the create table statement
+                ctblstmnts.append(ctblqry);
+                #print("all items on DB for class " + mclsref.__name__ + " are: ");
+                #print(f"all colnames are: {mclsref.getMyColNames()}");
+                #for item in mitemlist: print(item);
+            else:
+                mdataforalltbls.append([]);
+                ctblstmnts.append("");
+            mtexistsdata.append(texists);
+            #else not sure what to do if the table does not exist on the DB
+        
+        #print the data and other results here...
+        for n in range(len(mtblclses)):
+            mclsref = mtblclses[n];
+            print("class " + mclsref.__name__ + " " +
+                  ("EXISTS" if (mtexistsdata[n]) else "DOES NOT EXIST") + "\nand has colnames: " +
+                  f"{mclsref.getMyColNames()}\n and the create table statement is:\n");
+            print(f"{ctblstmnts[n]}\n\nand the data:");
+            if (myvalidator.isvaremptyornull(mdataforalltbls[n])): print("[]");
+            else:
+                for item in mdataforalltbls[n]: print(item);
         raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
     
     @classmethod
@@ -1022,13 +1094,14 @@ class mybase:
     def getLastItemOnTable(cls): return cls.getFirstOrLastItemOnTable(False);
 
     @classmethod
-    def getAllItemsOnTable(cls):
+    def getAllItemsOnTable(cls, pqry=True):
+        myvalidator.varmustbeboolean(pqry, "pqry");
         myselqry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
-        print(f"SELECT QUERY myselqry = {myselqry}");
+        if (pqry): print(f"SELECT QUERY myselqry = {myselqry}");
 
         myores = CURSOR.execute(myselqry).fetchall();
         CONN.commit();
-        print("successfully got the items from the DB!");
+        if (pqry): print("successfully got the items from the DB!");
         return myores;
 
     @classmethod

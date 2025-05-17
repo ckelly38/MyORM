@@ -307,10 +307,10 @@ if (runbsclspropacsststs):
       print(f"vcmpr last synced vals dict = {vcmpr.getLastSyncedValsDict()}");#should not be defined
 
 #need to sync the DB at the start...
-#?;
+#mybase.syncDB();
 
 #need to run a backup of data on the DB...
-#mybase.backupDB();
+mybase.backupDB();
 
 #need to test deleting values or clearing entire DB tables...
 rundeltests = True;
