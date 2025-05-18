@@ -1057,7 +1057,7 @@ class myvalidator:
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, "mtname");
         mstr = "";
         if (myvalidator.isvaremptyornull(vals)): mstr = cls.genQuestionString(colnames);
-        else: mstr = (", ".join(vals));
+        else: mstr = myvalidator.myjoin(", ", vals);
         return "INSERT INTO " + mtname + "(" + (", ".join(colnames)) + ") VALUES (" + mstr + ");";
     @classmethod
     def genSQLInsertIntoFromClsRef(cls, myclsref, vals=None):

@@ -865,8 +865,11 @@ class mybase:
 
         return exists;
 
-
+    @classmethod
+    def genSQLInsertIntoFromRef(cls, vals=None):
+        return myvalidator.genSQLInsertInto(cls.getTableName(), cls.getMyColNames(), vals);
     
+
     #NOT DONE YET MAYBE THIS SHOULD BE A CLASS METHOD 5-8-2025 12:04 AM MST
 
     @classmethod
@@ -932,15 +935,51 @@ class mybase:
             #else not sure what to do if the table does not exist on the DB
         
         #print the data and other results here...
+        datflines = [];
         for n in range(len(mtblclses)):
             mclsref = mtblclses[n];
-            print("class " + mclsref.__name__ + " " +
-                  ("EXISTS" if (mtexistsdata[n]) else "DOES NOT EXIST") + "\nand has colnames: " +
-                  f"{mclsref.getMyColNames()}\n and the create table statement is:\n");
-            print(f"{ctblstmnts[n]}\n\nand the data:");
+            clsexiststr = "class " + mclsref.__name__ + " ";
+            clsexiststr += ("EXISTS" if (mtexistsdata[n]) else "DOES NOT EXIST");
+            clsexiststr += " and has colnames: ";
+            datflines.append(clsexiststr);
+            clnmsstr = str(mclsref.getMyColNames());
+            datflines.append(clnmsstr);
+            ctranstr = "and the create table statement is:";
+            datflines.append(ctranstr);
+            datflines.append(ctblstmnts[n]);
+            dattranstr = "and the data: [";
+            if (myvalidator.isvaremptyornull(mdataforalltbls[n])): dattranstr += "]"; 
+            datflines.append(dattranstr);
+            print("\n" + clsexiststr + "\n" + clnmsstr + "\n" + ctranstr + "\n\n" + ctblstmnts[n]);
+            print("\n\n" + dattranstr);
             if (myvalidator.isvaremptyornull(mdataforalltbls[n])): print("[]");
             else:
-                for item in mdataforalltbls[n]: print(item);
+                print("[");
+                for item in mdataforalltbls[n]:
+                    datflines.append(str(item));
+                    print(item);
+                datflines.append("]");
+                print("]");
+        #print("\nPRINTING THE DATA ONLY FILE LINES HERE:");
+        #for line in datflines: print(line);
+
+        print("\nBEGIN GENERATING THE SQL COMMAND FILE ONLY HERE:");
+
+        mysqlfilelines = [];
+        for n in range(len(mtblclses)):
+            #create table if exists else do nothing, then generate the statements to insert the data.
+            mclsref = mtblclses[n];
+            if (mtexistsdata[n]):
+                mysqlfilelines.append(ctblstmnts[n]);
+                #take the data then generate the insert into table statements here...
+                for item in mdataforalltbls[n]:
+                    nwvqry = mclsref.genSQLInsertIntoFromRef(vals=item);
+                    mysqlfilelines.append(nwvqry);
+        for line in mysqlfilelines: print(line);
+        
+        #generate the python script file lines here...
+        #?;
+
         raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
     
     @classmethod
