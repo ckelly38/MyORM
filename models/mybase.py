@@ -952,9 +952,8 @@ class mybase:
             datflines.append(dattranstr);
             print("\n" + clsexiststr + "\n" + clnmsstr + "\n" + ctranstr + "\n\n" + ctblstmnts[n]);
             print("\n\n" + dattranstr);
-            if (myvalidator.isvaremptyornull(mdataforalltbls[n])): print("[]");
+            if (myvalidator.isvaremptyornull(mdataforalltbls[n])): pass;
             else:
-                print("[");
                 for item in mdataforalltbls[n]:
                     datflines.append(str(item));
                     print(item);
@@ -965,7 +964,7 @@ class mybase:
 
         print("\nBEGIN GENERATING THE SQL COMMAND FILE ONLY HERE:");
 
-        mysqlfilelines = [];
+        mysqlfilelines = [mclsref.genSQLDropTableFromClass(onlyifnot=True) for mclsref in mtblclses];
         for n in range(len(mtblclses)):
             #create table if exists else do nothing, then generate the statements to insert the data.
             mclsref = mtblclses[n];
@@ -978,7 +977,32 @@ class mybase:
         for line in mysqlfilelines: print(line);
         
         #generate the python script file lines here...
+        #we need to be able to call our methods to add the data.
+        #do we want to do this via objects or directly?
+        #the objects currently exist in this program...
+        #so this may be a problem when generating the new script.
+        #keep in mind the new script may be executed on a completely different machine
+        #after this program has closed and the objects probably will not be in memory.
         #?;
+        #we want to drop all of the tables
+        #we can use the command or current classes
+        #dropTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False)
+        #(above depends on the class being the same and that the table names are the same)
+        #or we can write one that does not...
+        #or we can store the sql queries in it and just run all of the queries...
+        #take the above...
+        #copy the array into the file...
+        #need to import the CURSOR and CONN from the config or init...
+        iline = "from init import CURSOR, CONN;";
+        qline = "mqries = " + str(mysqlfilelines);
+        nxtline = "for qry in mqries:";
+        bnxtline = "    CURSOR.execute(qry);";#\t instead of 4 spaces on these lines
+        cnxtline = "    CONN.commit();";#\t instead of 4 spaces on these lines
+        fline = "print('DB RESTORED SUCCESSFULLY!');"
+        mflines = [iline, qline, nxtline, bnxtline, cnxtline, fline];
+
+        print("\nBEGIN GENERATING THE PYTHON FILE ONLY HERE:");
+        for line in mflines: print(line);
 
         raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
     
