@@ -916,10 +916,13 @@ class mybase:
         mtexistsdata = [];
         mdataforalltbls = [];
         ctblstmnts = [];
+        from models import Signup;
         for mclsref in mtblclses:
             texists = mclsref.tableExists(pqry=False);
             #run the select all query here...
-            if (texists):
+            if (texists):# or (mclsref == Signup) bug here 5-21-2025 4 AM MST
+                #if (mclsref == Signup): mdataforalltbls.append([]);
+                #else:
                 mitemlist = mclsref.getAllItemsOnTable(pqry=False);
                 mdataforalltbls.append(mitemlist);
                 ctblqry = mclsref.genSQLCreateTableFromRef(varstr="" + SQLVARIANT, onlyifnot=False,
@@ -968,7 +971,7 @@ class mybase:
         for n in range(len(mtblclses)):
             #create table if exists else do nothing, then generate the statements to insert the data.
             mclsref = mtblclses[n];
-            if (mtexistsdata[n]):
+            if (mtexistsdata[n]):# or (mclsref == Signup) bug here 5-21-2025 4 AM MST
                 mysqlfilelines.append(ctblstmnts[n]);
                 #take the data then generate the insert into table statements here...
                 for item in mdataforalltbls[n]:
@@ -994,17 +997,96 @@ class mybase:
         #copy the array into the file...
         #need to import the CURSOR and CONN from the config or init...
         iline = "from init import CURSOR, CONN;";
-        qline = "mqries = " + str(mysqlfilelines);
+        qline = "mqries = " + str(mysqlfilelines) + ";";
         nxtline = "for qry in mqries:";
         bnxtline = "    CURSOR.execute(qry);";#\t instead of 4 spaces on these lines
         cnxtline = "    CONN.commit();";#\t instead of 4 spaces on these lines
         fline = "print('DB RESTORED SUCCESSFULLY!');"
-        mflines = [iline, qline, nxtline, bnxtline, cnxtline, fline];
+        
+        #have a leveling algorithmn go over the qline...
+        #enmbasestr = "ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', ";
+        #enmodptstr = "'something else, other', 'last'";
+        #finenmstr = enmbasestr + "'mychar\\\'s poses)sive', " + enmodptstr;
+        #oenumpstr = enmbasestr + "'mychar\'s poses)sive', " + enmodptstr + ")";
+        #myindxstr = "CONSTRAINT individualcoliduniqueconstraint";
+        #tmpindx = qline.index(myindxstr);
+        #tmpqline = qline[0:tmpindx] + oenumpstr + ", " + qline[tmpindx:];
+        #print(myvalidator.getLevelsForValStr(oenumpstr));
+        #print(myvalidator.getLevelsForValStr(qline));
+        #print(myvalidator.oLevelsAlgorithm(qline));
+        #print(myvalidator.oLevelsAlgorithm(tmpqline));
+
+        #if is quote and level is 2 and prev level is 3
+        #if next character is a comma insert the newline here...
+        mlvlsobj = myvalidator.oLevelsAlgorithm(qline);
+        #print(mlvlsobj);
+
+        cmais = [];
+        for i in range(len(mlvlsobj['finlvs'])):
+            clvl = mlvlsobj['finlvs'][i];
+            mc = mlvlsobj['val'][i];
+            plvl = (1 if (i == 0) else mlvlsobj['finlvs'][i - 1]);
+            if (clvl == 2 and plvl == 3):
+                if (i + 1 < len(mlvlsobj['finlvs'])):
+                    nxtmc = mlvlsobj['val'][i + 1];
+                    if (nxtmc == ','): cmais.append(i + 2);#i+2 where we want to put the newline
+        tmparr = myvalidator.mysplitWithLen(qline, cmais, 1, offset=0);
+        #nwlinestr = myvalidator.myjoin("\n", tmparr);
+        #print(f"nwlinestr = {nwlinestr}");
+
+        #mflines = [iline, qline, nxtline, bnxtline, cnxtline, fline];
+        mflines = [iline];
+        for n in range(len(tmparr)):
+            cline = tmparr[n];
+            fincline = ("          " + cline if (0 < n) else "" + cline);
+            mflines.append(fincline);
+        mflines.append(nxtline);
+        mflines.append(bnxtline);
+        mflines.append(cnxtline);
+        mflines.append(fline);
 
         print("\nBEGIN GENERATING THE PYTHON FILE ONLY HERE:");
         for line in mflines: print(line);
 
-        raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
+        #actually write the stuff here...
+        #we need to know what to call the new files and where to save them...
+        #note opening in write mode if the file does not exist will create it
+        #modes are read, write, append
+        #with open("game.txt", "w") as mfile:
+        #    for r in range(3):
+        #        for c in range(3):
+        #            mfile.write(self.game[r][c]);
+        #        mfile.write("\n");
+        #    mfile.close();
+        #lines = [];
+        #try:
+        #    with open("game.txt", "r") as mfile:
+        #        lines = mfile.readlines();
+        #        mfile.close();
+        #except:
+        #    print("there was a problem opening or reading game.txt! Playing a new game it is!");
+        #    return mgame;
+        #print(f"lines = {lines}");
+        with open("bkdatonly.txt", "w") as mfile:
+            for line in datflines:
+                mfile.write(line);
+                mfile.write("\n");
+            print("data only file written successfully!");
+            mfile.close();
+        with open("bkcmdsonly.sql", "w") as mfile:
+            for line in mysqlfilelines:
+                mfile.write(line);
+                mfile.write("\n");
+            print("sql file written successfully!");
+            mfile.close();
+        with open("bkscrpt.py", "w") as mfile:
+            for line in mflines:
+                mfile.write(line);
+                mfile.write("\n");
+            print("script file written successfully!");
+            mfile.close();
+        print("SUCCESSFULLY CREATED THE BACKUP FILES AND FINISHED THE BACKUP!");
+        #raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
     
     @classmethod
     def genSQLDropTableFromClass(cls, onlyifnot=False):

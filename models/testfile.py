@@ -282,6 +282,8 @@ print("no tables with save test (if one or both of the above is true, then true)
       f"{(tstnotablesbfrcreatecmd or tstnotables)}");
 print(f"tstwithusrpid = {tstwithusrpid}");
 
+#mybase.backupDB();
+
 sa.save(runbkbfr=False, runbkaftr=False);
 #vcmpr.save(runbkbfr=False, runbkaftr=False);
 sb.save(runbkbfr=False, runbkaftr=False);

@@ -803,6 +803,9 @@ class myvalidator:
 
     #NOT DONE YET WITH ALL OF THESE 4-30-2025 9:30 PM MST
 
+    #bug here 4-21-2025 4 AM MST
+    #added a small bug in the create table method to test or write a better leveling algorithm
+
     #DOES NOT VALIDATE THE TABLE NAME, DOES NOT DEPEND ON IT, BUT THE OTHER createTable methods DO.
     #HOWEVER, THIS METHOD ASSUMES THAT ALL MODEL CLASSES HAVE BEEN INITIALIZED OR
     #SETUP BEFORE THIS RUNS.
@@ -884,6 +887,13 @@ class myvalidator:
             #print(f"\nNEW mstrs = {mstrs}");
         print("\nAFTER FIRST LOOP:");
         print(f"mstrs = {mstrs}");
+
+        #bug here 5-21-2025 4 AM
+        #enmbasestr = "menm ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', ";
+        #enmodptstr = "'something else, other', 'last'";
+        #finenmstr = enmbasestr + "'mychar\\\'s poses)sive', " + enmodptstr + ")";
+        #oenumpstr = enmbasestr + "'mychar\'s poses)sive', " + enmodptstr + ")";
+        #mstrs.append(finenmstr);
         
         for n in range(len(mycols)):
             mc = mycols[n];
@@ -2807,6 +2817,38 @@ class myvalidator:
     def getDataTypesObjsWithNameFromList(cls, mlist, tpnm):
         if (mlist == None): return None;
         else: return [mobj for mobj in mlist for nm in mobj["names"] if (nm == tpnm)];
+    
+    @classmethod
+    def errorCheckAndReturnTheLevels(cls, lvls, val):
+        if (myvalidator.isvaremptyornull(val)):
+            return {"finlvs": [], "origlvs": [], "val": val, "errmsg": ""};
+        
+        errmsg = "";
+        if (len(val) == len(lvls)):
+            if (lvls[len(lvls) - 1] == 1): pass;
+            else:
+                errmsg = "invalid last level!";
+                #print(errmsg);
+                return {"finlvs": [], "origlvs": lvls, "val": val, "errmsg": errmsg};
+        else:
+            errmsg = "invalid number of levels found!";
+            #print(errmsg);
+            return {"finlvs": [], "origlvs": lvls, "val": val, "errmsg": errmsg};
+
+        plv = 1;
+        for lv in lvls:
+            if (lv < 1 or len(val) < lv):
+                errmsg = "invalid level found!";
+                #print(errmsg);
+                return {"finlvs": [], "origlvs": lvls, "val": val, "errmsg": errmsg};
+            else:
+                if (lv == plv or lv == plv + 1 or lv + 1 == plv): pass;
+                else:
+                    errmsg = "level diff was not valid!";
+                    #print(errmsg);
+                    return {"finlvs": [], "origlvs": lvls, "val": val, "errmsg": errmsg};
+            plv = lv;
+        return {"finlvs": lvls, "origlvs": lvls, "val": val, "errmsg": errmsg};
 
     @classmethod
     def getLevelsForValStr(cls, val):
@@ -2882,32 +2924,69 @@ class myvalidator:
         #print(f" val = {val}");
         #print(f'lvls = {myvalidator.myjoin("", lvls)}');
 
-        errmsg = "";
-        if (len(val) == len(lvls)):
-            if (lvls[len(lvls) - 1] == 1): pass;
-            else:
-                errmsg = "invalid last level!";
-                #print(errmsg);
-                return {"finlvs": [], "origlvs": lvls, "val": val, "errmsg": errmsg};
-        else:
-            errmsg = "invalid number of levels found!";
-            #print(errmsg);
-            return {"finlvs": [], "origlvs": lvls, "val": val, "errmsg": errmsg};
+        return myvalidator.errorCheckAndReturnTheLevels(lvls, val);
 
-        plv = 1;
-        for lv in lvls:
-            if (lv < 1 or len(val) < lv):
-                errmsg = "invalid level found!";
-                #print(errmsg);
-                return {"finlvs": [], "origlvs": lvls, "val": val, "errmsg": errmsg};
-            else:
-                if (lv == plv or lv == plv + 1 or lv + 1 == plv): pass;
+    @classmethod
+    def oLevelsAlgorithm(cls, valstr):
+        if (myvalidator.isvaremptyornull(valstr)):
+            return {"finlvs": [], "origlvs": [], "val": valstr, "errmsg": ""};
+        #print(f"valstr = {valstr}");
+
+        levels = [-1 for i in range(len(valstr))];
+        clevel = 1;
+        inclvl = False;
+        declvl = False;
+        fqti = -1;
+        fndqt = False;
+        isopqt = True;
+        for i in range(len(valstr)):
+            mc = valstr[i];
+            if (mc == '[' or mc == '('):
+                #if inside a quote but reached here... then do not increment
+                if (clevel > 4): pass;
+                else: inclvl = True;#
+            elif (mc == ']' or mc == ')'):
+                #if inside a quote but reached here... then do not decrement
+                if (clevel > 5): pass;
+                else: declvl = True;#
+            elif (mc == "'" or mc == '"'):
+                #found a quote here.
+                #print(f"found a quote at i = {i}!");
+                #print(f"fndqt = {fndqt}");
+                #print("need to tell if we can use this because if it got escaped, then cannot!");
+                #print(valstr[i - 1]);
+                if (fndqt):
+                    if (0 < i and (valstr[i - 1] == "\\" or valstr[i - 1] == '\\')): pass;
+                    else:
+                        if (mc == valstr[fqti]):
+                            #this quote is the same as our first quote therefore use it
+                            #print(f"fndqt at i = {i}!");
+                            #print(f"prev isopqt = {isopqt}");
+                            if (isopqt): declvl = True;
+                            else: inclvl = True;
+                            isopqt = not(isopqt);
                 else:
-                    errmsg = "level diff was not valid!";
-                    #print(errmsg);
-                    return {"finlvs": [], "origlvs": lvls, "val": val, "errmsg": errmsg};
-            plv = lv;
-        return {"finlvs": lvls, "origlvs": lvls, "val": val, "errmsg": errmsg};
+                    if (0 < i and (valstr[i - 1] == "\\" or valstr[i - 1] == '\\')): pass;
+                    else:
+                        fndqt = True;
+                        isopqt = True;
+                        fqti = i;
+                        inclvl = True;
+            if (declvl):
+                #dec immediately, then add level, then set to false
+                clevel -= 1;
+                levels[i] = clevel;
+                declvl = False;
+            else:
+                #add the level here..., then increment..., then set to false
+                levels[i] = clevel;
+                if (inclvl):
+                    clevel += 1;
+                    inclvl = False;
+        
+        #print(f"valstr = {valstr}");
+        #print(f"levels = {myvalidator.myjoin('', levels)}");
+        return myvalidator.errorCheckAndReturnTheLevels(levels, valstr);
 
     @classmethod
     def getParamsFromValType(cls, val):
