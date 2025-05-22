@@ -871,6 +871,19 @@ class mybase:
     
 
     #NOT DONE YET MAYBE THIS SHOULD BE A CLASS METHOD 5-8-2025 12:04 AM MST
+    
+    #NEED A METHOD TO READ THE DATA ONLY FILE AND THEN RESTORE THE DB FROM IT...
+
+    @classmethod
+    def restoreDBFromSQLFile(cls, filepathandnm):
+        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 1, "filepathandnm");
+        if (filepathandnm.endswith(".sql")): pass;
+        else:
+            raise ValueError("invalid file name and path to the file here " + filepathandnm +
+                             ". It must end with .sql, but it did not!");
+        CURSOR.execute(filepathandnm);
+        CONN.commit();
+        print("DB SUCCESSFULLY RESTORED!");
 
     @classmethod
     def backupDB(cls):
