@@ -873,17 +873,54 @@ class mybase:
     #NOT DONE YET MAYBE THIS SHOULD BE A CLASS METHOD 5-8-2025 12:04 AM MST
     
     #NEED A METHOD TO READ THE DATA ONLY FILE AND THEN RESTORE THE DB FROM IT...
+    #NEED A METHOD TO ATTEMPT TO ADD DATA BACK AFTER A NEW COL IS ADDED
+    # OR A NEW CONSTRAINT OR A NEW TABLE NAME, ETC.
 
+    #https://stackoverflow.com/questions/54289555/how-do-i-execute-an-sqlite-script-from-within-python
     @classmethod
     def restoreDBFromSQLFile(cls, filepathandnm):
-        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 1, "filepathandnm");
-        if (filepathandnm.endswith(".sql")): pass;
-        else:
-            raise ValueError("invalid file name and path to the file here " + filepathandnm +
-                             ". It must end with .sql, but it did not!");
-        CURSOR.execute(filepathandnm);
+        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 4, "filepathandnm");
+        myvalidator.stringMustEndWith(filepathandnm, ".sql", "filepathandnm");
+        mscrpt = None;
+        with open(filepathandnm, "r") as mfile:
+            mscrpt = mfile.read();
+            mfile.close();
+        CURSOR.executescript(mscrpt);
         CONN.commit();
         print("DB SUCCESSFULLY RESTORED!");
+    
+    @classmethod
+    def restoreDBFromPyFile(cls, filepathandnm):
+        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 3, "filepathandnm");
+        myvalidator.stringMustEndWith(filepathandnm, ".py", "filepathandnm");
+        import os;
+        os.system("python " + filepathandnm);
+        print("DONE EXECUTING THE RESTORE FILE!");
+    
+    #NOT DONE YET 5-23-2025 4 AM MST
+
+    @classmethod
+    def restoreDBFromDatOnlyFile(cls, filepathandnm):
+        #dat only file is in the following format (this may change):
+        #class classname EXISTS/DOES NOT EXIST and has colnames:\n
+        #[colnames for the class here in the list of strings]
+        #and the create table statement is:
+        #(line will be empty if table does not exist
+        # otherwise this line has the entire create table statement)
+        #and the data: [] or ends after [
+        #and then prints one row of each table here... as tuples
+        #...
+        #]
+        #this line will have the next class on it or will be blank
+        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 4, "filepathandnm");
+        myvalidator.stringMustEndWith(filepathandnm, ".txt", "filepathandnm");
+        mlines = None;
+        with open(filepathandnm, "r") as mfile:
+            mlines = mfile.readlines();
+            mfile.close();
+        for line in mlines:
+            print(line);
+        raise ValueError("NOT DONE YET WITH RESTORING FROM THE DATA ONLY FILE5-22-2025 11:28 PM MST!");
 
     @classmethod
     def backupDB(cls):

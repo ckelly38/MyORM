@@ -29,6 +29,11 @@ mybase.setupMain();
 print();
 #raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
+runresviapscpttsta = False;
+if (runresviapscpttsta):
+      mybase.restoreDBFromPyFile("./bkscrpt.py");
+      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
 #print(mynewcol);
 #tstobj = MyTestColsClass(colnames=["mynewcol"], colvalues=[1]);
 #values of the cols must get past into the constructor...
@@ -325,6 +330,18 @@ if (rundeltests):
       Signup.clearTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
       print("all items on the signups DB table are AFTER CLEARING THE TABLE: " +
             f"{Signup.getAllItemsOnTable()}\n");
+
+runresviasqlfiletst = False;
+#test restore DB from SQL file here
+if (runresviasqlfiletst):
+      mybase.restoreDBFromSQLFile("./bkcmdsonly.sql");
+      #raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
+runresviapscpttst = False;
+if (runresviapscpttst):
+      #the init import line may cause this to fail
+      mybase.restoreDBFromPyFile("./bkscrpt.py");
+      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 #still have a problem with multi-column and single column constraints adding or removing them
 #need a good test case, but as of yet do not have a great one 5-13-2025 9:11 PM MST
@@ -979,7 +996,7 @@ print(myvalidator.genSQLSum("price", False));
 #-LEFT JOIN, RIGHT JOIN, INNER JOIN, FULL JOIN, NATURAL JOIN, UNIONS
 #--note: some of these are different from LITE to normal SQL.
 #-figure out a way to let the user determine what to name the db
-#-figure out how to integrate mysql/postgressql...
+#-figure out how to integrate mysql/postgressql/sqlserver/oracle...
 #-figure out a way to tell the program if using sqllite or sql and
 #--if the commands are different from sql to sqllite (JOINS ARE) how they change in the generator
 #-figure out where to put the sql generator methods

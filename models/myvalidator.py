@@ -286,14 +286,31 @@ class myvalidator:
         return cls.stringMustHaveAtMaxOrAtMinNumChars(mstr, mxormnlen, False, varnm);
 
     @classmethod
-    def stringMustStartAndEndWith(cls, mstr, mc, varnm="varnm"):
-        myvalidator.varmustnotbeempty(mstr, "mstr");
-        myvalidator.varmustbethetypeonly(mstr, str, "mstr");
-        myvalidator.varmustbethetypeonly(mc, str, "mc");
-        if (myvalidator.isvaremptyornull(varnm)): return cls.strMustStartAndEndWith(mstr, mc, "varnm");
-        errmsg = "the string " + varnm + " does not start and end with " + mc + ", but it must!";
-        if (mstr.startswith(mc) and mstr.endswith(mc)): return True;
+    def stringMustStartOrEndOrBothWith(cls, mstr, estr, usestart, useboth, varnm="varnm"):
+        myvalidator.varmustbeboolean(usestart, "usestart");
+        myvalidator.stringMustHaveAtMinNumChars(mstr, 1, "mstr");
+        if (estr == None): return cls.stringMustEndWith(mstr, "", "varnm");
+        if (myvalidator.isvaremptyornull(varnm)): return cls.stringMustEndWith(mstr, estr, "varnm");
+        sorewstr = ("start and end" if (useboth) else ("start" if (usestart) else "end"));
+        errmsg = "the string " + mstr + " called " + varnm + " does not " + sorewstr + " with " + estr;
+        errmsg += ", but it must!";
+        if ((useboth and (mstr.startswith(estr) and mstr.endswith(estr))) or
+            ((not useboth) and ((usestart and mstr.startswith(estr)) or
+                                ((not usestart) and mstr.endswith(estr))))):
+            return True;
         else: raise ValueError(errmsg);
+    @classmethod
+    def stringMustStartOrEndWith(cls, mstr, estr, usestart, varnm="varnm"):
+        return cls.stringMustStartOrEndOrBothWith(mstr, estr, usestart, False, varnm);
+    @classmethod
+    def stringMustStartAndEndWith(cls, mstr, estr, varnm="varnm"):
+        return cls.stringMustStartOrEndOrBothWith(mstr, estr, True, True, varnm);
+    @classmethod
+    def stringMustStartWith(cls, mstr, estr, varnm="varnm"):
+        return cls.stringMustStartOrEndWith(mstr, estr, True, varnm);
+    @classmethod
+    def stringMustEndWith(cls, mstr, estr, varnm="varnm"):
+        return cls.stringMustStartOrEndWith(mstr, estr, False, varnm);
 
     @classmethod
     def isValueInRange(cls, val, minval, maxval, hasmin, hasmax):
