@@ -343,6 +343,11 @@ if (runresviapscpttst):
       mybase.restoreDBFromPyFile("./bkscrpt.py");
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
+runresviadatfiletst = True;
+if (runresviadatfiletst):
+      mybase.restoreDBFromDatOnlyFile("./bkdatonly.txt");
+      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
 #still have a problem with multi-column and single column constraints adding or removing them
 #need a good test case, but as of yet do not have a great one 5-13-2025 9:11 PM MST
 #

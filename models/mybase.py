@@ -891,6 +891,7 @@ class mybase:
     
     @classmethod
     def restoreDBFromPyFile(cls, filepathandnm):
+        #this method is a possible security problem.
         myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 3, "filepathandnm");
         myvalidator.stringMustEndWith(filepathandnm, ".py", "filepathandnm");
         import os;
@@ -900,17 +901,23 @@ class mybase:
     #NOT DONE YET 5-23-2025 4 AM MST
 
     @classmethod
+    def getLineIndexesWithStringOnIt(cls, mstr, mlines):
+        myvalidator.stringMustHaveAtMinNumChars(mstr, 1, "mstr");
+        if (myvalidator.isvaremptyornull(mlines)): return [];
+        return [n for n in range(len(mlines)) if (mstr in mlines[n] and mlines[n].index(mstr) == 0)];
+
+    @classmethod
     def restoreDBFromDatOnlyFile(cls, filepathandnm):
         #dat only file is in the following format (this may change):
         #class classname EXISTS/DOES NOT EXIST and has colnames:\n
-        #[colnames for the class here in the list of strings]
-        #and the create table statement is:
+        #[colnames for the class here in the list of strings]\n
+        #and the create table statement is:\n
         #(line will be empty if table does not exist
         # otherwise this line has the entire create table statement)
-        #and the data: [] or ends after [
-        #and then prints one row of each table here... as tuples
-        #...
-        #]
+        #and the data: []\n or ends after [\n
+        #and then prints one row of each table here... as tuples\n
+        #...\n
+        #]\n
         #this line will have the next class on it or will be blank
         myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 4, "filepathandnm");
         myvalidator.stringMustEndWith(filepathandnm, ".txt", "filepathandnm");
@@ -918,9 +925,125 @@ class mybase:
         with open(filepathandnm, "r") as mfile:
             mlines = mfile.readlines();
             mfile.close();
-        for line in mlines:
-            print(line);
-        raise ValueError("NOT DONE YET WITH RESTORING FROM THE DATA ONLY FILE5-22-2025 11:28 PM MST!");
+        print("BEGIN PRINTING THE FILE LINES HERE:");
+        #print(f"mlines = {mlines}");
+        for line in mlines: print(line[0:len(line) - 1]);
+        
+        #first we need to know where our bounds are for each class...
+        lineswithclsonthem = mybase.getLineIndexesWithStringOnIt("class", mlines);
+        ctbllines = mybase.getLineIndexesWithStringOnIt("and the create table statement is:", mlines);
+        dtaline = mybase.getLineIndexesWithStringOnIt("and the data: [", mlines);
+        print(f"lineswithclsonthem = {lineswithclsonthem}");
+        print(f"ctbllines = {ctbllines}");
+        print(f"dtaline = {dtaline}");
+        
+        mxitems = len(lineswithclsonthem);
+        for n in range(mxitems):
+            bglineindx = lineswithclsonthem[n];
+            exptctblindx = bglineindx + 2;
+            actctblindx = ctbllines[n];
+            clstbleexists = ("EXISTS" in mlines[bglineindx]);
+            print(f"clstbleexists = {clstbleexists}");
+            print(f"exptctblindx = {exptctblindx}");
+            print(f"actctblindx = {actctblindx}");
+            if (exptctblindx == actctblindx): pass;
+            else: raise ValueError("(1A) backup file is in the wrong format!");
+            if (clstbleexists):
+                if (1 < len(mlines[actctblindx + 1])): pass;
+                else: raise ValueError("(1B) backup file is in the wrong format!");
+            else:
+                if (1 < len(mlines[actctblindx + 1])):
+                    raise ValueError("(1C) backup file is in the wrong format!");
+            exptdtlindx = exptctblindx + 2;
+            actdtlindx = dtaline[n];
+            print(f"exptdtlindx = {exptdtlindx}");
+            print(f"actdtlindx = {actdtlindx}");
+            if (exptdtlindx == actdtlindx): pass;
+            else: raise ValueError("(2) backup file is in the wrong format!");
+            nxtbglineindx = (lineswithclsonthem[n + 1] if (n + 1 < mxitems) else len(mlines));
+            diffnxtclsdatline = nxtbglineindx - actdtlindx;
+            print(f"nxtbglineindx = {nxtbglineindx}");
+            print(f"(must be at least 1) diffnxtclsdatline = {diffnxtclsdatline}");
+            if (0 < diffnxtclsdatline): pass;
+            else: raise ValueError("(3A) backup file is in the wrong format!");
+            if (clstbleexists): pass;
+            else:
+                if (diffnxtclsdatline == 1): pass;
+                else: raise ValueError("(3B) backup file is in the wrong format!");
+            diffnxtclslineandprev = nxtbglineindx - bglineindx;
+            print(f"(must be at least 5) diffnxtclslineandprev = {diffnxtclslineandprev}");
+            if (4 < diffnxtclslineandprev): pass;
+            else: raise ValueError("(4) backup file is in the wrong format!");
+
+        print("backup data only file is in the correct format!");
+
+        #we care if the table exists...
+        #we care about the create table statement...
+        #we care about the data lines if there is data...
+        #we care what the data is...
+        for n in range(mxitems):
+            bglineindx = lineswithclsonthem[n];
+            ctblineindx = ctbllines[n];#execute directly
+            dtlindx = dtaline[n];#look at first line
+            nxtbglineindx = (lineswithclsonthem[n + 1] if (n + 1 < mxitems) else len(mlines));
+            diffnxtclsdatline = nxtbglineindx - actdtlindx;
+            bgline = mlines[bglineindx];
+            clstbleexists = ("EXISTS" in bgline);
+            tnmindx = bgline.index("with tablename: ");
+            tnmnxtspcindx = -1;
+            for i in range(tnmindx + 16, len(bgline)):
+                if (bgline[i] == ' '):
+                    tnmnxtspcindx = i;
+                    break;
+            myvalidator.valueMustBeInRange(tnmnxtspcindx, tnmindx + 17, len(bgline) - 1,
+                                           True, True, "tnmnxtspcindx");
+            tname = bgline[tnmindx + 16:tnmnxtspcindx];
+            print(f"tname = {tname}");
+            #print(f"len(tname) = {len(tname)}");
+            #add a drop table if exists and then execute it
+            #then execute the create table statement
+            #then add the data
+            dpqry = myvalidator.genSQLDropTable(tname, True);
+            print(f"DROP TABLE QUERY dpqry = {dpqry}");
+
+            #try:
+            #    CURSOR.execute(dpqry);
+            #    CONN.commit();
+            #except Exception as ex:
+            #    print("either the table already does not exist or problem connecting with the DB!");
+            #    traceback.print_exc();
+            
+            if (clstbleexists):
+                if (len(mlines[ctblineindx + 1]) == 1): pass;#no create table statement
+                else:
+                    #there is a create table statement
+                    ctbleqry = mlines[ctblineindx + 1][0:len(mlines[ctblineindx + 1]) - 1];
+                    print(f"CREATE TABLE QUERY: {ctbleqry}");
+                    #try:
+                    #    CURSOR.execute(ctbleqry);
+                    #    CONN.commit();
+                    #except Exception as ex:
+                    #    print("either the table already exists or problem connecting to the DB!");
+                    #    raise ex;
+                    print("the table has a create table statement do something here!");
+                if (diffnxtclsdatline == 1): pass;#no data on the table
+                else:
+                    #the diff is more than 1
+                    #either subtract 1 or 2 lines depending on how it is generated
+                    #need to start 1 more than the data only line start indicator.
+                    for k in range(diffnxtclsdatline - 2):
+                        myiline = mlines[dtlindx + 1 + k][0:len(mlines[dtlindx + 1 + k]) - 1];
+                        print(f"myiline = {myiline}");
+                        #need to convert the string to a tuple
+                        #then this will be the vals tuple passed in to the query method
+                        #mtp = tuple(myiline);
+                        #print(f"mtp = {mtp}");
+                        #mnwdatqry = myvalidator.genSQLInsertInto(tname, colnames, vals=None);
+                        #print(f"mnwdatqry = {mnwdatqry}");
+                        #CURSOR.execute(mnwdatqry, valstple);
+                        #CONN.commit();
+                    raise ValueError("the table has data need to do something here...!");
+        raise ValueError("NOT DONE YET WITH RESTORING FROM THE DATA ONLY FILE 5-22-2025 11:28 PM MST!");
 
     @classmethod
     def backupDB(cls):
@@ -966,7 +1089,7 @@ class mybase:
         mtexistsdata = [];
         mdataforalltbls = [];
         ctblstmnts = [];
-        from models import Signup;
+        #from models import Signup;#bug here 5-21-2025 4 AM MST
         for mclsref in mtblclses:
             texists = mclsref.tableExists(pqry=False);
             #run the select all query here...
@@ -993,6 +1116,7 @@ class mybase:
             mclsref = mtblclses[n];
             clsexiststr = "class " + mclsref.__name__ + " ";
             clsexiststr += ("EXISTS" if (mtexistsdata[n]) else "DOES NOT EXIST");
+            clsexiststr += " with tablename: " + mclsref.getTableName();
             clsexiststr += " and has colnames: ";
             datflines.append(clsexiststr);
             clnmsstr = str(mclsref.getMyColNames());
