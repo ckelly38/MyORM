@@ -313,6 +313,12 @@ class myvalidator:
         return cls.stringMustStartOrEndWith(mstr, estr, False, varnm);
 
     @classmethod
+    def getLineIndexesWithStringOnIt(cls, mstr, mlines):
+        myvalidator.stringMustHaveAtMinNumChars(mstr, 1, "mstr");
+        if (myvalidator.isvaremptyornull(mlines)): return [];
+        return [n for n in range(len(mlines)) if (mstr in mlines[n] and mlines[n].index(mstr) == 0)];
+
+    @classmethod
     def isValueInRange(cls, val, minval, maxval, hasmin, hasmax):
         myvalidator.varmustbeboolean(hasmin, "hasmin");
         myvalidator.varmustbeboolean(hasmax, "hasmax");
@@ -345,6 +351,15 @@ class myvalidator:
             if (hasmin and hasmax): mystr += " and";
             if (hasmax): mystr += " at most " + str(maxval);
             raise ValueError("" + varnm + mystr + " but it was not!");
+    @classmethod
+    def valueMustBeInMinAndMaxRange(cls, val, minval, maxval, varnm="varnm"):
+        return cls.valueMustBeInRange(val, minval, maxval, True, True, varnm);
+    @classmethod
+    def valueMustBeAtMinOnly(cls, val, minval, varnm="varnm"):
+        return cls.valueMustBeInRange(val, minval, 0, True, False, varnm);
+    @classmethod
+    def valueMustBeAtMaxOnly(cls, val, maxval, varnm="varnm"):
+        return cls.valueMustBeInRange(val, 0, maxval, False, True, varnm);
 
     @classmethod
     def myjoin(cls, sepstr, mlist):
@@ -435,8 +450,7 @@ class myvalidator:
         myvalidator.valueMustBeInRange(modval, 1, 0, True, False, "modval");
         #return myvalidator.myjoin("", [(n % modval) for n in range(numchars)]);
         mystr = "";
-        for n in range(numchars):
-            mystr += str(n % modval);
+        for n in range(numchars): mystr += str(n % modval);
         return mystr;
 
     @classmethod

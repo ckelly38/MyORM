@@ -870,9 +870,8 @@ class mybase:
         return myvalidator.genSQLInsertInto(cls.getTableName(), cls.getMyColNames(), vals);
     
 
-    #NOT DONE YET MAYBE THIS SHOULD BE A CLASS METHOD 5-8-2025 12:04 AM MST
+    #BACKUP AND RESTORE METHODS NOT DONE YET 5-25-2025 12:04 AM MST
     
-    #NEED A METHOD TO READ THE DATA ONLY FILE AND THEN RESTORE THE DB FROM IT...
     #NEED A METHOD TO ATTEMPT TO ADD DATA BACK AFTER A NEW COL IS ADDED
     # OR A NEW CONSTRAINT OR A NEW TABLE NAME, ETC.
 
@@ -898,16 +897,9 @@ class mybase:
         os.system("python " + filepathandnm);
         print("DONE EXECUTING THE RESTORE FILE!");
     
-    #NOT DONE YET 5-23-2025 4 AM MST
-
-    @classmethod
-    def getLineIndexesWithStringOnIt(cls, mstr, mlines):
-        myvalidator.stringMustHaveAtMinNumChars(mstr, 1, "mstr");
-        if (myvalidator.isvaremptyornull(mlines)): return [];
-        return [n for n in range(len(mlines)) if (mstr in mlines[n] and mlines[n].index(mstr) == 0)];
-
     @classmethod
     def restoreDBFromDatOnlyFile(cls, filepathandnm):
+        #this method is a possible security problem.
         #dat only file is in the following format (this may change):
         #class classname EXISTS/DOES NOT EXIST and has colnames:\n
         #[colnames for the class here in the list of strings]\n
@@ -930,9 +922,11 @@ class mybase:
         for line in mlines: print(line[0:len(line) - 1]);
         
         #first we need to know where our bounds are for each class...
-        lineswithclsonthem = mybase.getLineIndexesWithStringOnIt("class", mlines);
-        ctbllines = mybase.getLineIndexesWithStringOnIt("and the create table statement is:", mlines);
-        dtaline = mybase.getLineIndexesWithStringOnIt("and the data: [", mlines);
+        lineswithclsonthem = myvalidator.getLineIndexesWithStringOnIt("class", mlines);
+        ctbllines = myvalidator.getLineIndexesWithStringOnIt("and the create table statement is:",
+                                                             mlines);
+        dtaline = myvalidator.getLineIndexesWithStringOnIt("and the data: [", mlines);
+        print("begin make sure that the backup data file is in the correct format now:");
         print(f"lineswithclsonthem = {lineswithclsonthem}");
         print(f"ctbllines = {ctbllines}");
         print(f"dtaline = {dtaline}");
@@ -1006,12 +1000,12 @@ class mybase:
             dpqry = myvalidator.genSQLDropTable(tname, True);
             print(f"DROP TABLE QUERY dpqry = {dpqry}");
 
-            #try:
-            #    CURSOR.execute(dpqry);
-            #    CONN.commit();
-            #except Exception as ex:
-            #    print("either the table already does not exist or problem connecting with the DB!");
-            #    traceback.print_exc();
+            try:
+                CURSOR.execute(dpqry);
+                CONN.commit();
+            except Exception as ex:
+                print("either the table already does not exist or problem connecting with the DB!");
+                traceback.print_exc();
             
             if (clstbleexists):
                 if (len(mlines[ctblineindx + 1]) == 1): pass;#no create table statement
@@ -1019,31 +1013,42 @@ class mybase:
                     #there is a create table statement
                     ctbleqry = mlines[ctblineindx + 1][0:len(mlines[ctblineindx + 1]) - 1];
                     print(f"CREATE TABLE QUERY: {ctbleqry}");
-                    #try:
-                    #    CURSOR.execute(ctbleqry);
-                    #    CONN.commit();
-                    #except Exception as ex:
-                    #    print("either the table already exists or problem connecting to the DB!");
-                    #    raise ex;
-                    print("the table has a create table statement do something here!");
+                    
+                    try:
+                        CURSOR.execute(ctbleqry);
+                        CONN.commit();
+                    except Exception as ex:
+                        print("either the table already exists or problem connecting to the DB!");
+                        raise ex;
                 if (diffnxtclsdatline == 1): pass;#no data on the table
                 else:
                     #the diff is more than 1
                     #either subtract 1 or 2 lines depending on how it is generated
                     #need to start 1 more than the data only line start indicator.
+                    #line 2 is the colnames ,s cannot be in them neither can quotes we can use split
+                    cnmsline = mlines[bglineindx + 1];
+                    mycnmsstr = cnmsline[2:len(cnmsline) - 3];
+                    mcnms = myvalidator.mysplitWithDelimeter(mycnmsstr, "', '");
+                    print(f"cnmsline = {cnmsline}");
+                    print(f"mycnmsstr = {mycnmsstr}");
+                    print(f"mcnms = {mcnms}");
+                    
+                    #https://stackoverflow.com/questions/8494514/converting-string-to-tuple
+                    from ast import literal_eval;#this is a possible security problem.
                     for k in range(diffnxtclsdatline - 2):
-                        myiline = mlines[dtlindx + 1 + k][0:len(mlines[dtlindx + 1 + k]) - 1];
-                        print(f"myiline = {myiline}");
                         #need to convert the string to a tuple
                         #then this will be the vals tuple passed in to the query method
-                        #mtp = tuple(myiline);
-                        #print(f"mtp = {mtp}");
-                        #mnwdatqry = myvalidator.genSQLInsertInto(tname, colnames, vals=None);
-                        #print(f"mnwdatqry = {mnwdatqry}");
-                        #CURSOR.execute(mnwdatqry, valstple);
-                        #CONN.commit();
-                    raise ValueError("the table has data need to do something here...!");
-        raise ValueError("NOT DONE YET WITH RESTORING FROM THE DATA ONLY FILE 5-22-2025 11:28 PM MST!");
+                        myiline = mlines[dtlindx + 1 + k][0:len(mlines[dtlindx + 1 + k]) - 1];
+                        mtp = tuple(literal_eval(myiline));
+                        print(f"myiline = {myiline}");
+                        print(f"mtp = {mtp}");
+                        
+                        mnwdatqry = myvalidator.genSQLInsertInto(tname, mcnms, vals=None);
+                        print(f"mnwdatqry = {mnwdatqry}");
+                        
+                        CURSOR.execute(mnwdatqry, mtp);
+                        CONN.commit();
+        print("DB successfully restored from the backup data only file!");
 
     @classmethod
     def backupDB(cls):
@@ -1226,21 +1231,6 @@ class mybase:
         #we need to know what to call the new files and where to save them...
         #note opening in write mode if the file does not exist will create it
         #modes are read, write, append
-        #with open("game.txt", "w") as mfile:
-        #    for r in range(3):
-        #        for c in range(3):
-        #            mfile.write(self.game[r][c]);
-        #        mfile.write("\n");
-        #    mfile.close();
-        #lines = [];
-        #try:
-        #    with open("game.txt", "r") as mfile:
-        #        lines = mfile.readlines();
-        #        mfile.close();
-        #except:
-        #    print("there was a problem opening or reading game.txt! Playing a new game it is!");
-        #    return mgame;
-        #print(f"lines = {lines}");
         with open("bkdatonly.txt", "w") as mfile:
             for line in datflines:
                 mfile.write(line);
