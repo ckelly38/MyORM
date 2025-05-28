@@ -940,6 +940,7 @@ class mybase:
             print(f"clstbleexists = {clstbleexists}");
             print(f"exptctblindx = {exptctblindx}");
             print(f"actctblindx = {actctblindx}");
+            
             if (exptctblindx == actctblindx): pass;
             else: raise ValueError("(1A) backup file is in the wrong format!");
             if (clstbleexists):
@@ -952,12 +953,14 @@ class mybase:
             actdtlindx = dtaline[n];
             print(f"exptdtlindx = {exptdtlindx}");
             print(f"actdtlindx = {actdtlindx}");
+            
             if (exptdtlindx == actdtlindx): pass;
             else: raise ValueError("(2) backup file is in the wrong format!");
             nxtbglineindx = (lineswithclsonthem[n + 1] if (n + 1 < mxitems) else len(mlines));
             diffnxtclsdatline = nxtbglineindx - actdtlindx;
             print(f"nxtbglineindx = {nxtbglineindx}");
             print(f"(must be at least 1) diffnxtclsdatline = {diffnxtclsdatline}");
+            
             if (0 < diffnxtclsdatline): pass;
             else: raise ValueError("(3A) backup file is in the wrong format!");
             if (clstbleexists): pass;
@@ -966,6 +969,7 @@ class mybase:
                 else: raise ValueError("(3B) backup file is in the wrong format!");
             diffnxtclslineandprev = nxtbglineindx - bglineindx;
             print(f"(must be at least 5) diffnxtclslineandprev = {diffnxtclslineandprev}");
+            
             if (4 < diffnxtclslineandprev): pass;
             else: raise ValueError("(4) backup file is in the wrong format!");
 
@@ -1278,19 +1282,20 @@ class mybase:
         print("deleted " + tnmonclsnmstr + " on the DB successfully!\n");
 
         if (runbkaftr): cls.backupDB();
+        return True;
     
     @classmethod
     def deleteTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
-        cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
     def delTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
-        cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
     def removeTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
-        cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
     def remTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
-        cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     
 
     #WE CANNOT ADD IF EXISTS TO THE TRUNCATE NOR TO THE DELETE COMMANDS.
@@ -1335,6 +1340,11 @@ class mybase:
     @classmethod
     def clearTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
         return cls.truncateTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+
+    @classmethod
+    def clearThenDropTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
+        cls.truncateTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=False);
+        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=False, runbkaftr=runbkaftr);
 
     def deleteMyRowFromTable(self, onlyifnot=True, runbkbfr=False, runbkaftr=False):
         myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");

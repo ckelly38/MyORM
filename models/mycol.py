@@ -561,6 +561,60 @@ class mycol:
             if ((not isinctable) and myclsref.tableExists()):
                 #if it is not on our list and not called from createTable,
                 #then we assume it is not on the DB.
+                #OR if we are removing the constraint, then we are assuming that it is on the DB.
+                #we could test it with invalid data and see if the invalid data got onto the DB or not.
+                #but we would need to know the value for the class to test with that would violate
+                #the constraint data.
+                #
+                #at any rate, we need to:
+                #1. back up the data (if that has not already been done so),
+                #-but the backup files will have the OLD create table statement and all old data
+                #--even the insert into commands will be different.
+                #-when we restore the data, we want to use the NEW create table statement
+                #-we also want to use the NEW insert into statements
+                #-we may also need the user to provide new information if the cols have changed
+                #-if the col names got renamed, then the restore will need to know what the
+                #--old col names were and will need to map it with the new ones
+                #-if new cols are added or are totally different,
+                #--then the restore will need to know the new data...
+                #-the backup methods do not change the existing objects in memory
+                #--the user might be able to take advantage of this and update the data this way.
+                #--however if the objects did not exist when running the restore,
+                #---the user may not have access to them.
+                #
+                #if we just added or dropped a constraint only the old data will be used.
+                #--(if added a constraint some of the old data might not get restored).
+                #if we added a new column entirely, we need new data and the old data.
+                #if we change data types for one col, we need new data for that col and the old data.
+                #if we just renamed column names, then we only need old data with the new names.
+                #if we just deleted a column entirely, we need the old data new names.
+                #if we just renamed a table name, then we need the old name and the one.
+                #if we just deleted an entire table, then only the old data will be used.
+                #if a combination is used it depends on what changes were made will determine
+                #-if we need new only or old only or both old and new data.
+                #
+                #2. get rid of the current table,
+                #3. then add the new constraint
+                #4. then create the new table
+                #5. then attempt to restore the old data
+                #
+                #we may just want to backup only a specific table and not all of them to save space
+                #this may be a good idea, but it can bite you in the ass when you go to restore it...
+                #
+                print("BEFORE ATTEMPTING TO ADD OR DROP THE CONSTRAINT AFTER DROPPING THE TABLE!");
+                print(f"OLD mval = {mval}");
+                print(f"OLD self.getConstraints() = {self.getConstraints()}");
+
+                myclsref.clearThenDropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
+                if (myclsref.tableExists()): raise ValueError("failed to drop the table!");
+                else:
+                    #mycolobj and the other just needs to know the class
+                    self.addOrRemoveConstraint(mval, useadd, isinctable=isinctable);
+                    #myclsref.addOrRemoveMultiColumnConstraint(mval, useadd);
+                myclsref.createTable();
+
+                #now attempt to restore the data
+
                 #if (useadd):
                 #    ?;
                 #else:

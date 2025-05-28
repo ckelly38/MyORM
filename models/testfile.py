@@ -343,7 +343,7 @@ if (runresviapscpttst):
       mybase.restoreDBFromPyFile("./bkscrpt.py");
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
-runresviadatfiletst = True;
+runresviadatfiletst = False;
 if (runresviadatfiletst):
       mybase.restoreDBFromDatOnlyFile("./bkdatonly.txt");
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
@@ -362,7 +362,7 @@ if (runresviadatfiletst):
 #
 runremsgcolcnsttst = True;
 if (runremsgcolcnsttst):
-      runtstnocmprtble = True;
+      runtstnocmprtble = False;
       if (runtstnocmprtble): pass;
       else: Camper.createTable();#fails because not done yet
       print("CAMPER CONSTRAINTS BEFORE:");
