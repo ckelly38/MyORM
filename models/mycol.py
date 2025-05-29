@@ -517,11 +517,12 @@ class mycol:
     #
     #NOT DONE YET 5-6-2025 9:57 PM MST
 
-    def addOrRemoveConstraint(self, mval, useadd, isinctable=False):
+    def addOrRemoveConstraint(self, mval, useadd, runbkbfr=False, runbkaftr=False, isinctable=False):
         print(f"mval = {mval}");
         print(f"useadd = {useadd}");
         print(f"isinctable = {isinctable}");
 
+        myvalidator.varmustbeboolean(isinctable, "isinctable");
         myvalidator.varmustbeboolean(useadd, "useadd");
         if (myvalidator.isvaremptyornull(mval)): pass;
         else:
@@ -566,63 +567,14 @@ class mycol:
                 #but we would need to know the value for the class to test with that would violate
                 #the constraint data.
                 #
-                #at any rate, we need to:
-                #1. back up the data (if that has not already been done so),
-                #-but the backup files will have the OLD create table statement and all old data
-                #--even the insert into commands will be different.
-                #-when we restore the data, we want to use the NEW create table statement
-                #-we also want to use the NEW insert into statements
-                #-we may also need the user to provide new information if the cols have changed
-                #-if the col names got renamed, then the restore will need to know what the
-                #--old col names were and will need to map it with the new ones
-                #-if new cols are added or are totally different,
-                #--then the restore will need to know the new data...
-                #-the backup methods do not change the existing objects in memory
-                #--the user might be able to take advantage of this and update the data this way.
-                #--however if the objects did not exist when running the restore,
-                #---the user may not have access to them.
-                #
-                #if we just added or dropped a constraint only the old data will be used.
-                #--(if added a constraint some of the old data might not get restored).
-                #if we added a new column entirely, we need new data and the old data.
-                #if we change data types for one col, we need new data for that col and the old data.
-                #if we just renamed column names, then we only need old data with the new names.
-                #if we just deleted a column entirely, we need the old data new names.
-                #if we just renamed a table name, then we need the old name and the one.
-                #if we just deleted an entire table, then only the old data will be used.
-                #if a combination is used it depends on what changes were made will determine
-                #-if we need new only or old only or both old and new data.
-                #
-                #2. get rid of the current table,
-                #3. then add the new constraint
-                #4. then create the new table
-                #5. then attempt to restore the old data
-                #
-                #we may just want to backup only a specific table and not all of them to save space
-                #this may be a good idea, but it can bite you in the ass when you go to restore it...
-                #
-                print("BEFORE ATTEMPTING TO ADD OR DROP THE CONSTRAINT AFTER DROPPING THE TABLE!");
-                print(f"OLD mval = {mval}");
-                print(f"OLD self.getConstraints() = {self.getConstraints()}");
-
-                myclsref.clearThenDropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
-                if (myclsref.tableExists()): raise ValueError("failed to drop the table!");
-                else:
-                    #mycolobj and the other just needs to know the class
-                    self.addOrRemoveConstraint(mval, useadd, isinctable=isinctable);
-                    #myclsref.addOrRemoveMultiColumnConstraint(mval, useadd);
-                myclsref.createTable();
-
-                #now attempt to restore the data
-
                 #if (useadd):
                 #    ?;
                 #else:
                 #    ?;
                 print(f"mval = {mval}");
                 print(f"self.getConstraints() = {self.getConstraints()}");
-                raise ValueError("NEED TO DO A LOT HERE TO ADD THE CONSTRAINT SINCE THE " +
-                                 "TABLE ALREADY EXISTS!");
+                myclsref.addOrDropAConstraintAfterTableExists(mval, useadd, runbkbfr=runbkbfr,
+                                                             runbkaftr=runbkaftr, mcolobj=self);
             else:
                 #now add or remove it to or from the constraints list.
                 #get the current list for this, create an exact copy of it,
@@ -656,23 +608,28 @@ class mycol:
                             ", but it was not on the list!");
                     traceback.print_stack();
             if (callset): self.setConstraints(retlist);
-    def addConstraint(self, mval, isinctable=False):
-        self.addOrRemoveConstraint(mval, True, isinctable=isinctable);
-    def addAConstraint(self, mval, isinctable=False): self.addConstraint(mval, isinctable=isinctable);
-    def removeConstraint(self, mval, isinctable=False):
-        self.addOrRemoveConstraint(mval, False, isinctable=isinctable);
-    def removeAConstraint(self, mval, isinctable=False):
-        self.removeConstraint(mval, isinctable=isinctable);
+    def addConstraint(self, mval, runbkbfr=False, runbkaftr=False, isinctable=False):
+        self.addOrRemoveConstraint(mval, True, runbkbfr=runbkbfr, runbkaftr=runbkaftr,
+                                   isinctable=isinctable);
+    def addAConstraint(self, mval, runbkbfr=False, runbkaftr=False, isinctable=False):
+        self.addConstraint(mval, runbkbfr=runbkbfr, runbkaftr=runbkaftr, isinctable=isinctable);
+    def removeConstraint(self, mval, runbkbfr=False, runbkaftr=False, isinctable=False):
+        self.addOrRemoveConstraint(mval, False, runbkbfr=runbkbfr, runbkaftr=runbkaftr,
+                                   isinctable=isinctable);
+    def removeAConstraint(self, mval, runbkbfr=False, runbkaftr=False, isinctable=False):
+        self.removeConstraint(mval, runbkbfr=runbkbfr, runbkaftr=runbkaftr, isinctable=isinctable);
     
     def getConstraintByName(self, mcnstnm):
         mcnstsbynm = [cnst for cnst in self.getConstraints()
                       if myvalidator.getNameFromConstraint(cnst) == mcnstnm];
         return (None if (myvalidator.isvaremptyornull(mcnstsbynm)) else mcnstsbynm[0]);
 
-    def removeAConstraintByName(self, mcnstnm, isinctable=False):
-        self.removeAConstraint(self.getConstraintByName(mcnstnm), isinctable=isinctable);
-    def removeConstraintByName(self, mcnstnm, isinctable=False):
-        self.removeAConstraintByName(mcnstnm, isinctable=isinctable);
+    def removeAConstraintByName(self, mcnstnm, runbkbfr=False, runbkaftr=False, isinctable=False):
+        self.removeAConstraint(self.getConstraintByName(mcnstnm),
+                               runbkbfr=runbkbfr, runbkaftr=runbkaftr, isinctable=isinctable);
+    def removeConstraintByName(self, mcnstnm, runbkbfr=False, runbkaftr=False, isinctable=False):
+        self.removeAConstraintByName(mcnstnm, runbkbfr=runbkbfr, runbkaftr=runbkaftr,
+                                     isinctable=isinctable);
 
     constraints = property(getConstraints, setConstraints);
 

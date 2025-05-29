@@ -32,6 +32,11 @@ class myvalidator:
     def isvaremptyornull(clsnm, val): return (val == None or len(val) < 1);
 
     @classmethod
+    def isvarnull(cls, val): return (val == None);
+    @classmethod
+    def varisnull(cls, val): return cls.isvarnull(val);
+
+    @classmethod
     def varmustnotbeempty(clsnm, val, varnm="varname"):
         if (varnm == None or type(varnm) == str and len(varnm) < 1):
             return clsnm.varmustnotbeempty(val, "varname");

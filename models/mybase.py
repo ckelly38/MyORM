@@ -2536,7 +2536,70 @@ class mybase:
     #NOT DONE YET HERE 5-6-2025 6:56 PM MST
 
     @classmethod
-    def addOrRemoveMultiColumnConstraint(cls, mval, useadd):
+    def addOrDropAConstraintAfterTableExists(cls, mval, useadd, runbkbfr=False, runbkaftr=False,
+                                             mcolobj=None):
+        myvalidator.varmustbeboolean(useadd, "useadd");
+        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
+        #at any rate, we need to:
+        #1. back up the data (if that has not already been done so),
+        #-but the backup files will have the OLD create table statement and all old data
+        #--even the insert into commands will be different.
+        #-when we restore the data, we want to use the NEW create table statement
+        #-we also want to use the NEW insert into statements
+        #-we may also need the user to provide new information if the cols have changed
+        #-if the col names got renamed, then the restore will need to know what the
+        #--old col names were and will need to map it with the new ones
+        #-if new cols are added or are totally different,
+        #--then the restore will need to know the new data...
+        #-the backup methods do not change the existing objects in memory
+        #--the user might be able to take advantage of this and update the data this way.
+        #--however if the objects did not exist when running the restore,
+        #---the user may not have access to them.
+        #
+        #if we just added or dropped a constraint only the old data will be used.
+        #--(if added a constraint some of the old data might not get restored).
+        #if we added a new column entirely, we need new data and the old data.
+        #if we change data types for one col, we need new data for that col and the old data.
+        #if we just renamed column names, then we only need old data with the new names.
+        #if we just deleted a column entirely, we need the old data new names.
+        #if we just renamed a table name, then we need the old name and the one.
+        #if we just deleted an entire table, then only the old data will be used.
+        #if a combination is used it depends on what changes were made will determine
+        #-if we need new only or old only or both old and new data.
+        #
+        #2. get rid of the current table,
+        #3. then add the new constraint
+        #4. then create the new table
+        #5. then attempt to restore the old data
+        #
+        #we may just want to backup only a specific table and not all of them to save space
+        #this may be a good idea, but it can bite you in the ass when you go to restore it...
+        #
+        print("BEFORE ATTEMPTING TO ADD OR DROP THE CONSTRAINT AFTER DROPPING THE TABLE!");
+        print(f"OLD mval = {mval}");
+        usecolobj = (not myvalidator.varisnull(mcolobj));
+        if (usecolobj): print(f"OLD mcolobj.getConstraints() = {mcolobj.getConstraints()}");
+        else: print(f"OLD cls.getMultiColumnConstraints() = {cls.getMultiColumnConstraints()}");
+
+        cls.clearThenDropTable(onlyifnot=True, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+        if (cls.tableExists()): raise ValueError("failed to drop the table!");
+        else:
+            #mycolobj and the other just needs to know the class
+            if (usecolobj): mcolobj.addOrRemoveConstraint(mval, useadd, isinctable=False);
+            else: cls.addOrRemoveMultiColumnConstraint(mval, useadd);
+        cls.createTable();
+
+        #now attempt to restore the data
+        raise ValueError("NEED TO DO A LOT HERE TO ADD THE CONSTRAINT SINCE THE " +
+                                    "TABLE ALREADY EXISTS!");
+        #raise ValueError("NOT DONE YET 5-28-2025 10:37 PM MST!");
+
+    @classmethod
+    def addOrRemoveMultiColumnConstraint(cls, mval, useadd, runbkbfr=False, runbkaftr=False):
+        myvalidator.varmustbeboolean(useadd, "useadd");
+        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
         if (myvalidator.isvaremptyornull(mval)): pass;
         else:
             #if the table already exists on the DB, then we have a problem...
@@ -2549,12 +2612,8 @@ class mybase:
             if (isonlist == useadd): pass;
             else:
                 if (cls.tableExists()):
-                    #if (useadd):
-                    #    ?;
-                    #else:
-                    #    ?;
-                    raise ValueError("NEED TO DO A LOT HERE TO ADD THE CONSTRAINT SINCE THE " +
-                                    "TABLE ALREADY EXISTS!");
+                    cls.addOrDropAConstraintAfterTableExists(mval, useadd, runbkbfr=runbkbfr,
+                                                             runbkaftr=runbkaftr, mcolobj=None);
                 else:
                     #safe to add it...
                     #get the attribute name
@@ -2583,22 +2642,30 @@ class mybase:
                             nlist);
     #add a multi-column constraint convenience methods here
     @classmethod
-    def addMultiColumnConstraint(cls, mval): cls.addOrRemoveMultiColumnConstraint(mval, True);
+    def addMultiColumnConstraint(cls, mval, runbkbfr=False, runbkaftr=False):
+        cls.addOrRemoveMultiColumnConstraint(mval, True, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
-    def addMultiColConstraint(cls, mval): cls.addMultiColumnConstraint(mval);
+    def addMultiColConstraint(cls, mval, runbkbfr=False, runbkaftr=False):
+        cls.addMultiColumnConstraint(mval, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
-    def addAMultiColConstraint(cls, mval): cls.addMultiColumnConstraint(mval);
+    def addAMultiColConstraint(cls, mval, runbkbfr=False, runbkaftr=False):
+        cls.addMultiColumnConstraint(mval, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
-    def addAMultiColumnConstraint(cls, mval): cls.addMultiColumnConstraint(mval);
+    def addAMultiColumnConstraint(cls, mval, runbkbfr=False, runbkaftr=False):
+        cls.addMultiColumnConstraint(mval, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     #remove a multi-column constraint convenience methods here
     @classmethod
-    def removeMultiColumnConstraint(cls, mval): cls.addOrRemoveMultiColumnConstraint(mval, False);
+    def removeMultiColumnConstraint(cls, mval, runbkbfr=False, runbkaftr=False):
+        cls.addOrRemoveMultiColumnConstraint(mval, False, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
-    def removeMultiColConstraint(cls, mval): cls.removeMultiColumnConstraint(mval);
+    def removeMultiColConstraint(cls, mval, runbkbfr=False, runbkaftr=False):
+        cls.removeMultiColumnConstraint(mval, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
-    def removeAMultiColConstraint(cls, mval): cls.removeMultiColumnConstraint(mval);
+    def removeAMultiColConstraint(cls, mval, runbkbfr=False, runbkaftr=False):
+        cls.removeMultiColumnConstraint(mval, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
-    def removeAMultiColumnConstraint(cls, mval): cls.removeMultiColumnConstraint(mval);
+    def removeAMultiColumnConstraint(cls, mval, runbkbfr=False, runbkaftr=False):
+        cls.removeMultiColumnConstraint(mval, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     
     @classmethod
     def getAMultiColumnConstraintByName(cls, cnstnm):
@@ -2613,15 +2680,18 @@ class mybase:
     def getMultiColConstraintByName(cls, cnstnm): return cls.getAMultiColumnConstraintByName(cnstnm);
 
     @classmethod
-    def removeAMultiColumnConstraintByName(cls, cnstnm):
-        cls.removeAMultiColumnConstraint(cls.getAMultiColConstraintByName(cnstnm));
+    def removeAMultiColumnConstraintByName(cls, cnstnm, runbkbfr=False, runbkaftr=False):
+        cls.removeAMultiColumnConstraint(cls.getAMultiColConstraintByName(cnstnm),
+                                         runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
-    def removeAMultiColConstraintByName(cls, cnstnm): cls.removeAMultiColumnConstraintByName(cnstnm);
+    def removeAMultiColConstraintByName(cls, cnstnm, runbkbfr=False, runbkaftr=False):
+        cls.removeAMultiColumnConstraintByName(cnstnm, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
-    def removeMultiColConstraintByName(cls, cnstnm): cls.removeAMultiColumnConstraintByName(cnstnm);
+    def removeMultiColConstraintByName(cls, cnstnm, runbkbfr=False, runbkaftr=False):
+        cls.removeAMultiColumnConstraintByName(cnstnm, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
     @classmethod
-    def removeMultiColumnConstraintByName(cls, cnstnm):
-        cls.removeAMultiColumnConstraintByName(cnstnm);
+    def removeMultiColumnConstraintByName(cls, cnstnm, runbkbfr=False, runbkaftr=False):
+        cls.removeAMultiColumnConstraintByName(cnstnm, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
 
 
     @classmethod
