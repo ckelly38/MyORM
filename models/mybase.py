@@ -1054,6 +1054,78 @@ class mybase:
                         CONN.commit();
         print("DB successfully restored from the backup data only file!");
 
+    #NOT DONE YET RESTORING THE DB 5-29-2025 8:56 PM
+
+    @classmethod
+    def name(cls):
+        #at any rate, we need to:
+        #1. back up the data (if that has not already been done so),
+        #-but the backup files will have the OLD create table statement and all old data
+        #--even the insert into commands will be different.
+        #-when we restore the data, we want to use the NEW create table statement
+        #-we also want to use the NEW insert into statements
+        #-we may also need the user to provide new information if the cols have changed
+        #-if the col names got renamed, then the restore will need to know what the
+        #--old col names were and will need to map it with the new ones
+        #-if new cols are added or are totally different,
+        #--then the restore will need to know the new data...
+        #-the backup methods do not change the existing objects in memory
+        #--the user might be able to take advantage of this and update the data this way.
+        #--however if the objects did not exist when running the restore,
+        #---the user may not have access to them.
+        #
+        #if we just added or dropped a constraint only the old data will be used.
+        #--(if added a constraint some of the old data might not get restored).
+        #if we added a new column entirely, we need new data and the old data.
+        #if we change data types for one col, we need new data for that col and the old data.
+        #if we just renamed column names, then we only need old data with the new names.
+        #if we just deleted a column entirely, we need the old data new names.
+        #if we just renamed a table name, then we need the old name and the one.
+        #if we just deleted an entire table, then only the old data will be used.
+        #if a combination is used it depends on what changes were made will determine
+        #-if we need new only or old only or both old and new data.
+        #
+        #2. get rid of the current table,
+        #3. then add the new constraint
+        #4. then create the new table
+        #5. then attempt to restore the old data
+        
+
+        #we may just want to backup only a specific table and not all of them to save space
+        #this may be a good idea, but it can bite you in the ass when you go to restore it...
+        
+
+        #-new_data object or list of objects or something like that
+        #-old_data from one of the restore files methods and we want to know which one
+        #--the file will probably be the SQL file or the data only file,
+        #---not the script unless it was custom built for this
+        #-change log either file or data object that the user provides
+        #--(the mapping from the old data to the new data...)
+        #
+        #if [a col, a table, a constraint] was renamed what the old name was and what the new name is
+        #-we need the old data only.
+        #if [a col, a table, a constraint] was added or removed (the count will be different)
+        #-for removal we only need the old data only; for addition we need the new data only.
+        #if some other property of a col or a constraint was changed like data type, we need new data
+        #-ideally we treat this as creating something new; new data only.
+        #
+        #the old and new data need to be formatted the same.
+        #in that the old data is a list of tuples for a list of tables.
+        #
+        #what needs to be on the change log after said table exists?
+        #when does the change log need to start tracking changes?
+        #
+        #
+        #rnm table from old_name to new_name
+        #rnm col from old_name to new_name from table_name
+        #rnm cons from old_name to new_name from table_name
+        #del/add col col_name from table_name
+        #del/add table table_name
+        #del/add cons cons_name from table_name
+        #del/add icolcons type from col_name from table_name
+        #
+        raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
+
     @classmethod
     def backupDB(cls):
         #the backup entails everything that is on the DB...
