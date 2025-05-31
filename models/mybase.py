@@ -112,8 +112,14 @@ class mybase:
         isempty = myvalidator.isvaremptyornull(mlist);
         if (isempty): pass;
         else:
+            mbclses = [];
+            mtnms = [];
             for mclsref in mlist:
-                if (issubclass(mclsref, mybase) and not (mclsref == mybase)): mclsref.setupPartA();
+                if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
+                    mbclses.append(mclsref);
+                    mtnms.append(mclsref.getTableName());
+                    mclsref.setupPartA();
+            myvalidator.listMustContainUniqueValuesOnly(mtnms, "the list of table names");
             
             #due to a dependency on the all list existing and being set for all of the classes
             #(that are a subclass of mybase and not mybase),
@@ -1101,20 +1107,32 @@ class mybase:
         #---not the script unless it was custom built for this
         #-change log either file or data object that the user provides
         #--(the mapping from the old data to the new data...)
+        
+
+        #determining if we need new data or just the old or both:
         #
         #if [a col, a table, a constraint] was renamed what the old name was and what the new name is
         #-we need the old data only.
+        #-renaming all of these effects the create table statement
+        #--when it is a constraint that is the only thing that got changed though
+        #--we can get the new name from the class file in this case
+        #-renaming a table or a col on a table effects everything that refers to it
+        #--like foreign keys on other tables might no longer be valid until they are changed
+        #
         #if [a col, a table, a constraint] was added or removed (the count will be different)
-        #-for removal we only need the old data only; for addition we need the new data only.
+        #-for removal we only need the old data only;
+        #-for addition we need the new data only
+        #--(except for the constraint, but this will change what old data is legal).
         #if some other property of a col or a constraint was changed like data type, we need new data
         #-ideally we treat this as creating something new; new data only.
-        #
+        
         #the old and new data need to be formatted the same.
-        #in that the old data is a list of tuples for a list of tables.
-        #
+        #in that the old data is a list of tuples for a list of tables
+        #with a list of colnames for those tables.
+        
         #what needs to be on the change log after said table exists?
         #when does the change log need to start tracking changes?
-        #
+        #when should the change log be cleared?
         #
         #rnm table from old_name to new_name
         #rnm col from old_name to new_name from table_name
@@ -1123,7 +1141,20 @@ class mybase:
         #del/add table table_name
         #del/add cons cons_name from table_name
         #del/add icolcons type from col_name from table_name
+        
+        #which file is best to get the data from? We have the datonly, the sqlcmdsonly, scrpt file.
+        #A: the script file is a small short script that executes the sql commands stored in it.
+        #B: the sql file which has all of the sql commands only.
+        #C: the data only file has the class name, table name, col names, create table statement,
+        #-and the data
+        #-it may or may not have the create table statement if the table was never on the DB
         #
+        #if we use the datonly file, we can match it via classname or tablename
+        #if the cols have changed we just subsitute the new cols for the old ones
+        #then pull the old data
+        #but we still need the new data in some cases
+        #
+        #we will use the data only file as it is the most complete...
         raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
 
     @classmethod

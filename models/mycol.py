@@ -8,10 +8,11 @@ class mycol:
     #everything to init will need to be removed to solve an import problem between
     #this and the sql generator
     __myclassrefs__ = None;
-    __ucconscntr__ = 0;
-    __ccconscntr__ = 0;
+    __ucconscntr__ = 0;#uc for unique constraint see below
+    __ccconscntr__ = 0;#cc for check constraint cons for constraint cntr for counter
     __all_validators__ = None;
     __ransetup__= False;
+    #u for unique fky for foreign key mthd for method
     __ufkyhandlermthd__ = "WARN";#can be ERROR, WARN, or DISABLED.
 
     #constraint counter methods
@@ -229,7 +230,9 @@ class mycol:
         myvalidator.varmustbeboolean(val);
         cls.__ransetup__ = val;
 
+    
     #warn the user about a unique foreign key problem
+
     @classmethod
     def getWarnUniqueFKey(cls): return cls.__ufkyhandlermthd__;
     
@@ -266,6 +269,7 @@ class mycol:
     @classmethod
     def getUniqueForeignKeyErrorMessage(cls):
         return cls.getUniqueForeignKeyWarningOrErrorMessage(False);
+
 
     #my class ref methods
 
@@ -316,8 +320,17 @@ class mycol:
     @classmethod
     def getClassFromTableName(cls, tablename):
         myvalidator.varmustnotbeempty(tablename, "tablename");
-        for mycls in cls.getMyClassRefsMain(False):
-            if (hasattr(mycls, "getTableName") and (mycls.getTableName() == tablename)): return mycls;
+        from mybase import mybase;
+        msbclses = [mycls for mycls in cls.getMyClassRefsMain(False)
+                    if (issubclass(mycls, mybase) and not(mycls == mybase))];
+        mtnms = [mycls.getTableName() for mycls in msbclses];
+        myvalidator.listMustContainUniqueValuesOnly(mtnms, "mtnms");
+        for n in range(len(mtnms)):
+            if (mtnms[n] == tablename): return msbclses[n];
+        #for mycls in cls.getMyClassRefsMain(False):
+        #    if (issubclass(mycls, mybase) and not(mycls == mybase)):
+        #        if (mycls.getTableName() == tablename): return mycls;
+            #if (hasattr(mycls, "getTableName") and (mycls.getTableName() == tablename)): return mycls;
         raise ValueError("no class has that (" + tablename + ") as the given tablename!");
 
     #value needs to be removed because it cannot be stored in a class attribute for multiple objects

@@ -3,7 +3,7 @@ from mybase import mycol;
 from mycol import myvalidator;
 from myrefcol import myrefcol;
 validates = mycol.validates;
-mycol.setWarnUniqueFKeyMethod('WARN');#user warning of a problem WARN, ERROR, or DISABLED.
+#mycol.setWarnUniqueFKeyMethod('WARN');#user warning of a problem WARN*, ERROR, or DISABLED.
 class MyTestColsClass(mybase):
     #def __init__(self):
         #print("INSIDE OF CONSTRUCTOR ON TEST CLASS A!");
@@ -22,8 +22,8 @@ class MyTestColsClass(mybase):
                     foreignObjectName="myotstobj", constraints=None);# value=None,
     myothervar = 2;
     mymulticolargs = None;
-    #__mytablename__ = "testtable";
-    mytablename = "testtable";
+    #__mytablename__ = "testtablea";
+    mytablename = "testtablea";
 
 #mycol.getMyClassRefsMain(True);
 
@@ -45,8 +45,8 @@ class MyOtherTestClass(mybase):
                     foreignObjectName="mytstcolsobj", constraints=None);# value=None,
     mymulticolargs = None;
     myothervar = 2;
-    #__mytablename__ = "testtable";
-    mytablename = "testtable";
+    #__mytablename__ = "testtableb";
+    mytablename = "testtableb";
 
 #mycol.getMyClassRefsMain(True);
 
