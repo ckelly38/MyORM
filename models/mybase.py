@@ -126,8 +126,8 @@ class mybase:
             #we need to set the refcols here essentially after the setup method has run.
             #therefore it must be done in a separate loop after all of partA has finished running.
 
-            for mclsref in mlist:
-                if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
+            for mclsref in mbclses:
+                #if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
                     mclsref.setupPartB(True);
                     mclsref.setupPartC();
         mycol.setRanSetup(not isempty);
@@ -904,30 +904,7 @@ class mybase:
         print("DONE EXECUTING THE RESTORE FILE!");
     
     @classmethod
-    def restoreDBFromDatOnlyFile(cls, filepathandnm):
-        #this method is a possible security problem.
-        #dat only file is in the following format (this may change):
-        #class classname EXISTS/DOES NOT EXIST and has colnames:\n
-        #[colnames for the class here in the list of strings]\n
-        #and the create table statement is:\n
-        #(line will be empty if table does not exist
-        # otherwise this line has the entire create table statement)
-        #and the data: []\n or ends after [\n
-        #and then prints one row of each table here... as tuples\n
-        #...\n
-        #]\n
-        #this line will have the next class on it or will be blank
-        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 4, "filepathandnm");
-        myvalidator.stringMustEndWith(filepathandnm, ".txt", "filepathandnm");
-        mlines = None;
-        with open(filepathandnm, "r") as mfile:
-            mlines = mfile.readlines();
-            mfile.close();
-        print("BEGIN PRINTING THE FILE LINES HERE:");
-        #print(f"mlines = {mlines}");
-        for line in mlines: print(line[0:len(line) - 1]);
-        
-        #first we need to know where our bounds are for each class...
+    def dataOnlyFileMustBeInTheCorrectFormat(cls, mlines):
         lineswithclsonthem = myvalidator.getLineIndexesWithStringOnIt("class", mlines);
         ctbllines = myvalidator.getLineIndexesWithStringOnIt("and the create table statement is:",
                                                              mlines);
@@ -980,6 +957,38 @@ class mybase:
             else: raise ValueError("(4) backup file is in the wrong format!");
 
         print("backup data only file is in the correct format!");
+        return True;
+
+    @classmethod
+    def restoreDBFromDatOnlyFile(cls, filepathandnm):
+        #this method is a possible security problem.
+        #dat only file is in the following format (this may change):
+        #class classname EXISTS/DOES NOT EXIST and has colnames:\n
+        #[colnames for the class here in the list of strings]\n
+        #and the create table statement is:\n
+        #(line will be empty if table does not exist
+        # otherwise this line has the entire create table statement)
+        #and the data: []\n or ends after [\n
+        #and then prints one row of each table here... as tuples\n
+        #...\n
+        #]\n
+        #this line will have the next class on it or will be blank
+        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 5, "filepathandnm");
+        myvalidator.stringMustEndWith(filepathandnm, ".txt", "filepathandnm");
+        mlines = None;
+        with open(filepathandnm, "r") as mfile:
+            mlines = mfile.readlines();
+            mfile.close();
+        print("BEGIN PRINTING THE FILE LINES HERE:");
+        #print(f"mlines = {mlines}");
+        for line in mlines: print(line[0:len(line) - 1]);
+        
+        #first we need to know where our bounds are for each class...
+        lineswithclsonthem = myvalidator.getLineIndexesWithStringOnIt("class", mlines);
+        ctbllines = myvalidator.getLineIndexesWithStringOnIt("and the create table statement is:",
+                                                             mlines);
+        dtaline = myvalidator.getLineIndexesWithStringOnIt("and the data: [", mlines);
+        cls.dataOnlyFileMustBeInTheCorrectFormat(mlines);
 
         #we care if the table exists...
         #we care about the create table statement...
@@ -1059,11 +1068,12 @@ class mybase:
                         CURSOR.execute(mnwdatqry, mtp);
                         CONN.commit();
         print("DB successfully restored from the backup data only file!");
+        return True;
 
     #NOT DONE YET RESTORING THE DB 5-29-2025 8:56 PM
 
     @classmethod
-    def name(cls):
+    def name(cls, filepathandnm):
         #at any rate, we need to:
         #1. back up the data (if that has not already been done so),
         #-but the backup files will have the OLD create table statement and all old data
@@ -1155,116 +1165,106 @@ class mybase:
         #but we still need the new data in some cases
         #
         #we will use the data only file as it is the most complete...
-        raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
+        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 5, "filepathandnm");
+        myvalidator.stringMustEndWith(filepathandnm, ".txt", "filepathandnm");
+        mlines = None;
+        with open(filepathandnm, "r") as mfile:
+            mlines = mfile.readlines();
+            mfile.close();
+        print("BEGIN PRINTING THE FILE LINES HERE:");
+        #print(f"mlines = {mlines}");
+        for line in mlines: print(line[0:len(line) - 1]);
+        
+        #first we need to know where our bounds are for each class...
+        lineswithclsonthem = myvalidator.getLineIndexesWithStringOnIt("class", mlines);
+        ctbllines = myvalidator.getLineIndexesWithStringOnIt("and the create table statement is:",
+                                                             mlines);
+        dtaline = myvalidator.getLineIndexesWithStringOnIt("and the data: [", mlines);
+        cls.dataOnlyFileMustBeInTheCorrectFormat(mlines);
+
+        #we care if the table exists...
+        #we care about the create table statement...
+        #we care about the data lines if there is data...
+        #we care what the data is...
+        for n in range(mxitems):
+            bglineindx = lineswithclsonthem[n];
+            ctblineindx = ctbllines[n];#execute directly
+            dtlindx = dtaline[n];#look at first line
+            nxtbglineindx = (lineswithclsonthem[n + 1] if (n + 1 < mxitems) else len(mlines));
+            diffnxtclsdatline = nxtbglineindx - actdtlindx;
+            bgline = mlines[bglineindx];
+            clstbleexists = ("EXISTS" in bgline);
+            tnmindx = bgline.index("with tablename: ");
+            tnmnxtspcindx = -1;
+            for i in range(tnmindx + 16, len(bgline)):
+                if (bgline[i] == ' '):
+                    tnmnxtspcindx = i;
+                    break;
+            myvalidator.valueMustBeInRange(tnmnxtspcindx, tnmindx + 17, len(bgline) - 1,
+                                           True, True, "tnmnxtspcindx");
+            tname = bgline[tnmindx + 16:tnmnxtspcindx];
+            print(f"tname = {tname}");
+            #print(f"len(tname) = {len(tname)}");
+            raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
+            #add a drop table if exists and then execute it
+            #then execute the create table statement
+            #then add the data
+            dpqry = myvalidator.genSQLDropTable(tname, True);
+            print(f"DROP TABLE QUERY dpqry = {dpqry}");
+
+            try:
+                CURSOR.execute(dpqry);
+                CONN.commit();
+            except Exception as ex:
+                print("either the table already does not exist or problem connecting with the DB!");
+                traceback.print_exc();
+            
+            if (clstbleexists):
+                if (len(mlines[ctblineindx + 1]) == 1): pass;#no create table statement
+                else:
+                    #there is a create table statement
+                    ctbleqry = mlines[ctblineindx + 1][0:len(mlines[ctblineindx + 1]) - 1];
+                    print(f"CREATE TABLE QUERY: {ctbleqry}");
+                    
+                    try:
+                        CURSOR.execute(ctbleqry);
+                        CONN.commit();
+                    except Exception as ex:
+                        print("either the table already exists or problem connecting to the DB!");
+                        raise ex;
+                if (diffnxtclsdatline == 1): pass;#no data on the table
+                else:
+                    #the diff is more than 1
+                    #either subtract 1 or 2 lines depending on how it is generated
+                    #need to start 1 more than the data only line start indicator.
+                    #line 2 is the colnames ,s cannot be in them neither can quotes we can use split
+                    cnmsline = mlines[bglineindx + 1];
+                    mycnmsstr = cnmsline[2:len(cnmsline) - 3];
+                    mcnms = myvalidator.mysplitWithDelimeter(mycnmsstr, "', '");
+                    print(f"cnmsline = {cnmsline}");
+                    print(f"mycnmsstr = {mycnmsstr}");
+                    print(f"mcnms = {mcnms}");
+                    
+                    #https://stackoverflow.com/questions/8494514/converting-string-to-tuple
+                    from ast import literal_eval;#this is a possible security problem.
+                    for k in range(diffnxtclsdatline - 2):
+                        #need to convert the string to a tuple
+                        #then this will be the vals tuple passed in to the query method
+                        myiline = mlines[dtlindx + 1 + k][0:len(mlines[dtlindx + 1 + k]) - 1];
+                        mtp = tuple(literal_eval(myiline));
+                        print(f"myiline = {myiline}");
+                        print(f"mtp = {mtp}");
+                        
+                        mnwdatqry = myvalidator.genSQLInsertInto(tname, mcnms, vals=None);
+                        print(f"mnwdatqry = {mnwdatqry}");
+                        
+                        CURSOR.execute(mnwdatqry, mtp);
+                        CONN.commit();
+        print("DB successfully restored from the backup data only file!");
+        return True;
 
     @classmethod
-    def backupDB(cls):
-        #the backup entails everything that is on the DB...
-        #may need a new location set...
-        #we want to create a list of the SQL commands run
-        #we want all of the data on the DB...
-        #we also need to know the sequence of the backups like a date and time stamp...
-        #
-        #maybe what triggered it? User, or adding, removeing or changing a constraint,
-        #or adding, deleting, or changing column names or other column properties,
-        #or saving, updating data, or deleting data (row or rows),
-        #or deleting, adding, or changing tables (like the name, constraints)
-        #
-        #USER, constraint, table, data
-        #
-        #what if there are multiple differences? like data, constraints, tables
-        #(in this case, it would have been triggered by the USER)
-        #adding and dropping contsraints after the table exists
-        #causes a problem for saving the data later on (needs backed up immediately).
-        #
-        #most changes you make are readily apparent execpt one: renaming of existing tables or cols.
-        #since the data only file will include the classname and the tablename,
-        #this will be apparent there that is unless you changed the class name too.
-        #
-        #if you did not change the class name, but changed the table name,
-        #you can tell in the file that you just changed the table name
-        #
-        #if you changed both the class name and the table name, among other changes,
-        #then it will look like an entirely different table (when comparing these, so be careful).
-        #
-        #we need to know where to save the different types of files.
-        #
-        #we need to make the following files:
-        #-a python script to execute
-        #-an SQL file of commands to execute
-        #-a data only file
-        #
-        #we need to select all from all tables that this program knows of...
-        mtblclses = [mclsref for mclsref in mycol.getMyClassRefsMain(ftchnw=False)
-                     if (issubclass(mclsref, mybase) and not (mclsref == mybase))];
-
-        mtexistsdata = [];
-        mdataforalltbls = [];
-        ctblstmnts = [];
-        #from models import Signup;#bug here 5-21-2025 4 AM MST
-        for mclsref in mtblclses:
-            texists = mclsref.tableExists(pqry=False);
-            #run the select all query here...
-            if (texists):# or (mclsref == Signup) bug here 5-21-2025 4 AM MST
-                #if (mclsref == Signup): mdataforalltbls.append([]);
-                #else:
-                mitemlist = mclsref.getAllItemsOnTable(pqry=False);
-                mdataforalltbls.append(mitemlist);
-                ctblqry = mclsref.genSQLCreateTableFromRef(varstr="" + SQLVARIANT, onlyifnot=False,
-                                                           isinctable=True);#the create table statement
-                ctblstmnts.append(ctblqry);
-                #print("all items on DB for class " + mclsref.__name__ + " are: ");
-                #print(f"all colnames are: {mclsref.getMyColNames()}");
-                #for item in mitemlist: print(item);
-            else:
-                mdataforalltbls.append([]);
-                ctblstmnts.append("");
-            mtexistsdata.append(texists);
-            #else not sure what to do if the table does not exist on the DB
-        
-        #print the data and other results here...
-        datflines = [];
-        for n in range(len(mtblclses)):
-            mclsref = mtblclses[n];
-            clsexiststr = "class " + mclsref.__name__ + " ";
-            clsexiststr += ("EXISTS" if (mtexistsdata[n]) else "DOES NOT EXIST");
-            clsexiststr += " with tablename: " + mclsref.getTableName();
-            clsexiststr += " and has colnames: ";
-            datflines.append(clsexiststr);
-            clnmsstr = str(mclsref.getMyColNames());
-            datflines.append(clnmsstr);
-            ctranstr = "and the create table statement is:";
-            datflines.append(ctranstr);
-            datflines.append(ctblstmnts[n]);
-            dattranstr = "and the data: [";
-            if (myvalidator.isvaremptyornull(mdataforalltbls[n])): dattranstr += "]"; 
-            datflines.append(dattranstr);
-            print("\n" + clsexiststr + "\n" + clnmsstr + "\n" + ctranstr + "\n\n" + ctblstmnts[n]);
-            print("\n\n" + dattranstr);
-            if (myvalidator.isvaremptyornull(mdataforalltbls[n])): pass;
-            else:
-                for item in mdataforalltbls[n]:
-                    datflines.append(str(item));
-                    print(item);
-                datflines.append("]");
-                print("]");
-        #print("\nPRINTING THE DATA ONLY FILE LINES HERE:");
-        #for line in datflines: print(line);
-
-        print("\nBEGIN GENERATING THE SQL COMMAND FILE ONLY HERE:");
-
-        mysqlfilelines = [mclsref.genSQLDropTableFromClass(onlyifnot=True) for mclsref in mtblclses];
-        for n in range(len(mtblclses)):
-            #create table if exists else do nothing, then generate the statements to insert the data.
-            mclsref = mtblclses[n];
-            if (mtexistsdata[n]):# or (mclsref == Signup) bug here 5-21-2025 4 AM MST
-                mysqlfilelines.append(ctblstmnts[n]);
-                #take the data then generate the insert into table statements here...
-                for item in mdataforalltbls[n]:
-                    nwvqry = mclsref.genSQLInsertIntoFromRef(vals=item);
-                    mysqlfilelines.append(nwvqry);
-        for line in mysqlfilelines: print(line);
-        
+    def genpscrptfromsqlines(cls, msqlines):
         #generate the python script file lines here...
         #we need to be able to call our methods to add the data.
         #do we want to do this via objects or directly?
@@ -1282,8 +1282,9 @@ class mybase:
         #take the above...
         #copy the array into the file...
         #need to import the CURSOR and CONN from the config or init...
+        myvalidator.varmustnotbeempty(msqlines, "msqlines");
         iline = "from init import CURSOR, CONN;";
-        qline = "mqries = " + str(mysqlfilelines) + ";";
+        qline = "mqries = " + str(msqlines) + ";";
         nxtline = "for qry in mqries:";
         bnxtline = "    CURSOR.execute(qry);";#\t instead of 4 spaces on these lines
         cnxtline = "    CONN.commit();";#\t instead of 4 spaces on these lines
@@ -1330,6 +1331,205 @@ class mybase:
         mflines.append(bnxtline);
         mflines.append(cnxtline);
         mflines.append(fline);
+        return mflines;
+
+    @classmethod
+    def getTableClasses(ftchnow=False):
+        myvalidator.varmustbeboolean(ftchnow, "ftchnow");
+        return [mclsref for mclsref in mycol.getMyClassRefsMain(ftchnw=ftchnow)
+                     if (issubclass(mclsref, mybase) and not (mclsref == mybase))];
+
+    @classmethod
+    def getExistsCreateTableStatementsAndDataForAllTablesObject(cls, mtblclses):
+        mtexistsdata = [];
+        mdataforalltbls = [];
+        ctblstmnts = [];
+        #from models import Signup;#bug here 5-21-2025 4 AM MST
+        for mclsref in mtblclses:
+            texists = mclsref.tableExists(pqry=False);
+            #run the select all query here...
+            if (texists):# or (mclsref == Signup) bug here 5-21-2025 4 AM MST
+                #if (mclsref == Signup): mdataforalltbls.append([]);
+                #else:
+                mitemlist = mclsref.getAllItemsOnTable(pqry=False);
+                mdataforalltbls.append(mitemlist);
+                ctblqry = mclsref.genSQLCreateTableFromRef(varstr="" + SQLVARIANT, onlyifnot=False,
+                                                           isinctable=True);#the create table statement
+                ctblstmnts.append(ctblqry);
+                #print("all items on DB for class " + mclsref.__name__ + " are: ");
+                #print(f"all colnames are: {mclsref.getMyColNames()}");
+                #for item in mitemlist: print(item);
+            else:
+                mdataforalltbls.append([]);
+                ctblstmnts.append("");
+            mtexistsdata.append(texists);
+            #else not sure what to do if the table does not exist on the DB
+        return {"tsexists": mtexistsdata, "ctbls": ctblstmnts, "dataftbles": mdataforalltbls};
+    def getExistsCreateTableStatementAndDataForAllTablesObjectAfterClasses(cls, ftchnow=False):
+        mtclses = cls.getTableClasses(ftchnow=ftchnow);
+        return cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mtclses);
+
+    @classmethod
+    def genSQLFileLines(cls, mtexistsdata, ctblstmnts, mdataforalltbls):
+        mtblclses = cls.getTableClasses(ftchnow=False);
+        myvalidator.twoListsMustBeTheSameSize(mtexistsdata, mtblclses, "mtexistsdata", "mtblclses");
+        myvalidator.twoListsMustBeTheSameSize(ctblstmnts, mtblclses, "ctblstmnts", "mtblclses");
+        myvalidator.twoListsMustBeTheSameSize(mdataforalltbls, mtblclses,
+                                              "mdataforalltbls", "mtblclses");
+        mysqlfilelines = [mclsref.genSQLDropTableFromClass(onlyifnot=True) for mclsref in mtblclses];
+        for n in range(len(mtblclses)):
+            #create table if exists else do nothing, then generate the statements to insert the data.
+            mclsref = mtblclses[n];
+            if (mtexistsdata[n]):# or (mclsref == Signup) bug here 5-21-2025 4 AM MST
+                mysqlfilelines.append(ctblstmnts[n]);
+                #take the data then generate the insert into table statements here...
+                for item in mdataforalltbls[n]:
+                    nwvqry = mclsref.genSQLInsertIntoFromRef(vals=item);
+                    mysqlfilelines.append(nwvqry);
+        return mysqlfilelines;
+    @classmethod
+    def genSQLFileFromTExistsCTAndDataObj(cls, mdataobj):
+        myvalidator.objvarmusthavethesekeysonit(mdataobj, ["tsexists", "ctbls", "dataftbles"],
+                                                varnm="mdataobj");
+        mtexistsdata = mdataobj["tsexists"];
+        ctblstmnts = mdataobj["ctbls"];
+        mdataforalltbls = mdataobj["dataftbles"];
+        return cls.genSQLFileLines(mtexistsdata, ctblstmnts, mdataforalltbls);
+    @classmethod
+    def genSQLFileLinesFromTExistsCTAndDataForTFromObjFromClses(cls, mclses):
+        mdatobj = cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mclses);
+        return cls.genSQLFileFromTExistsCTAndDataObj(mdatobj);
+    @classmethod
+    def genSQLFileLinesFromTExistsCTAndDataForTFromObjAfterClasses(cls, ftchnow=False):
+        mtclses = cls.getTableClasses(ftchnow=ftchnow);
+        return cls.genSQLFileLinesFromTExistsCTAndDataForTFromObjFromClses(mtclses);
+
+    @classmethod
+    def genSQLFileLinesFromScriptFileLines(cls, scrptflines):
+        #qline = "mqries = " + str(msqlines) + ";";
+        #nxtline = "for qry in mqries:";
+        #         01234567890
+        #https://stackoverflow.com/questions/8494514/converting-string-to-tuple
+        #from ast import literal_eval;#this is a possible security problem.
+        
+        #si = 1;
+        ei = -1;
+        for n in reversed(range(len(scrptflines))):
+            #print(f"cscrptfline = {scrptflines[n]}");
+            if ("for qry in mqries:" in scrptflines[n]):
+                ei = n;
+                break;
+        #print(f"ei = {ei}");
+        myvalidator.valueMustBeInRange(ei, 2, len(scrptflines) - 4, True, True, "ei");
+        #mstr = scrptflines[1][9:len(scrptflines[1]) - 1];
+        #print(f"mstr = {mstr}");
+        mlist = [(scrptflines[i][11:len(scrptflines[i]) - 3] if (i + 1 == ei) else
+                  scrptflines[i][11:len(scrptflines[i]) - 2])
+                 for i in range(len(scrptflines)) if (0 < i and i < ei)];
+        #print(mlist);
+        return mlist;
+
+
+    @classmethod
+    def myfilewritelinesmethod(cls, fnmandpth, flines, dscptrmsg=""):
+        #actually write the stuff here...
+        #we need to know what to call the new files and where to save them...
+        #note opening in write mode if the file does not exist will create it
+        #modes are read, write, append
+        myvalidator.stringMustHaveAtMinNumChars(fnmandpth, 3, "fnmandpth");
+        if (myvalidator.isvarnull(dscptrmsg)):
+            return cls.myfilewritelinesmethod(fnmandpth, flines, dscptrmsg="");
+        if (myvalidator.isvarnull(flines)):
+            return cls.myfilewritelinesmethod(fnmandpth, [], dscptrmsg=dscptrmsg);
+        with open(fnmandpth, "w") as mfile:
+            for line in flines:
+                mfile.write(line);
+                mfile.write("\n");
+            print(dscptrmsg + (" " if (not(dscptrmsg.endswith(" "))) else "") +
+                  "file written successfully!");
+            mfile.close();
+        return True;
+
+    @classmethod
+    def backupDB(cls):
+        #the backup entails everything that is on the DB...
+        #may need a new location set...
+        #we want to create a list of the SQL commands run
+        #we want all of the data on the DB...
+        #we also need to know the sequence of the backups like a date and time stamp...
+        #
+        #maybe what triggered it? User, or adding, removeing or changing a constraint,
+        #or adding, deleting, or changing column names or other column properties,
+        #or saving, updating data, or deleting data (row or rows),
+        #or deleting, adding, or changing tables (like the name, constraints)
+        #
+        #USER, constraint, table, data
+        #
+        #what if there are multiple differences? like data, constraints, tables
+        #(in this case, it would have been triggered by the USER)
+        #adding and dropping contsraints after the table exists
+        #causes a problem for saving the data later on (needs backed up immediately).
+        #
+        #most changes you make are readily apparent execpt one: renaming of existing tables or cols.
+        #since the data only file will include the classname and the tablename,
+        #this will be apparent there that is unless you changed the class name too.
+        #
+        #if you did not change the class name, but changed the table name,
+        #you can tell in the file that you just changed the table name
+        #
+        #if you changed both the class name and the table name, among other changes,
+        #then it will look like an entirely different table (when comparing these, so be careful).
+        #
+        #we need to know where to save the different types of files.
+        #
+        #we need to make the following files:
+        #-a python script to execute
+        #-an SQL file of commands to execute
+        #-a data only file
+        #
+        #we need to select all from all tables that this program knows of...
+        mtblclses = cls.getTableClasses(ftchnow=False);
+        mdatobj = cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mtblclses);
+        mtexistsdata = mdatobj["tsexists"];
+        ctblstmnts = mdatobj["ctbls"];
+        mdataforalltbls = mdatobj["dataftbles"];
+        
+        #print the data and other results here...
+        datflines = [];
+        for n in range(len(mtblclses)):
+            mclsref = mtblclses[n];
+            clsexiststr = "class " + mclsref.__name__ + " ";
+            clsexiststr += ("EXISTS" if (mtexistsdata[n]) else "DOES NOT EXIST");
+            clsexiststr += " with tablename: " + mclsref.getTableName();
+            clsexiststr += " and has colnames: ";
+            datflines.append(clsexiststr);
+            clnmsstr = str(mclsref.getMyColNames());
+            datflines.append(clnmsstr);
+            ctranstr = "and the create table statement is:";
+            datflines.append(ctranstr);
+            datflines.append(ctblstmnts[n]);
+            dattranstr = "and the data: [";
+            if (myvalidator.isvaremptyornull(mdataforalltbls[n])): dattranstr += "]"; 
+            datflines.append(dattranstr);
+            print("\n" + clsexiststr + "\n" + clnmsstr + "\n" + ctranstr + "\n\n" + ctblstmnts[n]);
+            print("\n\n" + dattranstr);
+            if (myvalidator.isvaremptyornull(mdataforalltbls[n])): pass;
+            else:
+                for item in mdataforalltbls[n]:
+                    datflines.append(str(item));
+                    print(item);
+                datflines.append("]");
+                print("]");
+        #print("\nPRINTING THE DATA ONLY FILE LINES HERE:");
+        #for line in datflines: print(line);
+
+        print("\nBEGIN GENERATING THE SQL COMMAND FILE ONLY HERE:");
+
+        mysqlfilelines = cls.genSQLFileLines(mtexistsdata, ctblstmnts, mdataforalltbls);
+        for line in mysqlfilelines: print(line);
+        
+        #generate the python script file here
+        mflines = cls.genpscrptfromsqlines(mysqlfilelines);
 
         print("\nBEGIN GENERATING THE PYTHON FILE ONLY HERE:");
         for line in mflines: print(line);
@@ -1338,24 +1538,9 @@ class mybase:
         #we need to know what to call the new files and where to save them...
         #note opening in write mode if the file does not exist will create it
         #modes are read, write, append
-        with open("bkdatonly.txt", "w") as mfile:
-            for line in datflines:
-                mfile.write(line);
-                mfile.write("\n");
-            print("data only file written successfully!");
-            mfile.close();
-        with open("bkcmdsonly.sql", "w") as mfile:
-            for line in mysqlfilelines:
-                mfile.write(line);
-                mfile.write("\n");
-            print("sql file written successfully!");
-            mfile.close();
-        with open("bkscrpt.py", "w") as mfile:
-            for line in mflines:
-                mfile.write(line);
-                mfile.write("\n");
-            print("script file written successfully!");
-            mfile.close();
+        cls.myfilewritelinesmethod("bkdatonly.txt", datflines, dscptrmsg="data only");
+        cls.myfilewritelinesmethod("bkcmdsonly.sql", mysqlfilelines, dscptrmsg="sql");
+        cls.myfilewritelinesmethod("bkscrpt.py", mflines, dscptrmsg="script");
         print("SUCCESSFULLY CREATED THE BACKUP FILES AND FINISHED THE BACKUP!");
         #raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
     
