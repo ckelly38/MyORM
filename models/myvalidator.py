@@ -129,17 +129,6 @@ class myvalidator:
     def isClass(clsnm, val): return (type(val) == type);
 
     @classmethod
-    def objvarmusthavethesekeysonit(cls, mobj, rkys, varnm="mobj"):
-        if (myvalidator.isvaremptyornull(rkys)): return True;
-        if (myvalidator.isvaremptyornull(varnm)):
-            return cls.objvarmusthavethesekeysonit(mobj, rkys, "mobj");
-        myvalidator.varmustnotbenull(mobj, varnm);
-        errmsg = "the object " + varnm + " must have " + (", ".join(rkys));
-        errmsg += " as keys on it, but it did not!";
-        if (myvalidator.isListAInListB(rkys, mobj.keys())): return True;
-        else: raise ValueError(errmsg);
-
-    @classmethod
     def listMustContainUniqueValuesOnly(clsnm, mlist, varnm="varnm"):
         if (clsnm.isvaremptyornull(varnm)):
             return clsnm.listMustContainUniqueValuesOnly(mlist, "varnm");
@@ -214,6 +203,30 @@ class myvalidator:
     def doTwoListsContainTheSameData(cls, lista, listb):
         return (myvalidator.areTwoArraysTheSameSize(lista, listb) and
                 myvalidator.isListAInListB(lista, listb));
+
+    @classmethod
+    def itemMustBeOneOf(cls, item, mvals, varnm="varnm"):
+        myvalidator.varmustnotbeempty(mvals, "mvals");
+        if (myvalidator.isvaremptyornull(varnm)): return cls.itemMustBeOneOf(item, mvals, "varnm");
+        errmsg = "the item " + varnm + " must be one of the following ";
+        errmsg += myvalidator.myjoin(", ", mvals) + ", but it was not!";
+        if (type(item) in [list, tuple]):
+            if (myvalidator.isListAInListB(item, mvals)): return True;
+            else: raise ValueError(errmsg);
+        else:
+            if (item in mvals): return True;
+            else: raise ValueError(errmsg);
+
+    @classmethod
+    def objvarmusthavethesekeysonit(cls, mobj, rkys, varnm="mobj"):
+        if (myvalidator.isvaremptyornull(rkys)): return True;
+        if (myvalidator.isvaremptyornull(varnm)):
+            return cls.objvarmusthavethesekeysonit(mobj, rkys, "mobj");
+        myvalidator.varmustnotbenull(mobj, varnm);
+        errmsg = "the object " + varnm + " must have " + (", ".join(rkys));
+        errmsg += " as keys on it, but it did not!";
+        if (myvalidator.isListAInListB(rkys, mobj.keys())): return True;
+        else: raise ValueError(errmsg);
 
     @classmethod
     def stringContainsOnlyAlnumCharsIncludingUnderscores(cls, mstr):
@@ -571,7 +584,67 @@ class myvalidator:
             return mystr;
         else: raise ValueError("the column names must be the same length as the table names!");
 
+
+    #other file change log methods
+
+    #rnm table from old_name to new_name
+    #rnm col from old_name to new_name from table_name
+    #rnm cons from old_name to new_name from table_name
+    #del/add table table_name
+    #del/add col col_name from table_name
+    #del/add cons cons_name from table_name
+    #del/add icolcons type from col_name from table_name
+    #-nonnull, unique, unsigned, datatype 
     
+    @classmethod
+    def renameItemString(cls, tp, oldnm, nwnm, tnm=""):
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tp, varnm="the type string");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(oldnm, varnm="the old name");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(nwnm, varnm="the new name");
+        mpt = " from " + oldnm + " to " + nwnm;
+        tpstr = ("table" if (tp.upper() == "TABLE") else ("col" if (tp.upper() == "COL") else "cons"));
+        fptstr = "rnm " + tpstr + mpt;
+        if (tp.upper() == "TABLE"): return fptstr;
+        elif (tp.upper() in ["COL", "CONS", "CONSTRAINT"]):
+            myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tnm,
+                                                                            varnm="the table name");
+            return fptstr + " from " + tnm;
+        else:
+            myvalidator.itemMustBeOneOf(tp.upper(), ["TABLE", "COL", "CONS", "CONSTRAINT"], "tpstr");
+            raise ValueError("the type was not on the list or table, col, or cons, but it should be!");
+    
+    @classmethod
+    def addOrDeleteItemString(cls, useadd, tp, tnm, itnm="", icltp=""):
+        myvalidator.varmustbeboolean(useadd, "useadd");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tnm, varnm="the table name");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tp, varnm="the type string");
+        addstr = ("add" if (useadd) else "del");
+        icolconstpslist = ["INDIVIDUAL-COLUMN-CONSTRAINT", "INDIVIDUAL COLUMN CONSTRAINT", "ICOLCONS"];
+        constplist = ["CONS", "CONSTRAINT"];
+        inittpslist = ["TABLE", "COL", "CONS", "CONSTRAINT"];
+        tpslist = myvalidator.combineTwoLists(inittpslist, icolconstpslist);
+        myvalidator.itemMustBeOneOf(tp.upper(), tpslist, "tpstr");
+        myrettpstr = ("icolcons" if (tp.upper() in icolconstpslist) else
+                      ("cons" if (tp.upper() in constplist) else tp.upper().lower()));
+        basestr = addstr + " " + myrettpstr + " ";
+        if (myrettpstr == "table"): return basestr + tnm;
+        else:
+            #itemname is required now.
+            #everything will have itemname from tablename
+            myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(itnm, varnm="item name");
+            fpart = itnm + " from " + tnm;
+            midptstr = "";
+            if (myrettpstr == "icolcons"):
+                nltpslist = ["NONNULL", "NOTNULL", "NON-NULL", "NOT-NULL"];
+                otpslist = ["UNIQUE", "UNSIGNED", "DATATYPE"];
+                fintpslist = myvalidator.combineTwoLists(nltpslist, otpslist);
+                myvalidator.itemMustBeOneOf(icltp.upper(), fintpslist, "constpstr");
+                finicltp = ("notnull" if (icltp.upper() in nltpslist) else icltp.upper().lower());
+                midptstr = finicltp + " from ";
+            return basestr + midptstr + fpart;
+        
+
+
     #SQL methods might get removed from the validator class
 
     #will raise a value error if the constraint is not valid unless it is empty or null

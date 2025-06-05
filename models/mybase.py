@@ -994,12 +994,13 @@ class mybase:
         #we care about the create table statement...
         #we care about the data lines if there is data...
         #we care what the data is...
+        mxitems = len(lineswithclsonthem);
         for n in range(mxitems):
             bglineindx = lineswithclsonthem[n];
             ctblineindx = ctbllines[n];#execute directly
             dtlindx = dtaline[n];#look at first line
             nxtbglineindx = (lineswithclsonthem[n + 1] if (n + 1 < mxitems) else len(mlines));
-            diffnxtclsdatline = nxtbglineindx - actdtlindx;
+            diffnxtclsdatline = nxtbglineindx - dtlindx;
             bgline = mlines[bglineindx];
             clstbleexists = ("EXISTS" in bgline);
             tnmindx = bgline.index("with tablename: ");
@@ -1073,7 +1074,7 @@ class mybase:
     #NOT DONE YET RESTORING THE DB 5-29-2025 8:56 PM
 
     @classmethod
-    def name(cls, filepathandnm):
+    def restoreDBFromDatFileAndChangeLog(cls, filepathandnm, cloglines):
         #at any rate, we need to:
         #1. back up the data (if that has not already been done so),
         #-but the backup files will have the OLD create table statement and all old data
@@ -1167,6 +1168,8 @@ class mybase:
         #we will use the data only file as it is the most complete...
         myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 5, "filepathandnm");
         myvalidator.stringMustEndWith(filepathandnm, ".txt", "filepathandnm");
+        if (myvalidator.isvaremptyornull(cloglines)):
+            return cls.restoreDBFromDatOnlyFile(filepathandnm);
         mlines = None;
         with open(filepathandnm, "r") as mfile:
             mlines = mfile.readlines();
@@ -1186,12 +1189,13 @@ class mybase:
         #we care about the create table statement...
         #we care about the data lines if there is data...
         #we care what the data is...
+        mxitems = len(lineswithclsonthem);
         for n in range(mxitems):
             bglineindx = lineswithclsonthem[n];
             ctblineindx = ctbllines[n];#execute directly
             dtlindx = dtaline[n];#look at first line
             nxtbglineindx = (lineswithclsonthem[n + 1] if (n + 1 < mxitems) else len(mlines));
-            diffnxtclsdatline = nxtbglineindx - actdtlindx;
+            diffnxtclsdatline = nxtbglineindx - dtlindx;
             bgline = mlines[bglineindx];
             clstbleexists = ("EXISTS" in bgline);
             tnmindx = bgline.index("with tablename: ");
@@ -1205,6 +1209,13 @@ class mybase:
             tname = bgline[tnmindx + 16:tnmnxtspcindx];
             print(f"tname = {tname}");
             #print(f"len(tname) = {len(tname)}");
+
+            #what to do if the table already exists on the DB?
+            #what do we do if the table does not exist on the DB?
+            #how do we know if a table has changes or not?
+            #what to do if we have no changes for the table?
+            #what to do if we have changes for the table? well this depends on what they are.
+
             raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
             #add a drop table if exists and then execute it
             #then execute the create table statement
@@ -1334,7 +1345,7 @@ class mybase:
         return mflines;
 
     @classmethod
-    def getTableClasses(ftchnow=False):
+    def getTableClasses(cls, ftchnow=False):
         myvalidator.varmustbeboolean(ftchnow, "ftchnow");
         return [mclsref for mclsref in mycol.getMyClassRefsMain(ftchnw=ftchnow)
                      if (issubclass(mclsref, mybase) and not (mclsref == mybase))];

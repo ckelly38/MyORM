@@ -43,6 +43,13 @@ if (rungensqlfromscrpttst):
     for line in sqlines: print(line[0:len(line) - 1]);
     raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
+runresviadatclogfiletst = True;
+if (runresviadatclogfiletst):
+      cloglines = [myvalidator.addOrDeleteItemString(False, "cons", "campers", itnm="agecheck",
+                                                     icltp="")];
+      mybase.restoreDBFromDatFileAndChangeLog("./bkdatonly.txt", cloglines);
+      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
 #print(mynewcol);
 #tstobj = MyTestColsClass(colnames=["mynewcol"], colvalues=[1]);
 #values of the cols must get past into the constructor...
