@@ -1073,6 +1073,76 @@ class mybase:
 
     #NOT DONE YET RESTORING THE DB 5-29-2025 8:56 PM
 
+    #old data 0
+    #old data and new names only 1
+    #new data only 2
+    #old data and new data 3
+    @classmethod
+    def getIfLineRequiresNewOldOrBothData(cls, cloglines):
+        if (myvalidator.isvaremptyornull(cloglines)): return [];
+        else:
+            print("\nThe CHANGE LOG HAS:\n");
+            for line in cloglines: print(line);
+            print();
+            
+            #determining if we need new data or just the old or both:
+            #
+            #if [a col, a table, a constraint] was renamed what the old name was and
+            # what the new name is
+            #-we need the old data only.
+            #-renaming all of these effects the create table statement
+            #--when it is a constraint that is the only thing that got changed though
+            #--we can get the new name from the class file in this case
+            #-renaming a table or a col on a table effects everything that refers to it
+            #--like foreign keys on other tables might no longer be valid until they are changed
+            #
+            #if [a col, a table, a constraint] was added or removed (the count will be different)
+            #-for removal we only need the old data only;
+            #-for addition we need the new data only
+            #--(except for the constraint, but this will change what old data is legal).
+            #if some other property of a col or a constraint was changed like data type,
+            # we need new data
+            #-ideally we treat this as creating something new; new data only.
+            #
+            #rnm table from old_name to new_name
+            #rnm col from old_name to new_name on table_name
+            #rnm cons from old_name to new_name on table_name
+            #del/add col col_name on table_name
+            #del/add table table_name
+            #del/add cons cons_name on table_name
+            #del/add icolcons type from col_name on table_name
+            
+            #old data 0
+            #old data and new names only 1
+            #new data only 2
+            #old data and new data 3
+            print("old data is 0\nold data new names only is 1\nnew data only 2");
+            print("old and new data is 3");
+            mlist = [];
+            for line in cloglines:
+                if ("rnm" in line and line.index("rnm") == 0):
+                    #old data and the new names only
+                    mlist.append(1);
+                elif ("del" in line and line.index("del") == 0):
+                    #removing something here, old data only
+                    mlist.append(0);
+                elif ("add" in line and line.index("add") == 0):
+                    #if adding a new table we need new data
+                    #if adding a new col on a table we need new data and old data
+                    #if adding a new constraint we need old data
+                    #if adding a new individual col constraint (changing data type) new data
+                    if ("table" in line and line.index("table") == 4): mlist.append(2);
+                    elif ("col" in line and line.index("col") == 4): mlist.append(3);
+                    elif ("cons" in line and line.index("cons") == 4): mlist.append(0);
+                    elif ("icolcons" in line and line.index("icolcons") == 4): mlist.append(3);
+                    else: raise ValueError("the change log added and invalid type of something to it!");
+                else: raise ValueError("the change log line started with something invalid!");
+
+            #return [(? if ("rnm" in line and line.index("rnm") == 0) else
+            #         (? if ("del" in line and line.index("del") == 0) else
+            #          (? if ("add" in line and line.index("add") == 0) else ?))) for line in cloglines];
+            return mlist;
+
     @classmethod
     def restoreDBFromDatFileAndChangeLog(cls, filepathandnm, cloglines):
         #at any rate, we need to:
@@ -1215,6 +1285,12 @@ class mybase:
             #how do we know if a table has changes or not?
             #what to do if we have no changes for the table?
             #what to do if we have changes for the table? well this depends on what they are.
+            
+            print("\nThe CHANGE LOG HAS:\n");
+            for line in cloglines: print(line);
+            print();
+
+            #now need to determine if each change requires new data etc...
 
             raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
             #add a drop table if exists and then execute it

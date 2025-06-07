@@ -588,12 +588,12 @@ class myvalidator:
     #other file change log methods
 
     #rnm table from old_name to new_name
-    #rnm col from old_name to new_name from table_name
-    #rnm cons from old_name to new_name from table_name
+    #rnm col from old_name to new_name on table_name
+    #rnm cons from old_name to new_name on table_name
     #del/add table table_name
-    #del/add col col_name from table_name
-    #del/add cons cons_name from table_name
-    #del/add icolcons type from col_name from table_name
+    #del/add col col_name on table_name
+    #del/add cons cons_name on table_name
+    #del/add icolcons type from col_name on table_name
     #-nonnull, unique, unsigned, datatype 
     
     @classmethod
@@ -608,7 +608,7 @@ class myvalidator:
         elif (tp.upper() in ["COL", "CONS", "CONSTRAINT"]):
             myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tnm,
                                                                             varnm="the table name");
-            return fptstr + " from " + tnm;
+            return fptstr + " on " + tnm;
         else:
             myvalidator.itemMustBeOneOf(tp.upper(), ["TABLE", "COL", "CONS", "CONSTRAINT"], "tpstr");
             raise ValueError("the type was not on the list or table, col, or cons, but it should be!");
@@ -632,7 +632,7 @@ class myvalidator:
             #itemname is required now.
             #everything will have itemname from tablename
             myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(itnm, varnm="item name");
-            fpart = itnm + " from " + tnm;
+            fpart = itnm + " on " + tnm;
             midptstr = "";
             if (myrettpstr == "icolcons"):
                 nltpslist = ["NONNULL", "NOTNULL", "NON-NULL", "NOT-NULL"];
@@ -642,7 +642,12 @@ class myvalidator:
                 finicltp = ("notnull" if (icltp.upper() in nltpslist) else icltp.upper().lower());
                 midptstr = finicltp + " from ";
             return basestr + midptstr + fpart;
-        
+    @classmethod
+    def addItemString(cls, tp, tnm, itnm="", icltp=""):
+        return cls.addOrDeleteItemString(True, tp, tnm, itnm=itnm, icltp=icltp);
+    @classmethod
+    def delItemString(cls, tp, tnm, itnm="", icltp=""):
+        return cls.addOrDeleteItemString(False, tp, tnm, itnm=itnm, icltp=icltp);
 
 
     #SQL methods might get removed from the validator class
