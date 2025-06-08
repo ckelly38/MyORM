@@ -43,21 +43,28 @@ if (rungensqlfromscrpttst):
     for line in sqlines: print(line[0:len(line) - 1]);
     raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
-runresviadatclogfiletst = True;
-if (runresviadatclogfiletst):
-      #cloglines = [myvalidator.addOrDeleteItemString(False, "cons", "campers", itnm="agecheck",
-      #                                               icltp="")];
-      #myvalidator.renameItemString("icolcons", "pcheckname", "pckname", tnm="persons"),
+runclogtsts = False;
+if (runclogtsts):
       cloglines = [myvalidator.renameItemString("table", "crapers", "campers", tnm=""),
                    myvalidator.renameItemString("col", "pname", "name", tnm="persons"),
                    myvalidator.renameItemString("cons", "pcheckname", "pckname", tnm="persons"),
                    myvalidator.addItemString("table", "items", itnm="", icltp=""),
                    myvalidator.addItemString("col", "campers", itnm="issmart", icltp=""),
                    myvalidator.addItemString("cons", "campers", itnm="agecheck", icltp=""),
-                   myvalidator.addItemString("icolcons", "campers", itnm="issmart", icltp="datatype"),];
+                   myvalidator.addItemString("icolcons", "campers", itnm="issmart", icltp="datatype"),
+                   myvalidator.delItemString("table", "items", itnm="", icltp=""),
+                   myvalidator.delItemString("col", "campers", itnm="issmart", icltp=""),
+                   myvalidator.delItemString("cons", "campers", itnm="agecheck", icltp=""),
+                   myvalidator.delItemString("icolcons", "campers", itnm="issmart", icltp="datatype")];
       #for line in cloglines: print(line);
       print(mybase.getIfLineRequiresNewOldOrBothData(cloglines));
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
+runresviadatclogfiletst = True;
+if (runresviadatclogfiletst):
+      cloglines = [myvalidator.addOrDeleteItemString(False, "cons", "campers", itnm="agecheck",
+                                                     icltp="")];
+      #myvalidator.renameItemString("icolcons", "pcheckname", "pckname", tnm="persons"),
       mybase.restoreDBFromDatFileAndChangeLog("./bkdatonly.txt", cloglines);
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 

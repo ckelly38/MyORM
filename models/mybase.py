@@ -1081,9 +1081,9 @@ class mybase:
     def getIfLineRequiresNewOldOrBothData(cls, cloglines):
         if (myvalidator.isvaremptyornull(cloglines)): return [];
         else:
-            print("\nThe CHANGE LOG HAS:\n");
-            for line in cloglines: print(line);
-            print();
+            #print("\nThe CHANGE LOG HAS:\n");
+            #for line in cloglines: print(line);
+            #print();
             
             #determining if we need new data or just the old or both:
             #
@@ -1116,8 +1116,8 @@ class mybase:
             #old data and new names only 1
             #new data only 2
             #old data and new data 3
-            print("old data is 0\nold data new names only is 1\nnew data only 2");
-            print("old and new data is 3");
+            #print("old data is 0\nold data new names only is 1\nnew data only 2");
+            #print("old and new data is 3");
             mlist = [];
             for line in cloglines:
                 if ("rnm" in line and line.index("rnm") == 0):
@@ -1240,6 +1240,16 @@ class mybase:
         myvalidator.stringMustEndWith(filepathandnm, ".txt", "filepathandnm");
         if (myvalidator.isvaremptyornull(cloglines)):
             return cls.restoreDBFromDatOnlyFile(filepathandnm);
+        #if above only has 0s the other method will work fine.
+        dtrequsrnumslist = mybase.getIfLineRequiresNewOldOrBothData(cloglines);
+        hasnummorethanzero = False;
+        for n in dtrequsrnumslist:
+            if (n == 0): pass;
+            elif (0 < n and n < 4):
+                if (hasnummorethanzero): pass;
+                else: hasnummorethanzero = True;
+                #break;
+            else: raise ValueError("invalid number found and use here!");
         mlines = None;
         with open(filepathandnm, "r") as mfile:
             mlines = mfile.readlines();
@@ -1287,9 +1297,15 @@ class mybase:
             #what to do if we have changes for the table? well this depends on what they are.
             
             print("\nThe CHANGE LOG HAS:\n");
-            for line in cloglines: print(line);
+            for n in range(len(cloglines)):
+                line = cloglines[n];
+                print(str(dtrequsrnumslist[n]) + " | " + line);
             print();
-
+            print("the numbers on the left of the | mean:");
+            print("old data is 0\nold data new names only is 1\nnew data only 2");
+            print("old and new data is 3\n");
+            print(f"hasnummorethanzero = {hasnummorethanzero}");
+            
             #now need to determine if each change requires new data etc...
 
             raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
