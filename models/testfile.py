@@ -60,12 +60,67 @@ if (runclogtsts):
       print(mybase.getIfLineRequiresNewOldOrBothData(cloglines));
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
-runresviadatclogfiletst = True;
-if (runresviadatclogfiletst):
-      cloglines = [myvalidator.addOrDeleteItemString(False, "cons", "campers", itnm="agecheck",
-                                                     icltp="")];
+runresviadatclogfiletsta = True;
+if (runresviadatclogfiletsta):
+      cloglines = [myvalidator.addOrDeleteItemString(True, "cons", "campers", itnm="agecheck",
+                                                      icltp="")];
       #myvalidator.renameItemString("icolcons", "pcheckname", "pckname", tnm="persons"),
       mybase.restoreDBFromDatFileAndChangeLog("./bkdatonly.txt", cloglines);
+      tstcmpr = Camper(age=20, name="test", id=1);
+      print("CAMPER CONSTRAINTS AFTER:");
+      mclist = Camper.getMyColObjFromName("age", mycols=None).getConstraints();
+      print(mclist);
+      iteminlist = False;
+      for mcitem in mclist:
+            if ("agecheck" in mcitem and mcitem.index("agecheck") == 11):
+                  iteminlist = True;
+                  break;
+      #if this fails, then the agecheck constraint was not on the constraints list for Camper.
+      #this means the class file was not modified to include it back and that is why it now fails.
+      myvalidator.twoBoolVarsMustBeEqual(iteminlist, True, varnma="iteminlist", varnmb="expectedval");
+      print(f"tstcmpr = {tstcmpr}");
+      tstcmpr.save();#for the test to pass, the save must fail here...
+      raise ValueError("ADDING THE CONSTRAINT TEST FAILED BECAUSE SAVE SUCCEEDED!");
+
+runaddconstst = True;
+if (runaddconstst):
+      print("CAMPER CONSTRAINTS BEFORE:");
+      print(Camper.getMyColObjFromName("age", mycols=None).getConstraints());
+      Camper.getMyColObjFromName("age", mycols=None).addConstraint(
+            myvalidator.genSQLCheck("agecheck", "age >= 8 AND age <= 18"),
+            runbkbfr=False, runbkaftr=False, isinctable=False);
+      print("CAMPER CONSTRAINTS AFTER:");
+      print(Camper.getMyColObjFromName("age", mycols=None).getConstraints());
+      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
+runresviadatclogfiletst = False;
+if (runresviadatclogfiletst):
+      runconststonly = False;
+      if (runconststonly): pass;
+      else:
+            cloglines = [myvalidator.addOrDeleteItemString(False, "cons", "campers", itnm="agecheck",
+                                                      icltp="")];
+            #myvalidator.renameItemString("icolcons", "pcheckname", "pckname", tnm="persons"),
+            mybase.restoreDBFromDatFileAndChangeLog("./bkdatonly.txt", cloglines);
+      print("CAMPER CONSTRAINTS AFTER:");
+      mclist = Camper.getMyColObjFromName("age", mycols=None).getConstraints();
+      print(mclist);
+      iteminlist = False;
+      for mcitem in mclist:
+            if ("agecheck" in mcitem and mcitem.index("agecheck") == 11):
+                  iteminlist = True;
+                  break;
+      #if this fails that means the camper constraint did not get removed from the class file.
+      myvalidator.twoBoolVarsMustBeEqual(iteminlist, False, varnma="iteminlist", varnmb="expectedval");
+      #tstcmpr = Camper(age=20, name="test", id=1);
+      tstcmpr = Camper(colnames=["age", "name"], colvalues=[20, "test"], age=20, id=1);
+      #tstcmpr = Camper(colnames=["age", "name"], colvalues=[20, "test"], id=1);
+      #tstcmpr=Camper(colnames=["age", "name", "id"], colvalues=[20, "test", 1]);
+      #tstcmpr=Camper(colnames=["age", "name", "id"], colvalues=[20, "test", 1],
+      #               age=20, name="test", id=2);
+      print(f"tstcmpr = {tstcmpr}");
+      tstcmpr.save();
+      print("removing the camper constraint test past!");
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 #print(mynewcol);

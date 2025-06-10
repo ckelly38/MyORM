@@ -175,7 +175,7 @@ class Camper(mybase):
                                                       myvalidator.genSQLLength("name") + " >= 1")]);
     age = mycol(colname="age", datatype="Integer", defaultvalue=1, isprimarykey=False, isnonnull=True,
                 issigned=False, isunique=False, autoincrements=False,
-                constraints=[myvalidator.genSQLCheck("agecheck", "age >= 8 AND age <= 18")]);
+                constraints=[myvalidator.genSQLCheck("agecheck", "age >= 8 AND age <= 18")]);#
 
     # Add relationship
     #signups = db.relationship("Signup", back_populates="camper", cascade="all, delete-orphan");
@@ -213,8 +213,8 @@ class Camper(mybase):
     #@mybase.validates(["age"])
     #@validates(["age"])
     #@validates("name", "age")#use for multi-column validator (will cause an error)
-    @validates("age")
-    def isvalidage(self, key, val): return myvalidator.isValueInRangeWithMaxAndMin(val, 8, 18);
+    #@validates("age")
+    #def isvalidage(self, key, val): return myvalidator.isValueInRangeWithMaxAndMin(val, 8, 18);
 
     #myvalidator.addValidator("Camper", "isvalidage", ["age"]);
 

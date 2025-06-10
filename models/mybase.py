@@ -134,7 +134,7 @@ class mybase:
 
 
     #DEPENDS ON THE SQL VARIANT
-    def __init__(self, colnames=None, colvalues=None):
+    def __init__(self, colnames=None, colvalues=None, **kwargs):
         print("INSIDE BASE CLASS CONSTRUCTOR CALLING SETUP IF NEEDED FIRST!");
         #print(f"mycol.hasRunSetupYet() = {mycol.hasRunSetupYet()}");
         if (not mycol.hasRunSetupYet()): type(self).setupMain();
@@ -146,6 +146,62 @@ class mybase:
         print(f"mycolnames = {mycolnames}");
         print(f"colnames = {colnames}");#user provided
         print(f"colvalues = {colvalues}");#user provided
+        print(f"kwargs = {kwargs}");
+        
+        mkwdargslist = list(kwargs.keys());
+        if (myvalidator.isvaremptyornull(mkwdargslist)): pass;
+        else:
+            #if the user provides both the colnames and colvalues and keywordargs
+            #with contradicting values kill the program here because the call is invalid
+            #otherwise ignore them after copying them to the colvalues and colnames lists and recall
+            if (myvalidator.isvaremptyornull(colnames)):
+                ncolnames = myvalidator.combineTwoLists(colnames, mkwdargslist, nodups=True);
+                ncolvalues = [kwargs[ky] for ky in mkwdargslist];
+                #print(f"ncolnames = {ncolnames}");
+                #print(f"ncolvalues = {ncolvalues}");
+                
+                return self.__init__(colnames=ncolnames, colvalues=ncolvalues);
+            else:
+                #cmnkys = [ky for ky in mkwdargslist if ky in colnames];
+                #uargkys = [ky for ky in mkwdargslist if ky not in cmnkys];
+                cmnkys = [];
+                uargkys = [];
+                for ky in mkwdargslist:
+                    if (ky in colnames): cmnkys.append(ky);
+                    else: uargkys.append(ky);
+                cmnkyindxs = [colnames.index(ky) for ky in cmnkys];
+                #print(f"uargkys = {uargkys}");
+                #print(f"cmnkys = {cmnkys}");
+                #print(f"cmnkyindxs = {cmnkyindxs}");
+                
+                lstbadkynmvals = [];
+                for n in range(len(cmnkys)):
+                    ky = cmnkys[n];
+                    #print(f"argval = {kwargs[ky]}");
+                    #print(f"colval = {colvalues[cmnkyindxs[n]]}");
+
+                    if (kwargs[ky] == colvalues[cmnkyindxs[n]]): pass;
+                    else: lstbadkynmvals.append(ky);
+                
+                if (myvalidator.isvaremptyornull(lstbadkynmvals)):
+                    #no bad keys where there were contradicting values
+                    #but we may have different keys on both lists
+                    #so add the kywargs keys and values to the col lists
+                    ncolnames = myvalidator.combineTwoLists(colnames, mkwdargslist, nodups=True);
+                    ncolvalues = [val for val in colvalues];
+                    kyarglist = (mkwdargslist if (myvalidator.isvaremptyornull(cmnkys)) else uargkys);
+                    for ky in kyarglist: ncolvalues.append(kwargs[ky]);
+                    #print(f"kyarglist = {kyarglist}");
+                    #print(f"ncolnames = {ncolnames}");
+                    #print(f"ncolvalues = {ncolvalues}");
+                    
+                    return self.__init__(colnames=ncolnames, colvalues=ncolvalues);
+                else:
+                    errmsg = "all of the keys should agree on the values or the keys ";
+                    errmsg += "should be different, but they were not!\n";
+                    errmsg += "The following key(s) have two different values for them:\n";
+                    errmsg += str(lstbadkynmvals) + "!";
+                    raise TypeError(errmsg);
 
         self.setLastSyncedValsDict(None);
         self.setUserProvidedColNames(colnames);
@@ -909,10 +965,10 @@ class mybase:
         ctbllines = myvalidator.getLineIndexesWithStringOnIt("and the create table statement is:",
                                                              mlines);
         dtaline = myvalidator.getLineIndexesWithStringOnIt("and the data: [", mlines);
-        print("begin make sure that the backup data file is in the correct format now:");
+        print("\nbegin make sure that the backup data file is in the correct format now:");
         print(f"lineswithclsonthem = {lineswithclsonthem}");
         print(f"ctbllines = {ctbllines}");
-        print(f"dtaline = {dtaline}");
+        print(f"dtaline = {dtaline}\n");
         
         mxitems = len(lineswithclsonthem);
         for n in range(mxitems):
@@ -956,7 +1012,7 @@ class mybase:
             if (4 < diffnxtclslineandprev): pass;
             else: raise ValueError("(4) backup file is in the wrong format!");
 
-        print("backup data only file is in the correct format!");
+        print("\nbackup data only file is in the correct format!\n");
         return True;
 
     @classmethod
@@ -1138,9 +1194,14 @@ class mybase:
                     else: raise ValueError("the change log added and invalid type of something to it!");
                 else: raise ValueError("the change log line started with something invalid!");
 
-            #return [(? if ("rnm" in line and line.index("rnm") == 0) else
-            #         (? if ("del" in line and line.index("del") == 0) else
-            #          (? if ("add" in line and line.index("add") == 0) else ?))) for line in cloglines];
+            #mlist = [(1 if ("rnm" in line and line.index("rnm") == 0) else
+            #         (0 if ("del" in line and line.index("del") == 0) else
+            #          ((2 if ("table" in line and line.index("table") == 4) else
+            # (3 if ("col" in line and line.index("col") == 4) else 
+            # (0 if ("cons" in line and line.index("cons") == 4) else
+            # (3 if ("icolcons" in line and line.index("icolcons") == 4) else -1))))
+            # if ("add" in line and line.index("add") == 0) else -1))) for line in cloglines];
+            #for num in mlist: myvalidator.valueMustBeInMinAndMaxRange(num, 0, 3, "num");
             return mlist;
 
     @classmethod
@@ -1265,11 +1326,31 @@ class mybase:
         dtaline = myvalidator.getLineIndexesWithStringOnIt("and the data: [", mlines);
         cls.dataOnlyFileMustBeInTheCorrectFormat(mlines);
 
+        #what to do if the table already exists on the DB?
+        #what do we do if the table does not exist on the DB?
+        #how do we know if a table has changes or not?
+        #what to do if we have no changes for the table?
+        #what to do if we have changes for the table? well this depends on what they are.
+        
+        #determine if each change requires new data etc (dtrequsrnumslist has that info)
+        print("\nThe CHANGE LOG HAS:\n");
+        for n in range(len(cloglines)):
+            line = cloglines[n];
+            print(str(dtrequsrnumslist[n]) + " | " + line);
+        print();
+        print("the numbers on the left of the | mean:");
+        print("old data is 0\nold data new names only is 1\nnew data only 2");
+        print("old and new data is 3\n");
+        print(f"hasnummorethanzero = {hasnummorethanzero}\n");
+        
+
         #we care if the table exists...
         #we care about the create table statement...
         #we care about the data lines if there is data...
         #we care what the data is...
         mxitems = len(lineswithclsonthem);
+        datrejlistftbles = [];
+        mtnms = [];
         for n in range(mxitems):
             bglineindx = lineswithclsonthem[n];
             ctblineindx = ctbllines[n];#execute directly
@@ -1287,54 +1368,46 @@ class mybase:
             myvalidator.valueMustBeInRange(tnmnxtspcindx, tnmindx + 17, len(bgline) - 1,
                                            True, True, "tnmnxtspcindx");
             tname = bgline[tnmindx + 16:tnmnxtspcindx];
+            mtnms.append(tname);
             print(f"tname = {tname}");
             #print(f"len(tname) = {len(tname)}");
 
-            #what to do if the table already exists on the DB?
-            #what do we do if the table does not exist on the DB?
-            #how do we know if a table has changes or not?
-            #what to do if we have no changes for the table?
-            #what to do if we have changes for the table? well this depends on what they are.
-            
-            print("\nThe CHANGE LOG HAS:\n");
-            for n in range(len(cloglines)):
-                line = cloglines[n];
-                print(str(dtrequsrnumslist[n]) + " | " + line);
-            print();
-            print("the numbers on the left of the | mean:");
-            print("old data is 0\nold data new names only is 1\nnew data only 2");
-            print("old and new data is 3\n");
-            print(f"hasnummorethanzero = {hasnummorethanzero}");
-            
-            #now need to determine if each change requires new data etc...
-
-            raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
+            #raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
             #add a drop table if exists and then execute it
             #then execute the create table statement
             #then add the data
-            dpqry = myvalidator.genSQLDropTable(tname, True);
-            print(f"DROP TABLE QUERY dpqry = {dpqry}");
+            #
+            #if using the all of the old data only, then we do not need to drop the tables...
+            #we also do not need to create the tables either...
+            #we just need to restore the data on the one...
+            #if some of the data was not on the backup file, then it might be there we can keep it...
+            
+            datrejlistftble = [];
+            if (hasnummorethanzero):
+                dpqry = myvalidator.genSQLDropTable(tname, True);
+                print(f"DROP TABLE QUERY dpqry = {dpqry}");
 
-            try:
-                CURSOR.execute(dpqry);
-                CONN.commit();
-            except Exception as ex:
-                print("either the table already does not exist or problem connecting with the DB!");
-                traceback.print_exc();
+                try:
+                    CURSOR.execute(dpqry);
+                    CONN.commit();
+                except Exception as ex:
+                    print("either the table already does not exist or problem connecting with the DB!");
+                    traceback.print_exc();
             
             if (clstbleexists):
                 if (len(mlines[ctblineindx + 1]) == 1): pass;#no create table statement
                 else:
                     #there is a create table statement
-                    ctbleqry = mlines[ctblineindx + 1][0:len(mlines[ctblineindx + 1]) - 1];
-                    print(f"CREATE TABLE QUERY: {ctbleqry}");
-                    
-                    try:
-                        CURSOR.execute(ctbleqry);
-                        CONN.commit();
-                    except Exception as ex:
-                        print("either the table already exists or problem connecting to the DB!");
-                        raise ex;
+                    if (hasnummorethanzero):
+                        ctbleqry = mlines[ctblineindx + 1][0:len(mlines[ctblineindx + 1]) - 1];
+                        print(f"CREATE TABLE QUERY: {ctbleqry}");
+                        
+                        try:
+                            CURSOR.execute(ctbleqry);
+                            CONN.commit();
+                        except Exception as ex:
+                            print("either the table already exists or problem connecting to the DB!");
+                            raise ex;
                 if (diffnxtclsdatline == 1): pass;#no data on the table
                 else:
                     #the diff is more than 1
@@ -1361,9 +1434,25 @@ class mybase:
                         mnwdatqry = myvalidator.genSQLInsertInto(tname, mcnms, vals=None);
                         print(f"mnwdatqry = {mnwdatqry}");
                         
-                        CURSOR.execute(mnwdatqry, mtp);
-                        CONN.commit();
-        print("DB successfully restored from the backup data only file!");
+                        try:
+                            CURSOR.execute(mnwdatqry, mtp);
+                            CONN.commit();
+                        except Exception as ex:
+                            datrejlistftble.append(mtp);
+                            print("either the data could not be added if it violates a newly " +
+                                  "added constraint or if it is not in the correct format or " +
+                                  "the table does not exist or if the data was already on the table " +
+                                  "or there was a problem contacting the DB.");
+                            traceback.print_exc();
+            datrejlistftbles.append(datrejlistftble);
+        print("\nDB successfully restored from the backup data only file!");
+        print("the data rejection list for each table is as follows:");
+        for n in range(len(datrejlistftbles)):
+            mlist = datrejlistftbles[n];
+            print("the table name is: " + mtnms[n]);
+            for item in mlist: print(item);
+        #print(datrejlistftble);
+        print("end of data rejection list!\n");
         return True;
 
     @classmethod

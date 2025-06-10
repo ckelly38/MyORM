@@ -50,7 +50,7 @@ class myvalidator:
                                           varnma="boolvara", varnmb="boolvarb"):
         myvalidator.varmustbeboolean(vala, varnma);
         myvalidator.varmustbeboolean(valb, varnmb);
-        myvalidator.varmustbeboolean(usediff, usediff);
+        myvalidator.varmustbeboolean(usediff, "usediff");
         if (myvalidator.isvaremptyornull(varnma)):
             return cls.twoBoolVarsMustBeDifferentOrEqual(vala, valb, usediff, "boolvara", varnmb);
         if (myvalidator.isvaremptyornull(varnmb)):
@@ -178,7 +178,8 @@ class myvalidator:
         return cls.twoArraysMustBeTheSameSize(arra, arrb, arranm, arrbnm);
 
     @classmethod
-    def combineTwoLists(cls, lista, listb):
+    def combineTwoLists(cls, lista, listb, nodups=False):
+        myvalidator.varmustbeboolean(nodups, "nodups");
         if (myvalidator.isvaremptyornull(lista)):
             return (None if myvalidator.isvaremptyornull(listb) else listb);
         else:
@@ -188,7 +189,11 @@ class myvalidator:
                 #list of strings and another list of strings
                 #copy one, then copy the other directly
                 mynwlist = [mstr for mstr in lista];
-                for mstr in listb: mynwlist.append(mstr);
+                if (nodups):
+                    for mstr in listb:
+                        if (mstr not in lista): mynwlist.append(mstr);
+                else:
+                    for mstr in listb: mynwlist.append(mstr);
                 return mynwlist;
 
     @classmethod
