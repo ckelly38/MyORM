@@ -213,8 +213,8 @@ class Camper(mybase):
     #@mybase.validates(["age"])
     #@validates(["age"])
     #@validates("name", "age")#use for multi-column validator (will cause an error)
-    #@validates("age")
-    #def isvalidage(self, key, val): return myvalidator.isValueInRangeWithMaxAndMin(val, 8, 18);
+    @validates("age")
+    def isvalidage(self, key, val): return myvalidator.isValueInRangeWithMaxAndMin(val, 8, 18);
 
     #myvalidator.addValidator("Camper", "isvalidage", ["age"]);
 

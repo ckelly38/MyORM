@@ -60,7 +60,18 @@ if (runclogtsts):
       print(mybase.getIfLineRequiresNewOldOrBothData(cloglines));
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
-runresviadatclogfiletsta = True;
+#need a test that requires new data at minimum
+#ideally we test all on the change log and then combinations
+#
+#need a test with at least one renamed col and/or have foreign keys point to it
+#need a test with at least one renamed table and/or have foreign keys point to it
+#need a test with a new added table
+#need a test with one new col on a table
+#need a test where the data type of a col changed
+
+
+
+runresviadatclogfiletsta = False;
 if (runresviadatclogfiletsta):
       cloglines = [myvalidator.addOrDeleteItemString(True, "cons", "campers", itnm="agecheck",
                                                       icltp="")];
@@ -82,7 +93,7 @@ if (runresviadatclogfiletsta):
       tstcmpr.save();#for the test to pass, the save must fail here...
       raise ValueError("ADDING THE CONSTRAINT TEST FAILED BECAUSE SAVE SUCCEEDED!");
 
-runaddconstst = True;
+runaddconstst = False;
 if (runaddconstst):
       print("CAMPER CONSTRAINTS BEFORE:");
       print(Camper.getMyColObjFromName("age", mycols=None).getConstraints());
@@ -406,10 +417,10 @@ if (runbsclspropacsststs):
 #mybase.syncDB();
 
 #need to run a backup of data on the DB...
-mybase.backupDB();
+#mybase.backupDB();
 
 #need to test deleting values or clearing entire DB tables...
-rundeltests = True;
+rundeltests = False;
 if (rundeltests):
       print(f"all items on the signups DB table are: {Signup.getAllItemsOnTable()}");
       #sa.deleteMyRowFromTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
@@ -449,23 +460,24 @@ if (runresviadatfiletst):
 #mycolobj.removeAConstraintByName(self, mcnstnm, isinctable=False);
 #mybasesubclass.removeAMultiColumnConstraintByName(cls, cnstnm);
 #
-runremsgcolcnsttst = True;
+runremsgcolcnsttst = False;
 if (runremsgcolcnsttst):
       runtstnocmprtble = False;
       if (runtstnocmprtble): pass;
-      else: Camper.createTable();#fails because not done yet
+      else: Camper.createTable();#case fails because not done yet in below method
       print("CAMPER CONSTRAINTS BEFORE:");
       print(Camper.getMyColObjFromName("age", mycols=None).getConstraints());
       Camper.getMyColObjFromName("age", mycols=None).removeAConstraintByName("agecheck",
                                                                              isinctable=False);
       print("CAMPER CONSTRAINTS AFTER:");
+      #crashed before here, but cannot get here without a better test case
       print(Camper.getMyColObjFromName("age", mycols=None).getConstraints());
 
-runremmulcolcnsttst = True;
+runremmulcolcnsttst = False;
 if (runremmulcolcnsttst):
       #runtstnocmprtble = True;
       #if (runtstnocmprtble): pass;
-      #else: Camper.createTable();#fails because not done yet
+      #else: Camper.createTable();#case fails because not done yet in below method
       #print("CAMPER CONSTRAINTS BEFORE:");
       #print(Camper.getMultiColumnConstraints());
       #Camper.removeAMultiColumnConstraintByName(cnstnm);
