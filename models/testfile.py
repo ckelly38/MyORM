@@ -69,8 +69,33 @@ if (runclogtsts):
 #need a test with one new col on a table
 #need a test where the data type of a col changed
 
+runresviadatclogfiletstrencola = False;
+if (runresviadatclogfiletstrencola):
+      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
+runresviadatclogfiletstrencolb = True;
+if (runresviadatclogfiletstrencolb):
+      #to rename a column we will need to change the names in the class file first
+      #they also all must match...
+      #the user may need to update the change log by hand
+      #we will assume that when it makes it here that the class has had the appropriate changes made
+      #we are going to attempt to restore the data from the bkup file
+      #with knowing that the user changed the column name
+      #we also assume that the database has been cleared of all of the data first before we begin
+      #
+      #the first thing that needs to happen is if the table exists on the DB to drop it
+      #the second thing is that the renaming occurs in the class file.
+      #now the third thing we are going to attempt to restore the DB.
+      #
+      #vmpr = Camper(age=15, name="Susan", id=1);
+      #vmpr.save();
+      #mybase.backupDB();
+      Camper.clearAndDropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
+      cloglines = [myvalidator.renameItemString("col", "age", "myage", tnm="campers")];
+      mybase.restoreDBFromDatFileAndChangeLog("./bkdatonly.txt", cloglines);
+      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
+#test adding a constraint part b
 runresviadatclogfiletsta = False;
 if (runresviadatclogfiletsta):
       cloglines = [myvalidator.addOrDeleteItemString(True, "cons", "campers", itnm="agecheck",
@@ -93,6 +118,7 @@ if (runresviadatclogfiletsta):
       tstcmpr.save();#for the test to pass, the save must fail here...
       raise ValueError("ADDING THE CONSTRAINT TEST FAILED BECAUSE SAVE SUCCEEDED!");
 
+#test adding a constraint part a
 runaddconstst = False;
 if (runaddconstst):
       print("CAMPER CONSTRAINTS BEFORE:");
@@ -104,6 +130,7 @@ if (runaddconstst):
       print(Camper.getMyColObjFromName("age", mycols=None).getConstraints());
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
+#test removing a constraint part b
 runresviadatclogfiletst = False;
 if (runresviadatclogfiletst):
       runconststonly = False;
@@ -414,7 +441,7 @@ if (runbsclspropacsststs):
       print(f"vcmpr last synced vals dict = {vcmpr.getLastSyncedValsDict()}");#should not be defined
 
 #need to sync the DB at the start...
-#mybase.syncDB();
+#mybase.syncDB();#METHOD DOES NOT EXIST 4-30-2025
 
 #need to run a backup of data on the DB...
 #mybase.backupDB();
@@ -448,6 +475,7 @@ if (runresviadatfiletst):
       mybase.restoreDBFromDatOnlyFile("./bkdatonly.txt");
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
+
 #still have a problem with multi-column and single column constraints adding or removing them
 #need a good test case, but as of yet do not have a great one 5-13-2025 9:11 PM MST
 #
@@ -460,6 +488,8 @@ if (runresviadatfiletst):
 #mycolobj.removeAConstraintByName(self, mcnstnm, isinctable=False);
 #mybasesubclass.removeAMultiColumnConstraintByName(cls, cnstnm);
 #
+
+#test removing a constraint part a
 runremsgcolcnsttst = False;
 if (runremsgcolcnsttst):
       runtstnocmprtble = False;

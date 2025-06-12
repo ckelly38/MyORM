@@ -173,9 +173,9 @@ class Camper(mybase):
                  isnonnull=True, issigned=False, isunique=True, autoincrements=False,
                  constraints=[myvalidator.genSQLCheck("namelencheck",
                                                       myvalidator.genSQLLength("name") + " >= 1")]);
-    age = mycol(colname="age", datatype="Integer", defaultvalue=1, isprimarykey=False, isnonnull=True,
+    myage = mycol(colname="myage", datatype="Integer", defaultvalue=1, isprimarykey=False, isnonnull=True,
                 issigned=False, isunique=False, autoincrements=False,
-                constraints=[myvalidator.genSQLCheck("agecheck", "age >= 8 AND age <= 18")]);#
+                constraints=[myvalidator.genSQLCheck("agecheck", "myage >= 8 AND myage <= 18")]);#
 
     # Add relationship
     #signups = db.relationship("Signup", back_populates="camper", cascade="all, delete-orphan");
@@ -213,7 +213,7 @@ class Camper(mybase):
     #@mybase.validates(["age"])
     #@validates(["age"])
     #@validates("name", "age")#use for multi-column validator (will cause an error)
-    @validates("age")
+    @validates("myage")
     def isvalidage(self, key, val): return myvalidator.isValueInRangeWithMaxAndMin(val, 8, 18);
 
     #myvalidator.addValidator("Camper", "isvalidage", ["age"]);
@@ -283,7 +283,7 @@ class Camper(mybase):
     
     def __repr__(self, exobjslist=None, usesafelistonly=False):
         return self.__simplerepr__(["<Camper ", ": ", " is ", " years old>"],
-                                   myattrs=["id_value", "name_value", "age_value", "signups"],
+                                   myattrs=["id_value", "name_value", "myage_value", "signups"],
                                    ignoreerr=True, strstarts=True, exobjslist=exobjslist,
                                    usesafelistonly=usesafelistonly);
 

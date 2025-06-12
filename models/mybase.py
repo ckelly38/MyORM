@@ -1304,12 +1304,16 @@ class mybase:
         #if above only has 0s the other method will work fine.
         dtrequsrnumslist = mybase.getIfLineRequiresNewOldOrBothData(cloglines);
         hasnummorethanzero = False;
+        hasnummorethanone = False;
         for n in dtrequsrnumslist:
             if (n == 0): pass;
             elif (0 < n and n < 4):
                 if (hasnummorethanzero): pass;
                 else: hasnummorethanzero = True;
                 #break;
+                if (1 < n and n < 4):
+                    if (hasnummorethanone): pass;
+                    else: hasnummorethanone = True;
             else: raise ValueError("invalid number found and use here!");
         mlines = None;
         with open(filepathandnm, "r") as mfile:
@@ -1334,14 +1338,52 @@ class mybase:
         
         #determine if each change requires new data etc (dtrequsrnumslist has that info)
         print("\nThe CHANGE LOG HAS:\n");
+        allfintnmsflines = [];
         for n in range(len(cloglines)):
             line = cloglines[n];
+            #there are only two or three commands that will not have it like this that is
+            #when we are:
+            #add/del table table_name or
+            #rnm table oldtnm to newtnm
+            #we want the last index of on table_name
+            if (("add table " in line and line.index("add table ") == 0) or
+                ("del table " in line and line.index("del table ") == 0)):
+                si = 10;
+            elif ("rnm table " in line and line.index("rnm table ") == 0 and " to " in line):
+                si = line.rindex(" to ") + 4;
+            elif (" on " in line): si = line.rindex(" on ") + 4;
+            else: raise ValueError("the change log line was in the wrong format!");
+            tnmfline = line[si:];
+            allfintnmsflines.append(tnmfline);
             print(str(dtrequsrnumslist[n]) + " | " + line);
         print();
         print("the numbers on the left of the | mean:");
         print("old data is 0\nold data new names only is 1\nnew data only 2");
         print("old and new data is 3\n");
-        print(f"hasnummorethanzero = {hasnummorethanzero}\n");
+        print(f"hasnummorethanzero = {hasnummorethanzero}");
+        print(f"hasnummorethanone = {hasnummorethanone}");
+
+        #we need the highest number for each table...
+        utnms = myvalidator.removeDuplicatesFromList(allfintnmsflines);
+        allnumsoneachtble = [];#list of lists
+        for utnm in utnms:
+            numsftble = [];
+            for n in range(len(cloglines)):
+                line = cloglines[n];
+                tnmfline = allfintnmsflines[n];
+                numfline = dtrequsrnumslist[n];
+                if (tnmfline == utnm): numsftble.append(numfline);
+            allnumsoneachtble.append(numsftble);
+        mxnumoneachtble = [];
+        mnnumoneachtble = [];
+        for mlist in allnumsoneachtble:
+            mxnumoneachtble.append(max(mlist));
+            mnnumoneachtble.append(min(mlist));
+        print(f"utnms = {utnms}");
+        print(f"allnumsoneachtble = {allnumsoneachtble}");
+        print(f"mnnumoneachtble = {mnnumoneachtble}");
+        print(f"mxnumoneachtble = {mxnumoneachtble}\n");
+        #if (hasnummorethanzero): raise ValueError("NEED TO DO SOMETHING HERE...!");
         
 
         #we care if the table exists...
@@ -1372,7 +1414,15 @@ class mybase:
             print(f"tname = {tname}");
             #print(f"len(tname) = {len(tname)}");
 
-            #raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
+            #possible problem here: 6-12-2025 2:40 AM tname comes from the bkupdat file
+            #but the unique table name comes from the change log and
+            #if the table was renamed this would be the new name and not the old
+            #which will result in a mismatch
+            if (tname in utnms):
+                print("WE NEED TO DO A LOT HERE...!");
+                raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
+            else: print("WE USE THE OLD DATA ONLY HERE!");
+
             #add a drop table if exists and then execute it
             #then execute the create table statement
             #then add the data
@@ -1825,6 +1875,9 @@ class mybase:
     def clearThenDropTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
         cls.truncateTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=False);
         return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=False, runbkaftr=runbkaftr);
+    @classmethod
+    def clearAndDropTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
+        return cls.clearThenDropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
 
     def deleteMyRowFromTable(self, onlyifnot=True, runbkbfr=False, runbkaftr=False):
         myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");

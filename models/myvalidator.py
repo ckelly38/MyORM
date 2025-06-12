@@ -197,6 +197,11 @@ class myvalidator:
                 return mynwlist;
 
     @classmethod
+    def removeDuplicatesFromList(cls, mlist):
+        if (myvalidator.isvaremptyornull(mlist)): return mlist;
+        else: return list(set(mlist));
+
+    @classmethod
     def isListAInListB(cls, lista, listb):
         if (myvalidator.isvaremptyornull(lista)): return myvalidator.isvaremptyornull(listb);
         for itema in lista:
