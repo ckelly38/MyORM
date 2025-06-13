@@ -1339,6 +1339,8 @@ class mybase:
         #determine if each change requires new data etc (dtrequsrnumslist has that info)
         print("\nThe CHANGE LOG HAS:\n");
         allfintnmsflines = [];
+        allprevtnms = [];
+        isatleastoneprevnm = False;
         for n in range(len(cloglines)):
             line = cloglines[n];
             #there are only two or three commands that will not have it like this that is
@@ -1346,15 +1348,25 @@ class mybase:
             #add/del table table_name or
             #rnm table oldtnm to newtnm
             #we want the last index of on table_name
+            hasprevnm = False;
             if (("add table " in line and line.index("add table ") == 0) or
                 ("del table " in line and line.index("del table ") == 0)):
                 si = 10;
             elif ("rnm table " in line and line.index("rnm table ") == 0 and " to " in line):
                 si = line.rindex(" to ") + 4;
+                oldnmsi = 10;
+                oldnmei = si - 4;
+                oldtnm = line[oldnmsi:oldnmei];
+                hasprevnm = True;
+                if (isatleastoneprevnm): pass;
+                else: isatleastoneprevnm = True;
+                allprevtnms.append(oldtnm);
             elif (" on " in line): si = line.rindex(" on ") + 4;
             else: raise ValueError("the change log line was in the wrong format!");
             tnmfline = line[si:];
             allfintnmsflines.append(tnmfline);
+            if (hasprevnm): pass;
+            else: allprevtnms.append("");#tnmfline
             print(str(dtrequsrnumslist[n]) + " | " + line);
         print();
         print("the numbers on the left of the | mean:");
@@ -1365,21 +1377,36 @@ class mybase:
 
         #we need the highest number for each table...
         utnms = myvalidator.removeDuplicatesFromList(allfintnmsflines);
+        uprevtnms = [];#not sure if this should be a list of lists or not...
         allnumsoneachtble = [];#list of lists
         for utnm in utnms:
             numsftble = [];
+            hasprevnm = False;
             for n in range(len(cloglines)):
                 line = cloglines[n];
                 tnmfline = allfintnmsflines[n];
                 numfline = dtrequsrnumslist[n];
-                if (tnmfline == utnm): numsftble.append(numfline);
+                if (tnmfline == utnm):
+                    numsftble.append(numfline);
+                    if ("rnm table " in line and line.index("rnm table ") == 0 and " to " in line):
+                        oldnmsi = 10;
+                        oldnmei = line.rindex(" to ");
+                        oldtnm = line[oldnmsi:oldnmei];
+                        hasprevnm = True;
+                        uprevtnms.append(oldtnm);
+            if (hasprevnm): pass;
+            else: uprevtnms.append("");
             allnumsoneachtble.append(numsftble);
         mxnumoneachtble = [];
         mnnumoneachtble = [];
         for mlist in allnumsoneachtble:
             mxnumoneachtble.append(max(mlist));
             mnnumoneachtble.append(min(mlist));
+        print(f"allfintnmsflines = {allfintnmsflines}");
+        print(f"allprevtnms = {allprevtnms}");
+        print(f"isatleastoneprevnm = {isatleastoneprevnm}");
         print(f"utnms = {utnms}");
+        print(f"uprevtnms = {uprevtnms}");
         print(f"allnumsoneachtble = {allnumsoneachtble}");
         print(f"mnnumoneachtble = {mnnumoneachtble}");
         print(f"mxnumoneachtble = {mxnumoneachtble}\n");
@@ -1414,11 +1441,15 @@ class mybase:
             print(f"tname = {tname}");
             #print(f"len(tname) = {len(tname)}");
 
-            #possible problem here: 6-12-2025 2:40 AM tname comes from the bkupdat file
-            #but the unique table name comes from the change log and
+            #tname comes from the bkupdat file
+            #but the unique table name utnms comes from the change log and
             #if the table was renamed this would be the new name and not the old
-            #which will result in a mismatch
-            if (tname in utnms):
+            #which will result in a mismatch so we included a check against previous names
+            #we also need to know the names of tables that got renamed and what their old name was.
+            usenwnmsordataftble = (tname in utnms or (isatleastoneprevnm and tname in uprevtnms));
+            print(f"usenwnmsordataftble = {usenwnmsordataftble}");
+            
+            if (usenwnmsordataftble):
                 print("WE NEED TO DO A LOT HERE...!");
                 raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
             else: print("WE USE THE OLD DATA ONLY HERE!");
@@ -1431,9 +1462,25 @@ class mybase:
             #we also do not need to create the tables either...
             #we just need to restore the data on the one...
             #if some of the data was not on the backup file, then it might be there we can keep it...
+
+            #QUESTIONS ON THE PROCEDURE ASKED ON 6-13-2025 2:49 AM MST
+            #
+            #given that we are using the old data only:
+            #-do we drop all of the data and restore it from the datfile OR
+            #-should we not change the DB (not remove the table and then restore it back from datfile)
+            #and add the old data back if possible?
+            #
+            #given that we are using old data only and the new names from the change log:
+            #-we will need the new create table statement and not the one on the datfile though
+            #-we should probably drop all of the data and restore it from the datfile.
+            #
+            #given that we need new data for the table:
+            #-we will need the new create table statement and not the one on the datfile though
+            #-we should probably drop all of the data and restore it from the datfile.
+            #-but we will also need the new data here from the user
             
             datrejlistftble = [];
-            if (hasnummorethanzero):
+            if (usenwnmsordataftble):
                 dpqry = myvalidator.genSQLDropTable(tname, True);
                 print(f"DROP TABLE QUERY dpqry = {dpqry}");
 
@@ -1448,7 +1495,8 @@ class mybase:
                 if (len(mlines[ctblineindx + 1]) == 1): pass;#no create table statement
                 else:
                     #there is a create table statement
-                    if (hasnummorethanzero):
+                    if (usenwnmsordataftble):
+                        raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
                         ctbleqry = mlines[ctblineindx + 1][0:len(mlines[ctblineindx + 1]) - 1];
                         print(f"CREATE TABLE QUERY: {ctbleqry}");
                         
