@@ -1465,6 +1465,21 @@ class mybase:
 
             #QUESTIONS ON THE PROCEDURE ASKED ON 6-13-2025 2:49 AM MST
             #
+            #what does the user expect to happen if we call this method with
+            #a change log and the datfile and the log says to use the old data?
+            #
+            #-what if the change requires a new create table statement?
+            #--deleting a table does not. (only one that does not)
+            #--the others do.
+            #--if the change requires a new create table statement,
+            #then we need the new one and we need to drop the old one and restore data from the file.
+            #
+            #-what if the change does not require a new create table statement?
+            #--IE we deleted a table?
+            #--drop it if the old one exists and that is it
+            #--however it is possible that the older tables refer to it
+            #--in this case we probably want new create table statements for all if this is found
+            #
             #given that we are using the old data only:
             #-do we drop all of the data and restore it from the datfile OR
             #-should we not change the DB (not remove the table and then restore it back from datfile)
