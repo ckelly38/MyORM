@@ -341,9 +341,27 @@ class myvalidator:
         return cls.stringMustStartOrEndWith(mstr, estr, False, varnm);
 
     @classmethod
+    def doesLineHaveStringOnItAtIndex(cls, mstr, line, indxval):
+        mstrisemptyornull = myvalidator.isvaremptyornull(mstr);
+        if (myvalidator.isvaremptyornull(line)):
+            if (indxval == 0): return mstrisemptyornull;
+            else: myvalidator.valueMustBeInRange(indxval, 0, 0, True, True, varnm="indxval");
+        elif (mstrisemptyornull): return False;
+        else:
+            myvalidator.valueMustBeInRange(indxval, 0, len(line) - 1, True, True, varnm="indxval");
+            return (mstr in line and line.index(mstr) == indxval);
+    @classmethod
+    def lineHasStringOnItAtIndex(cls, mstr, line, indxval):
+        return cls.doesLineHaveStringOnItAtIndex(mstr, line, indxval);
+    @classmethod
+    def lineHasMSTROnItAtIndex(cls, mstr, line, indxval):
+        return cls.doesLineHaveStringOnItAtIndex(mstr, line, indxval);
+
+    @classmethod
     def getLineIndexesWithStringOnIt(cls, mstr, mlines):
         myvalidator.stringMustHaveAtMinNumChars(mstr, 1, "mstr");
         if (myvalidator.isvaremptyornull(mlines)): return [];
+        #                                    if (cls.doesLineHaveStringOnItAtIndex(mstr, mlines[n], 0))
         return [n for n in range(len(mlines)) if (mstr in mlines[n] and mlines[n].index(mstr) == 0)];
 
     @classmethod

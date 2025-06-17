@@ -1176,6 +1176,7 @@ class mybase:
             #print("old and new data is 3");
             mlist = [];
             for line in cloglines:
+                #if (myvalidator.lineHasStringOnItAtIndex("rnm", line, 0))
                 if ("rnm" in line and line.index("rnm") == 0):
                     #old data and the new names only
                     mlist.append(1);
@@ -1340,6 +1341,7 @@ class mybase:
         print("\nThe CHANGE LOG HAS:\n");
         allfintnmsflines = [];
         allprevtnms = [];
+        mydeltablenms = [];
         isatleastoneprevnm = False;
         for n in range(len(cloglines)):
             line = cloglines[n];
@@ -1349,9 +1351,9 @@ class mybase:
             #rnm table oldtnm to newtnm
             #we want the last index of on table_name
             hasprevnm = False;
-            if (("add table " in line and line.index("add table ") == 0) or
-                ("del table " in line and line.index("del table ") == 0)):
-                si = 10;
+            #mydeltnm = myvalidator.lineHasMSTROnItAtIndex("del table", line, 0);
+            mydeltnm = ("del table " in line and line.index("del table ") == 0);
+            if (("add table " in line and line.index("add table ") == 0) or mydeltnm): si = 10;
             elif ("rnm table " in line and line.index("rnm table ") == 0 and " to " in line):
                 si = line.rindex(" to ") + 4;
                 oldnmsi = 10;
@@ -1365,6 +1367,7 @@ class mybase:
             else: raise ValueError("the change log line was in the wrong format!");
             tnmfline = line[si:];
             allfintnmsflines.append(tnmfline);
+            if (mydeltnm): mydeltablenms.append(tnmfline);
             if (hasprevnm): pass;
             else: allprevtnms.append("");#tnmfline
             print(str(dtrequsrnumslist[n]) + " | " + line);
@@ -1446,11 +1449,22 @@ class mybase:
             #if the table was renamed this would be the new name and not the old
             #which will result in a mismatch so we included a check against previous names
             #we also need to know the names of tables that got renamed and what their old name was.
-            usenwnmsordataftble = (tname in utnms or (isatleastoneprevnm and tname in uprevtnms));
+            
+            #according to the backup data file and change log is the current table name current or
+            #is it a previous name?
+            #if the answer is yes, then we know we are working with old and new data
+            #if the answer is no, then we know we are working with old data only.
+            tnmiscurrentnm = (tname in utnms);
+            tnmisprevnm = (isatleastoneprevnm and tname in uprevtnms);
+            usenwnmsordataftble = (tnmiscurrentnm or tnmisprevnm);
+            print(f"tnmiscurrentnm = {tnmiscurrentnm}");
+            print(f"tnmisprevnm = {tnmisprevnm}");
             print(f"usenwnmsordataftble = {usenwnmsordataftble}");
             
             if (usenwnmsordataftble):
                 print("WE NEED TO DO A LOT HERE...!");
+                #for line in cloglines:
+                #    print(myvalidator.lineHasMSTROnItAtIndex("del table " + tname, line, 0));
                 raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
             else: print("WE USE THE OLD DATA ONLY HERE!");
 
@@ -1470,9 +1484,16 @@ class mybase:
             #
             #-what if the change requires a new create table statement?
             #--deleting a table does not. (only one that does not)
-            #--the others do.
+            #--the others do (and the other tables that refer to the deleted tables).
             #--if the change requires a new create table statement,
             #then we need the new one and we need to drop the old one and restore data from the file.
+            #
+            #when we need a create table statement do we use the one in the backup file or
+            #do we generate a new one for the table?
+            #what if the table was deleted?
+            #
+            #if the change requires a new create table statement, then we must build it.
+            #if it does not we can use the one from the file.
             #
             #-what if the change does not require a new create table statement?
             #--IE we deleted a table?
@@ -1496,7 +1517,7 @@ class mybase:
             
             datrejlistftble = [];
             if (usenwnmsordataftble):
-                dpqry = myvalidator.genSQLDropTable(tname, True);
+                dpqry = myvalidator.genSQLDropTable(tname, onlyifnot=True);
                 print(f"DROP TABLE QUERY dpqry = {dpqry}");
 
                 try:
@@ -1511,8 +1532,19 @@ class mybase:
                 else:
                     #there is a create table statement
                     if (usenwnmsordataftble):
-                        raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
-                        ctbleqry = mlines[ctblineindx + 1][0:len(mlines[ctblineindx + 1]) - 1];
+                        #in order for tname to be the correct name to use it must be in the utnms list
+                        #if it is in the unique previous names list we can assume
+                        #that it corresponds with a unique table name that got renamed
+                        #if this is not the case we are screwed this will crash...
+                        mtnmfref = ("" + tname if (tname in utnms) else
+                                    "" + utnms[uprevtnms.index(tname)]);
+                        print(f"current table name is mtnmfref = {mtnmfref}");
+                        
+                        mclsref = mycol.getClassFromTableName(mtnmfref);#need the current table name
+                        #raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
+                        ctbleqry = mclsref.genSQLCreateTableFromRef(varstr="" + SQLVARIANT,
+                                                                   onlyifnot=False, isinctable=True);
+                        #ctbleqry = mlines[ctblineindx + 1][0:len(mlines[ctblineindx + 1]) - 1];
                         print(f"CREATE TABLE QUERY: {ctbleqry}");
                         
                         try:
@@ -1521,6 +1553,9 @@ class mybase:
                         except Exception as ex:
                             print("either the table already exists or problem connecting to the DB!");
                             raise ex;
+                        print("created " + mclsref.getTableAndClassNameString() +
+                              " on the DB successfully!\n");
+                        
                 if (diffnxtclsdatline == 1): pass;#no data on the table
                 else:
                     #the diff is more than 1
