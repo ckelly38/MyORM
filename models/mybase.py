@@ -1405,15 +1405,18 @@ class mybase:
         for mlist in allnumsoneachtble:
             mxnumoneachtble.append(max(mlist));
             mnnumoneachtble.append(min(mlist));
+        isadeltble = not(myvalidator.isvaremptyornull(mydeltablenms));
         print(f"allfintnmsflines = {allfintnmsflines}");
         print(f"allprevtnms = {allprevtnms}");
         print(f"isatleastoneprevnm = {isatleastoneprevnm}");
+        print(f"mydeltablenms = {mydeltablenms}");
+        print(f"isadeltble = {isadeltble}");
         print(f"utnms = {utnms}");
         print(f"uprevtnms = {uprevtnms}");
         print(f"allnumsoneachtble = {allnumsoneachtble}");
         print(f"mnnumoneachtble = {mnnumoneachtble}");
         print(f"mxnumoneachtble = {mxnumoneachtble}\n");
-        #if (hasnummorethanzero): raise ValueError("NEED TO DO SOMETHING HERE...!");
+        if (isadeltble): raise ValueError("NEED TO DO SOMETHING HERE...!");
         
 
         #we care if the table exists...

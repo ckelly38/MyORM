@@ -91,7 +91,10 @@ if (runresviadatclogfiletstrencolb):
       #vmpr.save();
       #mybase.backupDB();
       Camper.clearAndDropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
-      cloglines = [myvalidator.renameItemString("col", "age", "myage", tnm="campers")];
+      cloglines = None;
+      usedeltst = False;
+      if (usedeltst): cloglines = [myvalidator.delItemString("table", "campers", itnm="", icltp="")];
+      else: cloglines = [myvalidator.renameItemString("col", "age", "myage", tnm="campers")];
       mybase.restoreDBFromDatFileAndChangeLog("./bkdatonly.txt", cloglines);
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
