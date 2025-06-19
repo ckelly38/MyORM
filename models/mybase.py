@@ -1416,7 +1416,7 @@ class mybase:
         print(f"allnumsoneachtble = {allnumsoneachtble}");
         print(f"mnnumoneachtble = {mnnumoneachtble}");
         print(f"mxnumoneachtble = {mxnumoneachtble}\n");
-        if (isadeltble): raise ValueError("NEED TO DO SOMETHING HERE...!");
+        #if (isadeltble): raise ValueError("NEED TO DO SOMETHING HERE...!");
         
 
         #we care if the table exists...
@@ -1460,11 +1460,14 @@ class mybase:
             tnmiscurrentnm = (tname in utnms);
             tnmisprevnm = (isatleastoneprevnm and tname in uprevtnms);
             usenwnmsordataftble = (tnmiscurrentnm or tnmisprevnm);
+            tnmdeltble = (isadeltble and (tname in mydeltablenms));
             print(f"tnmiscurrentnm = {tnmiscurrentnm}");
             print(f"tnmisprevnm = {tnmisprevnm}");
             print(f"usenwnmsordataftble = {usenwnmsordataftble}");
+            print(f"isadeltble = {isadeltble}");
+            print(f"tnmdeltble = {tnmdeltble}");
             
-            if (usenwnmsordataftble):
+            if (usenwnmsordataftble or isadeltble):
                 print("WE NEED TO DO A LOT HERE...!");
                 #for line in cloglines:
                 #    print(myvalidator.lineHasMSTROnItAtIndex("del table " + tname, line, 0));
