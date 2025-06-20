@@ -92,7 +92,7 @@ if (runresviadatclogfiletstrencolb):
       #mybase.backupDB();
       Camper.clearAndDropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
       cloglines = None;
-      usedeltst = True;
+      usedeltst = False;
       if (usedeltst): cloglines = [myvalidator.delItemString("table", "campers", itnm="", icltp="")];
       else: cloglines = [myvalidator.renameItemString("col", "age", "myage", tnm="campers")];
       mybase.restoreDBFromDatFileAndChangeLog("./bkdatonly.txt", cloglines);

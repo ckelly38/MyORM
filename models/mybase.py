@@ -1444,6 +1444,7 @@ class mybase:
                                            True, True, "tnmnxtspcindx");
             tname = bgline[tnmindx + 16:tnmnxtspcindx];
             mtnms.append(tname);
+            print("\nBEGIN WORKING ON THE TABLE NOW:");
             print(f"tname = {tname}");
             #print(f"len(tname) = {len(tname)}");
 
@@ -1459,10 +1460,19 @@ class mybase:
             #if the answer is no, then we know we are working with old data only.
             tnmiscurrentnm = (tname in utnms);
             tnmisprevnm = (isatleastoneprevnm and tname in uprevtnms);
+            prvnmi = (uprevtnms.index(tname) if (tnmisprevnm) else -1);
             usenwnmsordataftble = (tnmiscurrentnm or tnmisprevnm);
-            tnmdeltble = (isadeltble and (tname in mydeltablenms));
-            print(f"tnmiscurrentnm = {tnmiscurrentnm}");
+            tnmdeltble = (isadeltble and ((tname in mydeltablenms) or
+                                          (tnmisprevnm and (utnms[prvnmi] in mydeltablenms))));
+            print(f"tnm in utnms = tname on change log = tnmiscurrentnm = {tnmiscurrentnm}");
+            print("NOTE: the table name even if it is not on the change log may still be current!");
             print(f"tnmisprevnm = {tnmisprevnm}");
+            print(f"prvnmi = {prvnmi}");
+            if (prvnmi in range(len(utnms))):
+                print(f"current table name since tname is previous is: {utnms[prvnmi]}");
+            print("NOTE: when we say it is a previous name, the table name was changed and " +
+                  "both are present on the change log, but only the old one will be present " +
+                  "on the data file.");
             print(f"usenwnmsordataftble = {usenwnmsordataftble}");
             print(f"isadeltble = {isadeltble}");
             print(f"tnmdeltble = {tnmdeltble}");
@@ -1533,6 +1543,12 @@ class mybase:
                     print("either the table already does not exist or problem connecting with the DB!");
                     traceback.print_exc();
             
+            #if we deleted a table, regardless of if it exists on the data file,
+            #we should only drop it here, in this case the user does not want the data
+            if (tnmdeltble):
+                print(f"\nWE DO NOT WANT A TABLE NOR THE DATA FOR tname = {tname}!");
+                continue;
+
             if (clstbleexists):
                 if (len(mlines[ctblineindx + 1]) == 1): pass;#no create table statement
                 else:
