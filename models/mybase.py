@@ -1341,7 +1341,10 @@ class mybase:
         print("\nThe CHANGE LOG HAS:\n");
         allfintnmsflines = [];
         allprevtnms = [];
-        mydeltablenms = [];
+        mydeltablenms = [];#list will contain duplicates
+        myaddtlinenums = [];
+        mydeltlinenums = [];
+        myaddtablenms = [];#list will contain duplicates
         isatleastoneprevnm = False;
         for n in range(len(cloglines)):
             line = cloglines[n];
@@ -1353,7 +1356,8 @@ class mybase:
             hasprevnm = False;
             #mydeltnm = myvalidator.lineHasMSTROnItAtIndex("del table", line, 0);
             mydeltnm = ("del table " in line and line.index("del table ") == 0);
-            if (("add table " in line and line.index("add table ") == 0) or mydeltnm): si = 10;
+            myaddtnm = ("add table " in line and line.index("add table ") == 0);
+            if (myaddtnm or mydeltnm): si = 10;
             elif ("rnm table " in line and line.index("rnm table ") == 0 and " to " in line):
                 si = line.rindex(" to ") + 4;
                 oldnmsi = 10;
@@ -1367,7 +1371,12 @@ class mybase:
             else: raise ValueError("the change log line was in the wrong format!");
             tnmfline = line[si:];
             allfintnmsflines.append(tnmfline);
-            if (mydeltnm): mydeltablenms.append(tnmfline);
+            if (myaddtnm):
+                myaddtablenms.append(tnmfline);
+                myaddtlinenums.append(n); 
+            if (mydeltnm):
+                mydeltablenms.append(tnmfline);
+                mydeltlinenums.append(n);
             if (hasprevnm): pass;
             else: allprevtnms.append("");#tnmfline
             print(str(dtrequsrnumslist[n]) + " | " + line);
@@ -1406,10 +1415,26 @@ class mybase:
             mxnumoneachtble.append(max(mlist));
             mnnumoneachtble.append(min(mlist));
         isadeltble = not(myvalidator.isvaremptyornull(mydeltablenms));
+        
+        #need to get all numbers for each table on the unique list
+        uaddtblnms = myvalidator.removeDuplicatesFromList(myaddtablenms);
+        udeltblnms = myvalidator.removeDuplicatesFromList(mydeltablenms);
+        umyaddtblelinenums = [[myaddtlinenums[n] for n in range(len(myaddtablenms))
+                               if (myaddtablenms[n] == nm)] for nm in uaddtblnms];
+        umydeltblelinenums = [[mydeltlinenums[n] for n in range(len(mydeltablenms))
+                               if (mydeltablenms[n] == nm)] for nm in udeltblnms];
+        #? = [myvalidator.name(arra, arrb) for nm in ?];
         print(f"allfintnmsflines = {allfintnmsflines}");
         print(f"allprevtnms = {allprevtnms}");
         print(f"isatleastoneprevnm = {isatleastoneprevnm}");
+        print(f"myaddtablenms = {myaddtablenms}");
         print(f"mydeltablenms = {mydeltablenms}");
+        print(f"myaddtlinenums = {myaddtlinenums}");
+        print(f"mydeltlinenums = {mydeltlinenums}");
+        print(f"uaddtblnms = {uaddtblnms}");
+        print(f"udeltblnms = {udeltblnms}");
+        print(f"umyaddtblelinenums = {umyaddtblelinenums}");
+        print(f"umydeltblelinenums = {umydeltblelinenums}");
         print(f"isadeltble = {isadeltble}");
         print(f"utnms = {utnms}");
         print(f"uprevtnms = {uprevtnms}");
@@ -1544,8 +1569,11 @@ class mybase:
                     traceback.print_exc();
             
             #if we deleted a table, regardless of if it exists on the data file,
-            #we should only drop it here, in this case the user does not want the data
-            if (tnmdeltble):
+            #we should only drop it here, in this case the user does not want the data.
+            #
+            #IF DELETED AND THEN ADDED BACK LATER ON, ORDER MATTERS AND THERE MIGHT BE A problem here
+            #possible bug here 6-21-2025 2:15 AM MST
+            if (tnmdeltble): 
                 print(f"\nWE DO NOT WANT A TABLE NOR THE DATA FOR tname = {tname}!");
                 continue;
 

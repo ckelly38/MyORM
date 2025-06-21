@@ -69,9 +69,17 @@ if (runclogtsts):
 #need a test with one new col on a table
 #need a test where the data type of a col changed
 
-runresviadatclogfiletstrencola = False;
-if (runresviadatclogfiletstrencola):
+runinsertionsrttst = False;
+if (runinsertionsrttst):
+      myvalidator.name(list(range(0, 20, 2)), list(range(0, 20, 3)));
+      #myvalidator.name(None, list(range(0, 20, 3)));
+      #myvalidator.name(list(range(0, 20, 2)), None);
+      #myvalidator.name(None, None);
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
+#runresviadatclogfiletstrencola = False;
+#if (runresviadatclogfiletstrencola):
+#      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 runresviadatclogfiletstrencolb = True;
 if (runresviadatclogfiletstrencolb):
@@ -92,8 +100,11 @@ if (runresviadatclogfiletstrencolb):
       #mybase.backupDB();
       Camper.clearAndDropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
       cloglines = None;
-      usedeltst = False;
-      if (usedeltst): cloglines = [myvalidator.delItemString("table", "campers", itnm="", icltp="")];
+      usedeltst = True;
+      if (usedeltst):
+            #cloglines = [myvalidator.delItemString("table", "campers", itnm="", icltp="")];
+            cloglines = [myvalidator.delItemString("table", "campers", itnm="", icltp=""),
+                         myvalidator.addItemString("table", "campers", itnm="", icltp="")];
       else: cloglines = [myvalidator.renameItemString("col", "age", "myage", tnm="campers")];
       mybase.restoreDBFromDatFileAndChangeLog("./bkdatonly.txt", cloglines);
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");

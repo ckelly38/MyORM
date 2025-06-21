@@ -506,6 +506,154 @@ class myvalidator:
         myvalidator.varmustbeboolean(boolval, "boolval");
         return cls.genListOfSameVals(numbools, boolval);
     
+    #something else here
+
+    @classmethod
+    def insertionSortNums(cls, arra, arrb):
+        #insertion sort here:
+        #print(f"arra = {arra}");
+        #print(f"arrb = {arrb}");
+        if (myvalidator.isvaremptyornull(arra)): return arrb;
+        elif (myvalidator.isvaremptyornull(arrb)): return arra;
+        for n in range(len(arra)):
+            if (n + 1 < len(arra)):
+                if (arra[n + 1] < arra[n]):
+                    raise ValueError("the first array was not sorted, but must be!");
+        for n in range(len(arrb)):
+            if (n + 1 < len(arrb)):
+                if (arrb[n + 1] < arrb[n]):
+                    raise ValueError("the second array was not sorted, but must be!");
+        
+        maxarra = arra[len(arra) - 1];
+        minarra = arra[0];
+        maxarrb = arrb[len(arrb) - 1];
+        minarrb = arrb[0];
+        resarr = None;
+        if (minarrb < maxarra):
+            if (minarra < maxarrb): 
+                #do the sorting of the two arrays here...
+                #of the two arrays figure out which one is the smallest
+                #if they are not equal smallest first
+                #if they are equal do a before b.
+                #the min will come from the resarr these items will need to be bigger than that.
+                #get the first item(s) by comparing minimums
+                #if amin < bmin a is first
+                #if bmin < amin b is first
+                #if they are equal a is first then b
+                asi = 0;
+                bsi = 0;
+                resarr = [];
+                if (minarrb < minarra):
+                    resarr.append(minarrb);
+                    bsi = 1;
+                elif (minarra < minarrb):
+                    resarr.append(minarra);
+                    asi = 1;
+                else:
+                    resarr.append(minarra);
+                    resarr.append(minarrb);
+                    bsi = 1;
+                    asi = 1;
+                #copy all from a, then from b if they are the same
+                for n in range(asi, len(arra)):
+                    if (arra[n] == resarr[0]):
+                        asi += 1;
+                        resarr.append(arra[n]);
+                for n in range(bsi, len(arrb)):
+                    if (arrb[n] == resarr[0]):
+                        bsi += 1;
+                        resarr.append(arrb[n]);
+                #print(f"asi = {asi}");
+                #print(f"bsi = {bsi}");
+                
+                for n in range(asi, len(arra)):
+                    for k in range(bsi, len(arrb)):
+                        #print(f"arra[{n}] = {arra[n]}");
+                        #print(f"arrb[{k}] = {arrb[k]}");
+                        
+                        bkaftrcp = False;
+                        if (arra[n] < arrb[k]):
+                            resarr.append(arra[n]);
+                            asi += 1;
+                            bkaftrcp = True;
+                            #print(f"asi = {asi}");
+                            #print(f"bsi = {bsi}");
+                            #print(f"resarr = {resarr}");
+                            #raise ValueError("item in a is less than item in b!");
+                        elif (arrb[k] < arra[n]):
+                            resarr.append(arrb[k]);
+                            bsi += 1;
+                            #print(f"asi = {asi}");
+                            #print(f"bsi = {bsi}");
+                            #print(f"resarr = {resarr}");
+                            #raise ValueError("item in b is less than item in a!");
+                        else:
+                            resarr.append(arra[n]);
+                            resarr.append(arrb[k]);
+                            asi += 1;
+                            bsi += 1;
+                            bkaftrcp = True;
+                            #print(f"asi = {asi}");
+                            #print(f"bsi = {bsi}");
+                            #print(f"resarr = {resarr}");
+                            #raise ValueError("they are equal!");
+                        
+                        #copy all from a, then from b if they are the same
+                        for oai in range(asi, len(arra)):
+                            if (arra[oai] == resarr[len(resarr) - 1]):
+                                asi += 1;
+                                resarr.append(arra[oai]);
+                        for obi in range(bsi, len(arrb)):
+                            if (arrb[obi] == resarr[len(resarr) - 1]):
+                                bsi += 1;
+                                resarr.append(arrb[obi]);
+                        #print(f"NEW asi = {asi}");
+                        #print(f"NEW bsi = {bsi}");
+                        
+                        if (bkaftrcp):
+                            bkaftrcp = False;
+                            break;
+                #print(f"resarr = {resarr}");
+                #raise ValueError("NOT DONE YET HERE 6-21-2025 3 AM MST!");
+            else:
+                #minarra >= maxarrb b is before all of a
+                resarr = [item for item in arrb];
+                for item in arra: resarr.append(item);
+        else:
+            #minarrb >= maxarra b is after all of a
+            resarr = [item for item in arra];
+            for item in arrb: resarr.append(item);
+        #print(f"resarr = {resarr}");
+        
+        if (len(resarr) == len(arra) + len(arrb)): return resarr;
+        else:
+            raise ValueError("the length of the resarr (" + str(len(resarr)) + ") must be the " +
+                             "sum of the lengths of the two original arrays, " +
+                             "len(arra) = " + str(len(arra)) + " len(arrb) = " + str(len(arrb)) +
+                             ", but it was not!");
+
+    @classmethod
+    def name(cls, arra, arrb):
+        #list of indexes for adding will be first array (assumed ints sorted in ascending order)
+        #list of indexes for deleting will be second array (assumed ints sorted in ascending order)
+        #we need to kind of merge or insertion sort these arrays assume that they are sorted
+        #we want to know the order of add or deleting if we combine these two and sort them...
+        #the catch is if we sort them then we can tell which one will be where
+        #if we do not modify the original arrays
+        #
+        srtdabarr = myvalidator.insertionSortNums(arra, arrb);
+        #if in arra only 0 if in arrb only 1 if both 2.
+        isaempty = myvalidator.isvaremptyornull(arra);
+        isbempty = myvalidator.isvaremptyornull(arrb);
+        resarr = ([] if (isaempty and isbempty) else
+                  [(1 if (isaempty) else (0 if (isbempty) else
+                    (2 if (item in arra and item in arrb) else (0 if (item in arra) else 1))))
+                  for item in srtdabarr]);
+        print(f"arra = {arra}");
+        print(f"arrb = {arrb}");
+        print(f"srtdabarr = {srtdabarr}");
+        print(f"resarr = {resarr}");
+        raise ValueError("NOT DONE YET HERE 6-21-2025 3 AM MST!");
 
     #convenience methods since the validators list (and all of these methods) reside in the mycol class
 
