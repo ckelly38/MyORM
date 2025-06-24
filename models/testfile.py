@@ -71,10 +71,10 @@ if (runclogtsts):
 
 runinsertionsrttst = False;
 if (runinsertionsrttst):
-      myvalidator.name(list(range(0, 20, 2)), list(range(0, 20, 3)));
-      #myvalidator.name(None, list(range(0, 20, 3)));
-      #myvalidator.name(list(range(0, 20, 2)), None);
-      #myvalidator.name(None, None);
+      myvalidator.compareTwoArraysItemByItem(list(range(0, 20, 2)), list(range(0, 20, 3)));
+      #myvalidator.compareTwoArraysItemByItem(None, list(range(0, 20, 3)));
+      #myvalidator.compareTwoArraysItemByItem(list(range(0, 20, 2)), None);
+      #myvalidator.compareTwoArraysItemByItem(None, None);
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 #runresviadatclogfiletstrencola = False;

@@ -633,7 +633,7 @@ class myvalidator:
                              ", but it was not!");
 
     @classmethod
-    def name(cls, arra, arrb):
+    def compareTwoArraysItemByItem(cls, arra, arrb):
         #list of indexes for adding will be first array (assumed ints sorted in ascending order)
         #list of indexes for deleting will be second array (assumed ints sorted in ascending order)
         #we need to kind of merge or insertion sort these arrays assume that they are sorted
@@ -653,7 +653,7 @@ class myvalidator:
         print(f"arrb = {arrb}");
         print(f"srtdabarr = {srtdabarr}");
         print(f"resarr = {resarr}");
-        raise ValueError("NOT DONE YET HERE 6-21-2025 3 AM MST!");
+        return resarr;
 
     #convenience methods since the validators list (and all of these methods) reside in the mycol class
 

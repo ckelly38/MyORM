@@ -1419,11 +1419,28 @@ class mybase:
         #need to get all numbers for each table on the unique list
         uaddtblnms = myvalidator.removeDuplicatesFromList(myaddtablenms);
         udeltblnms = myvalidator.removeDuplicatesFromList(mydeltablenms);
+        cmnuaddanddeltnms = [nm for nm in uaddtblnms if (nm in udeltblnms)];
         umyaddtblelinenums = [[myaddtlinenums[n] for n in range(len(myaddtablenms))
                                if (myaddtablenms[n] == nm)] for nm in uaddtblnms];
         umydeltblelinenums = [[mydeltlinenums[n] for n in range(len(mydeltablenms))
                                if (mydeltablenms[n] == nm)] for nm in udeltblnms];
-        #? = [myvalidator.name(arra, arrb) for nm in ?];
+        #? = [];
+        #we need to know if it ends with add or delete
+        #we want the order...
+        for nm in cmnuaddanddeltnms:
+            addi = uaddtblnms.index(nm);
+            deli = udeltblnms.index(nm);
+            addlnumlist = umyaddtblelinenums[addi];
+            dellnumlist = umydeltblelinenums[deli];
+            mxaddnum = (-1 if (myvalidator.isvaremptyornull(addlnumlist)) else max(addlnumlist));
+            mxdelnum = (-1 if (myvalidator.isvaremptyornull(dellnumlist)) else max(dellnumlist));
+            print(f"mxaddnum = {mxaddnum}");
+            print(f"mxdelnum = {mxdelnum}");
+            print("myvalidator.name(arra, arrb) = " +
+                  f"{myvalidator.compareTwoArraysItemByItem(addlnumlist, dellnumlist)}");
+            #0 means on first array add; 1 means on delete only; 2 means on both
+            #the line numbers themselves give us the order...
+        #? = [myvalidator.name(arra, arrb) for nm in cmnuaddanddeltnms];
         print(f"allfintnmsflines = {allfintnmsflines}");
         print(f"allprevtnms = {allprevtnms}");
         print(f"isatleastoneprevnm = {isatleastoneprevnm}");
@@ -1435,6 +1452,7 @@ class mybase:
         print(f"udeltblnms = {udeltblnms}");
         print(f"umyaddtblelinenums = {umyaddtblelinenums}");
         print(f"umydeltblelinenums = {umydeltblelinenums}");
+        print(f"cmnuaddanddeltnms = {cmnuaddanddeltnms}");
         print(f"isadeltble = {isadeltble}");
         print(f"utnms = {utnms}");
         print(f"uprevtnms = {uprevtnms}");
