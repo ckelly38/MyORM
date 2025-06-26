@@ -1436,10 +1436,24 @@ class mybase:
             mxdelnum = (-1 if (myvalidator.isvaremptyornull(dellnumlist)) else max(dellnumlist));
             print(f"mxaddnum = {mxaddnum}");
             print(f"mxdelnum = {mxdelnum}");
-            print("myvalidator.name(arra, arrb) = " +
-                  f"{myvalidator.compareTwoArraysItemByItem(addlnumlist, dellnumlist)}");
+            
+            mydatobj = myvalidator.compareTwoArraysItemByItemInfoObj(addlnumlist, dellnumlist);
+            srtedarr = mydatobj["sortedarr"];
+            myresarr = mydatobj["resarr"];
+            print(f"mydatobj = {mydatobj}");
+            print(f"srtedarr = {srtedarr}");
+            print(f"myresarr = {myresarr}");
+
             #0 means on first array add; 1 means on delete only; 2 means on both
             #the line numbers themselves give us the order...
+
+            if (myresarr[len(myresarr) - 1] == 0): print("added it last!");
+            elif (myresarr[len(myresarr) - 1] == 1): print("deleted it last!");
+            #elif (myresarr[len(myresarr) - 1] == 2): print("did both to it last!");
+            else:
+                raise ValueError("invalid value found for the last item on the resarr! " +
+                                 "It must be one of the following: 0, 1, or 2, but it was not!");
+    
         #? = [myvalidator.name(arra, arrb) for nm in cmnuaddanddeltnms];
         print(f"allfintnmsflines = {allfintnmsflines}");
         print(f"allprevtnms = {allprevtnms}");

@@ -633,7 +633,7 @@ class myvalidator:
                              ", but it was not!");
 
     @classmethod
-    def compareTwoArraysItemByItem(cls, arra, arrb):
+    def compareTwoArraysItemByItemInfoObj(cls, arra, arrb):
         #list of indexes for adding will be first array (assumed ints sorted in ascending order)
         #list of indexes for deleting will be second array (assumed ints sorted in ascending order)
         #we need to kind of merge or insertion sort these arrays assume that they are sorted
@@ -653,7 +653,27 @@ class myvalidator:
         print(f"arrb = {arrb}");
         print(f"srtdabarr = {srtdabarr}");
         print(f"resarr = {resarr}");
-        return resarr;
+        return {"arraisempty": isaempty, "arrbisempty": isbempty, "addarr": arra, "delarr": arrb,
+                "sortedarr": srtdabarr, "resarr": resarr};
+    @classmethod
+    def getValueFromCompareArraysDataObject(cls, key, datobj):
+        myvalidator.objvarmusthavethesekeysonit(datobj, [key], varnm="arrscompdatobj");
+        return datobj[key];
+    @classmethod
+    def compareTwoArraysItemByItemResArrFromDatObj(cls, datobj):
+        return myvalidator.getValueFromCompareArraysDataObject("resarr", datobj);
+    @classmethod
+    def compareTwoArraysItemByItemResArr(cls, arra, arrb):
+        return myvalidator.compareTwoArraysItemByItemResArrFromDatObj(
+            cls.compareTwoArraysItemByItemInfoObj(arra, arrb));
+    @classmethod
+    def compareTwoArraysItemByItemSortedArrFromDatObj(cls, datobj):
+        return myvalidator.getValueFromCompareArraysDataObject("sortedarr", datobj);
+    @classmethod
+    def compareTwoArraysItemByItemSortedArr(cls, arra, arrb):
+        return myvalidator.compareTwoArraysItemByItemSortedArrFromDatObj(
+            cls.compareTwoArraysItemByItemInfoObj(arra, arrb));
+
 
     #convenience methods since the validators list (and all of these methods) reside in the mycol class
 
