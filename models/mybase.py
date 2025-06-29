@@ -1424,9 +1424,9 @@ class mybase:
                                if (myaddtablenms[n] == nm)] for nm in uaddtblnms];
         umydeltblelinenums = [[mydeltlinenums[n] for n in range(len(mydeltablenms))
                                if (mydeltablenms[n] == nm)] for nm in udeltblnms];
-        #? = [];
         #we need to know if it ends with add or delete
         #we want the order...
+        cmnnmsisaddedordellast = [];
         for nm in cmnuaddanddeltnms:
             addi = uaddtblnms.index(nm);
             deli = udeltblnms.index(nm);
@@ -1447,8 +1447,12 @@ class mybase:
             #0 means on first array add; 1 means on delete only; 2 means on both
             #the line numbers themselves give us the order...
 
-            if (myresarr[len(myresarr) - 1] == 0): print("added it last!");
-            elif (myresarr[len(myresarr) - 1] == 1): print("deleted it last!");
+            if (myresarr[len(myresarr) - 1] == 0):
+                cmnnmsisaddedordellast.append(True);
+                print("added it last!");
+            elif (myresarr[len(myresarr) - 1] == 1):
+                cmnnmsisaddedordellast.append(False);
+                print("deleted it last!");
             #elif (myresarr[len(myresarr) - 1] == 2): print("did both to it last!");
             else:
                 raise ValueError("invalid value found for the last item on the resarr! " +
@@ -1467,6 +1471,7 @@ class mybase:
         print(f"umyaddtblelinenums = {umyaddtblelinenums}");
         print(f"umydeltblelinenums = {umydeltblelinenums}");
         print(f"cmnuaddanddeltnms = {cmnuaddanddeltnms}");
+        print(f"cmnnmsisaddedordellast = {cmnnmsisaddedordellast}");
         print(f"isadeltble = {isadeltble}");
         print(f"utnms = {utnms}");
         print(f"uprevtnms = {uprevtnms}");
