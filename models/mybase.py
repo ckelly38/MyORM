@@ -1457,8 +1457,8 @@ class mybase:
             else:
                 raise ValueError("invalid value found for the last item on the resarr! " +
                                  "It must be one of the following: 0, 1, or 2, but it was not!");
-    
-        #? = [myvalidator.name(arra, arrb) for nm in cmnuaddanddeltnms];
+        
+        #print all of the data from the above loops up to this point
         print(f"allfintnmsflines = {allfintnmsflines}");
         print(f"allprevtnms = {allprevtnms}");
         print(f"isatleastoneprevnm = {isatleastoneprevnm}");
@@ -1487,6 +1487,7 @@ class mybase:
         #we care what the data is...
         mxitems = len(lineswithclsonthem);
         datrejlistftbles = [];
+        clogtnmdatreglist = [];
         mtnms = [];
         for n in range(mxitems):
             bglineindx = lineswithclsonthem[n];
@@ -1526,6 +1527,16 @@ class mybase:
             usenwnmsordataftble = (tnmiscurrentnm or tnmisprevnm);
             tnmdeltble = (isadeltble and ((tname in mydeltablenms) or
                                           (tnmisprevnm and (utnms[prvnmi] in mydeltablenms))));
+            #is the tname deleted last or not
+            tnmisdellast = (isadeltble and ((tnmiscurrentnm and tname in cmnuaddanddeltnms and
+                            not(cmnnmsisaddedordellast[cmnuaddanddeltnms.index(tname)])) or
+                            (tnmisprevnm and (utnms[prvnmi] in cmnuaddanddeltnms and
+                            not(cmnnmsisaddedordellast[cmnuaddanddeltnms.index(utnms[prvnmi])])))));
+            #is the tname added last or not
+            tnmisaddlast = (isadeltble and ((tnmiscurrentnm and tname in cmnuaddanddeltnms and
+                            cmnnmsisaddedordellast[cmnuaddanddeltnms.index(tname)]) or
+                            (tnmisprevnm and (utnms[prvnmi] in cmnuaddanddeltnms and
+                            cmnnmsisaddedordellast[cmnuaddanddeltnms.index(utnms[prvnmi])]))));
             print(f"tnm in utnms = tname on change log = tnmiscurrentnm = {tnmiscurrentnm}");
             print("NOTE: the table name even if it is not on the change log may still be current!");
             print(f"tnmisprevnm = {tnmisprevnm}");
@@ -1538,12 +1549,14 @@ class mybase:
             print(f"usenwnmsordataftble = {usenwnmsordataftble}");
             print(f"isadeltble = {isadeltble}");
             print(f"tnmdeltble = {tnmdeltble}");
+            print(f"tnmisdellast = {tnmisdellast}");
+            print(f"tnmisaddlast = {tnmisaddlast}");
             
-            if (usenwnmsordataftble or isadeltble):
+            if (usenwnmsordataftble):#usenwnmsordataftble or isadeltble, or tnmisaddlast
                 print("WE NEED TO DO A LOT HERE...!");
                 #for line in cloglines:
                 #    print(myvalidator.lineHasMSTROnItAtIndex("del table " + tname, line, 0));
-                raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
+                #raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
             else: print("WE USE THE OLD DATA ONLY HERE!");
 
             #add a drop table if exists and then execute it
@@ -1608,12 +1621,13 @@ class mybase:
             #if we deleted a table, regardless of if it exists on the data file,
             #we should only drop it here, in this case the user does not want the data.
             #
-            #IF DELETED AND THEN ADDED BACK LATER ON, ORDER MATTERS AND THERE MIGHT BE A problem here
-            #possible bug here 6-21-2025 2:15 AM MST
-            if (tnmdeltble): 
+            #IF DELETED AND THEN ADDED BACK LATER ON, ORDER MATTERS
+            if (tnmisdellast):#tnmdeltble 
                 print(f"\nWE DO NOT WANT A TABLE NOR THE DATA FOR tname = {tname}!");
+                datrejlistftbles.append(datrejlistftble);
+                clogtnmdatreglist.append(tname);
                 continue;
-
+            
             if (clstbleexists):
                 if (len(mlines[ctblineindx + 1]) == 1): pass;#no create table statement
                 else:
@@ -1642,7 +1656,19 @@ class mybase:
                             raise ex;
                         print("created " + mclsref.getTableAndClassNameString() +
                               " on the DB successfully!\n");
-                        
+
+                #if table is not a del last table,
+                #then what do we do with the data on the database or on the file?
+                #we deleted then added the table back after the data from the file what data do we want?
+                #do we just want to create the table, but abandon the data? WE ONLY CREATE THE TABLE.
+                #possible problem here 7-1-2025 2:36 AM MST
+                if (tnmisaddlast):
+                    print(f"\nWE ONLY WANT THE TABLE BUT NOT THE DATA FOR tname = {tname}!");
+                    datrejlistftbles.append(datrejlistftble);
+                    clogtnmdatreglist.append(tname);
+                    #PROBLEM HERE AND BELOW IF THERE IS NEW DATA FOR THIS TABLE AND IF WE WANT IT.
+                    continue;
+
                 if (diffnxtclsdatline == 1): pass;#no data on the table
                 else:
                     #the diff is more than 1
@@ -1684,9 +1710,12 @@ class mybase:
         print("the data rejection list for each table is as follows:");
         for n in range(len(datrejlistftbles)):
             mlist = datrejlistftbles[n];
-            print("the table name is: " + mtnms[n]);
+            print("the table name is: " + mtnms[n] + ("*" if (mtnms[n] in clogtnmdatreglist) else ""));
             for item in mlist: print(item);
         #print(datrejlistftble);
+        #possible problem here 7-1-2025 2:36 AM MST
+        print("NOTE: the * next to the name means that if there was data it was ignored due " +
+              "to the change log and not due to errors!");
         print("end of data rejection list!\n");
         return True;
 
