@@ -100,8 +100,11 @@ if (runresviadatclogfiletstrencolb):
       #mybase.backupDB();
       Camper.clearAndDropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
       usedeltst = False;
-      usedelthenaddtst = True;
+      usedelthenaddtst = False;
       usaddthendeltst = False;
+      myvalidator.listOfBoolsMustHaveXNumTrueYNumFalse([usedeltst, usedelthenaddtst, usaddthendeltst],
+                                                       1, 0, tpnumt="max", tpnumf=None,
+                                                       varnm="boolsarr");
       cloglines = None;
       if (usedeltst): cloglines = [myvalidator.delItemString("table", "campers", itnm="", icltp="")];
       elif (usedelthenaddtst):

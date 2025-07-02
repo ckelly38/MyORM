@@ -506,7 +506,62 @@ class myvalidator:
         myvalidator.varmustbeboolean(boolval, "boolval");
         return cls.genListOfSameVals(numbools, boolval);
     
-    #something else here
+    @classmethod
+    def listOfBoolsMustHaveXNumTrueYNumFalse(cls, blsarr, rqnumt, rqnumf, tpnumt=None, tpnumf=None,
+                                             varnm="varnm"):
+        myvalidator.varmustbethetypeonly(rqnumt, int, "rqnumt");
+        myvalidator.varmustbethetypeonly(rqnumf, int, "rqnumf");
+        mintpopts = ["MIN", "min", "MINIMUM", "minimum", ">"];
+        maxtpopts = ["MAX", "max", "MAXIMUM", "maximum", "<"];
+        exacttpopts = ["EXACT", "exact", "EQUAL", "equal", "SAME", "same", "="];
+        mytpopts = [None, ""];
+        mytpopts = myvalidator.combineTwoLists(mytpopts, mintpopts, nodups=True);
+        mytpopts = myvalidator.combineTwoLists(mytpopts, maxtpopts, nodups=True);
+        mytpopts = myvalidator.combineTwoLists(mytpopts, exacttpopts, nodups=True);
+        myvalidator.itemMustBeOneOf(tpnumt, mytpopts, "tpnumt");
+        myvalidator.itemMustBeOneOf(tpnumf, mytpopts, "tpnumf");
+        if (myvalidator.isvaremptyornull(varnm)):
+            return cls.listOfBoolsMustHaveXNumTrueYNumFalse(blsarr, rqnumt, rqnumf, tpnumt, tpnumf,
+                                             varnm="blsarrnm");
+        cnumt = 0;
+        cnumf = 0;
+        if (myvalidator.isvaremptyornull(blsarr)): pass;
+        else:
+            for n in range(len(blsarr)):
+                bval = blsarr[n];
+                myvalidator.varmustbeboolean(bval, varnm + "[" + str(n) + "]");
+                if (bval): cnumt += 1;
+                else: cnumf += 1;
+        #now that we have the actual counts we need to compare them with the requested counts and
+        #the types
+        #if the type is min, max, or exact, or empty or none for no restrictions on this
+        tvnm = varnm + " num true";
+        fvnm = varnm + " num false";
+        for itemtp in ["cnumt", "cnumf"]:
+            #oitemtp = ("rqnumt" if (itemtp == "cnumt") else "rqnumf");
+            cntval = (cnumt if (itemtp == "cnumt") else cnumf);
+            rqval = (rqnumt if (itemtp == "cnumt") else rqnumf);
+            tpval = (tpnumt if (itemtp == "cnumt") else tpnumf);
+            avnm = (tvnm if (itemtp == "cnumt") else fvnm);
+            #print(f"itemtp = {itemtp}");
+            #print(f"cntval = {cntval}");
+            #print(f"rqval = {rqval}");
+            #print(f"tpval = {tpval}");
+            #print(f"avnm = {avnm}");
+            if (myvalidator.isvaremptyornull(tpval)): pass;
+            else:
+                if (tpval in mintpopts):
+                    myvalidator.valueMustBeAtMinOnly(cntval, rqval, varnm=avnm);
+                elif (tpval in maxtpopts):
+                    myvalidator.valueMustBeAtMaxOnly(cntval, rqval, varnm=avnm);
+                else:#elif (tpval in exacttpopts):
+                    if (cntval == rqval): pass;
+                    else:
+                        raise ValueError("actual " + avnm + " must be the same as the requested " +
+                                         "count for " + avnm + ", but they were not!");
+        return True;
+
+    #compare arrays methods and sorting of two arrays of numbers
 
     @classmethod
     def insertionSortNums(cls, arra, arrb):
@@ -649,10 +704,10 @@ class myvalidator:
                   [(1 if (isaempty) else (0 if (isbempty) else
                     (2 if (item in arra and item in arrb) else (0 if (item in arra) else 1))))
                   for item in srtdabarr]);
-        print(f"arra = {arra}");
-        print(f"arrb = {arrb}");
-        print(f"srtdabarr = {srtdabarr}");
-        print(f"resarr = {resarr}");
+        #print(f"arra = {arra}");
+        #print(f"arrb = {arrb}");
+        #print(f"srtdabarr = {srtdabarr}");
+        #print(f"resarr = {resarr}");
         return {"arraisempty": isaempty, "arrbisempty": isbempty, "addarr": arra, "delarr": arrb,
                 "sortedarr": srtdabarr, "resarr": resarr};
     @classmethod
