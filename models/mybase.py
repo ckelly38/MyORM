@@ -1388,11 +1388,15 @@ class mybase:
         print(f"hasnummorethanone = {hasnummorethanone}");
 
         #we need the highest number for each table...
+        #we need to know the old name and the new name of the col for each table...
         utnms = myvalidator.removeDuplicatesFromList(allfintnmsflines);
         uprevtnms = [];#not sure if this should be a list of lists or not...
         allnumsoneachtble = [];#list of lists
+        allrnmcolobjsoneachtble = [];#list of lists
+        isarnmcoltble = False;
         for utnm in utnms:
             numsftble = [];
+            rnmcolobjsftble = [];
             hasprevnm = False;
             for n in range(len(cloglines)):
                 line = cloglines[n];
@@ -1406,8 +1410,28 @@ class mybase:
                         oldtnm = line[oldnmsi:oldnmei];
                         hasprevnm = True;
                         uprevtnms.append(oldtnm);
+                    trnmcol = myvalidator.lineHasMSTROnItAtIndex("rnm col from ", line, 0);
+                    if (trnmcol and " to " in line and " on " in line):
+                        #if the table has renamed cols, then get it
+                        toindx = line.index(" to ");
+                        onindx = line.index(" on ");
+                        oldclnm = line[13:toindx];
+                        nwcolnm = line[toindx + 4:onindx];
+                        myvalidator.valueMustBeInMinAndMaxRange(toindx, 14, len(line) - 1,
+                                                                varnm="toindx");
+                        myvalidator.valueMustBeInMinAndMaxRange(toindx, 14, onindx, varnm="toindx");
+                        if (isarnmcoltble): pass;
+                        else: isarnmcoltble = True;
+                        #print(f"line = {line}");
+                        #print(f"tnmfline = {tnmfline}");
+                        #print(f"oldclnm = {oldclnm}");
+                        #print(f"nwcolnm = {nwcolnm}");
+                        
+                        rnmcolobjsftble.append({"oldcolname": oldclnm, "newcolname": nwcolnm,
+                                                "linenum": n});
             if (hasprevnm): pass;
             else: uprevtnms.append("");
+            allrnmcolobjsoneachtble.append(rnmcolobjsftble);
             allnumsoneachtble.append(numsftble);
         mxnumoneachtble = [];
         mnnumoneachtble = [];
@@ -1473,9 +1497,11 @@ class mybase:
         print(f"cmnuaddanddeltnms = {cmnuaddanddeltnms}");
         print(f"cmnnmsisaddedordellast = {cmnnmsisaddedordellast}");
         print(f"isadeltble = {isadeltble}");
+        print(f"isarnmcoltble = {isarnmcoltble}");
         print(f"utnms = {utnms}");
         print(f"uprevtnms = {uprevtnms}");
         print(f"allnumsoneachtble = {allnumsoneachtble}");
+        print(f"allrnmcolobjsoneachtble = {allrnmcolobjsoneachtble}");
         print(f"mnnumoneachtble = {mnnumoneachtble}");
         print(f"mxnumoneachtble = {mxnumoneachtble}\n");
         #if (isadeltble): raise ValueError("NEED TO DO SOMETHING HERE...!");
@@ -1551,12 +1577,14 @@ class mybase:
             print(f"tnmdeltble = {tnmdeltble}");
             print(f"tnmisdellast = {tnmisdellast}");
             print(f"tnmisaddlast = {tnmisaddlast}");
+            print(f"isarnmcoltble = {isarnmcoltble}");
             
-            if (usenwnmsordataftble):#usenwnmsordataftble or isadeltble, or tnmisaddlast
+            if (usenwnmsordataftble and isarnmcoltble):
+                #usenwnmsordataftble or isadeltble, or tnmisaddlast
                 print("WE NEED TO DO A LOT HERE...!");
                 #for line in cloglines:
                 #    print(myvalidator.lineHasMSTROnItAtIndex("del table " + tname, line, 0));
-                #raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
+                raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
             else: print("WE USE THE OLD DATA ONLY HERE!");
 
             #add a drop table if exists and then execute it
