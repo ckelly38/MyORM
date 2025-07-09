@@ -1394,6 +1394,7 @@ class mybase:
         allnumsoneachtble = [];#list of lists
         allrnmcolobjsoneachtble = [];#list of lists
         isarnmcoltble = False;
+        alltblshasrnmcols = [];
         for utnm in utnms:
             numsftble = [];
             rnmcolobjsftble = [];
@@ -1428,9 +1429,10 @@ class mybase:
                         #print(f"nwcolnm = {nwcolnm}");
                         
                         rnmcolobjsftble.append({"oldcolname": oldclnm, "newcolname": nwcolnm,
-                                                "linenum": n});
+                                                "tablenamefromline": tnmfline, "linenum": n});
             if (hasprevnm): pass;
             else: uprevtnms.append("");
+            alltblshasrnmcols.append(not myvalidator.isvaremptyornull(rnmcolobjsftble));
             allrnmcolobjsoneachtble.append(rnmcolobjsftble);
             allnumsoneachtble.append(numsftble);
         mxnumoneachtble = [];
@@ -1502,6 +1504,7 @@ class mybase:
         print(f"uprevtnms = {uprevtnms}");
         print(f"allnumsoneachtble = {allnumsoneachtble}");
         print(f"allrnmcolobjsoneachtble = {allrnmcolobjsoneachtble}");
+        print(f"alltblshasrnmcols = {alltblshasrnmcols}");
         print(f"mnnumoneachtble = {mnnumoneachtble}");
         print(f"mxnumoneachtble = {mxnumoneachtble}\n");
         #if (isadeltble): raise ValueError("NEED TO DO SOMETHING HERE...!");
@@ -1549,8 +1552,10 @@ class mybase:
             #if the answer is no, then we know we are working with old data only.
             tnmiscurrentnm = (tname in utnms);
             tnmisprevnm = (isatleastoneprevnm and tname in uprevtnms);
+            utnmi = (utnms.index(tname) if (tnmiscurrentnm) else -1);
             prvnmi = (uprevtnms.index(tname) if (tnmisprevnm) else -1);
             usenwnmsordataftble = (tnmiscurrentnm or tnmisprevnm);
+            #is the previous or current tname on the mydeltablenms list
             tnmdeltble = (isadeltble and ((tname in mydeltablenms) or
                                           (tnmisprevnm and (utnms[prvnmi] in mydeltablenms))));
             #is the tname deleted last or not
@@ -1563,6 +1568,9 @@ class mybase:
                             cmnnmsisaddedordellast[cmnuaddanddeltnms.index(tname)]) or
                             (tnmisprevnm and (utnms[prvnmi] in cmnuaddanddeltnms and
                             cmnnmsisaddedordellast[cmnuaddanddeltnms.index(utnms[prvnmi])]))));
+            #is the tname on the rename col list
+            tnmhasarnmcol = (isarnmcoltble and ((tnmiscurrentnm and alltblshasrnmcols[utnmi]) or
+                                                (tnmisprevnm and alltblshasrnmcols[prvnmi])));
             print(f"tnm in utnms = tname on change log = tnmiscurrentnm = {tnmiscurrentnm}");
             print("NOTE: the table name even if it is not on the change log may still be current!");
             print(f"tnmisprevnm = {tnmisprevnm}");
@@ -1578,13 +1586,14 @@ class mybase:
             print(f"tnmisdellast = {tnmisdellast}");
             print(f"tnmisaddlast = {tnmisaddlast}");
             print(f"isarnmcoltble = {isarnmcoltble}");
+            print(f"tnmhasarnmcol = {tnmhasarnmcol}");
             
             if (usenwnmsordataftble and isarnmcoltble):
                 #usenwnmsordataftble or isadeltble, or tnmisaddlast
                 print("WE NEED TO DO A LOT HERE...!");
                 #for line in cloglines:
                 #    print(myvalidator.lineHasMSTROnItAtIndex("del table " + tname, line, 0));
-                raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
+                #raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
             else: print("WE USE THE OLD DATA ONLY HERE!");
 
             #add a drop table if exists and then execute it
@@ -1708,8 +1717,32 @@ class mybase:
                     mcnms = myvalidator.mysplitWithDelimeter(mycnmsstr, "', '");
                     print(f"cnmsline = {cnmsline}");
                     print(f"mycnmsstr = {mycnmsstr}");
-                    print(f"mcnms = {mcnms}");
+                    print(f"mcnms = {mcnms}");#old col names
                     
+                    finclnms = None;
+                    if (tnmhasarnmcol):
+                        #need to identify what col names stay the same and which get changed...
+                        #look at the col objects list for the table...
+                        #we want the current column names, but keep the old order...
+                        
+                        if (tnmiscurrentnm):
+                            print(f"allrnmcolobjsoneachtble[utnmi] = {allrnmcolobjsoneachtble[utnmi]}");
+                            print(f"alltblshasrnmcols[utnmi] = {alltblshasrnmcols[utnmi]}");
+                        else:
+                            #table name is a previous table name
+                            print(f"allrnmcolobjsoneachtble[prvnmi] = {allrnmcolobjsoneachtble[prvnmi]}");
+                            print(f"alltblshasrnmcols[prvnmi] = {alltblshasrnmcols[prvnmi]}");
+                        
+                        myustindx = (utnmi if (tnmiscurrentnm) else prvnmi);
+                        myodclnms = [mobj["oldcolname"] for mobj in allrnmcolobjsoneachtble[myustindx]];
+                        mynwclnms = [mobj["newcolname"] for mobj in allrnmcolobjsoneachtble[myustindx]];
+                        nwclnms = [(mynwclnms[myodclnms.index(nm)] if (nm in myodclnms) else nm)
+                                    for nm in mcnms];
+                        finclnms = ["" + nm for nm in nwclnms];
+                        print(f"nwclnms = {nwclnms}");
+                    else: finclnms = ["" + nm for nm in mcnms];
+                    print(f"finclnms = {finclnms}");
+
                     #https://stackoverflow.com/questions/8494514/converting-string-to-tuple
                     from ast import literal_eval;#this is a possible security problem.
                     for k in range(diffnxtclsdatline - 2):
@@ -1720,7 +1753,7 @@ class mybase:
                         print(f"myiline = {myiline}");
                         print(f"mtp = {mtp}");
                         
-                        mnwdatqry = myvalidator.genSQLInsertInto(tname, mcnms, vals=None);
+                        mnwdatqry = myvalidator.genSQLInsertInto(tname, finclnms, vals=None);
                         print(f"mnwdatqry = {mnwdatqry}");
                         
                         try:
