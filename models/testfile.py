@@ -81,6 +81,13 @@ if (runinsertionsrttst):
 #if (runresviadatclogfiletstrencola):
 #      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
+runresviadatclogfiletstrnmtble = True;
+if (runresviadatclogfiletstrnmtble):
+      Camper.clearAndDropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
+      cloglines = [myvalidator.renameItemString("table", "campers", "crapers", tnm="crapers")];
+      mybase.restoreDBFromDatFileAndChangeLog("./bkdatonly.txt", cloglines);
+      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
 runresviadatclogfiletstrencolb = True;
 if (runresviadatclogfiletstrencolb):
       #to rename a column we will need to change the names in the class file first

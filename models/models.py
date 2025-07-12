@@ -142,7 +142,7 @@ class Activity(mybase):
 #mycol.getMyClassRefsMain(True);
 
 class Camper(mybase):
-    __tablename__ = 'campers';
+    __tablename__ = 'crapers';#campers
 
     #validations and constraints bug problem 4-3-2025 4 AM MST: (bug is fixed)
     #

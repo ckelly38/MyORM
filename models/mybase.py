@@ -1360,7 +1360,7 @@ class mybase:
             if (myaddtnm or mydeltnm): si = 10;
             elif ("rnm table " in line and line.index("rnm table ") == 0 and " to " in line):
                 si = line.rindex(" to ") + 4;
-                oldnmsi = 10;
+                oldnmsi = 15;#ignore the from space part (5) and ignore the rnm table part (10)
                 oldnmei = si - 4;
                 oldtnm = line[oldnmsi:oldnmei];
                 hasprevnm = True;
@@ -1406,7 +1406,7 @@ class mybase:
                 if (tnmfline == utnm):
                     numsftble.append(numfline);
                     if ("rnm table " in line and line.index("rnm table ") == 0 and " to " in line):
-                        oldnmsi = 10;
+                        oldnmsi = 15;
                         oldnmei = line.rindex(" to ");
                         oldtnm = line[oldnmsi:oldnmei];
                         hasprevnm = True;
@@ -1576,7 +1576,7 @@ class mybase:
             print(f"tnmisprevnm = {tnmisprevnm}");
             print(f"prvnmi = {prvnmi}");
             if (prvnmi in range(len(utnms))):
-                print(f"current table name since tname is previous is: {utnms[prvnmi]}");
+                print(f"current table name, since tname is previous, is: {utnms[prvnmi]}");
             print("NOTE: when we say it is a previous name, the table name was changed and " +
                   "both are present on the change log, but only the old one will be present " +
                   "on the data file.");
