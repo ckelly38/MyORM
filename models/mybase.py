@@ -1509,6 +1509,22 @@ class mybase:
         print(f"mxnumoneachtble = {mxnumoneachtble}\n");
         #if (isadeltble): raise ValueError("NEED TO DO SOMETHING HERE...!");
         
+        for prevtnm in allprevtnms:
+            if (myvalidator.isvaremptyornull(prevtnm)): pass;
+            else:
+                if (prevtnm in allfintnmsflines):
+                    mclglinenums = [i + 1 for i in range(len(allfintnmsflines))
+                                    if (allfintnmsflines[i] == prevtnm)];
+                    olinenums = [prevtnmi + 1 for i in range(len(allfintnmsflines))
+                                 for prevtnmi in range(len(allprevtnms))
+                                    if (not(myvalidator.isvaremptyornull(allprevtnms[prevtnmi])) and
+                                        allfintnmsflines[i] == allprevtnms[prevtnmi])];
+                    finclgproblnums = myvalidator.combineTwoLists(mclglinenums, olinenums, nodups=True);
+                    raise ValueError("a table must have at most one previous name and at most one " +
+                                     "current name, but one table with a prevname (" + prevtnm +
+                                     ") has a table name that is both previous and current, " +
+                                     "which is illegal! Some effected line numbers in the change " +
+                                     "log are: " + str(finclgproblnums));
 
         #we care if the table exists...
         #we care about the create table statement...
@@ -1555,6 +1571,12 @@ class mybase:
             utnmi = (utnms.index(tname) if (tnmiscurrentnm) else -1);
             prvnmi = (uprevtnms.index(tname) if (tnmisprevnm) else -1);
             usenwnmsordataftble = (tnmiscurrentnm or tnmisprevnm);
+            tnmisascrrnt = ((tnmiscurrentnm == tnmisprevnm) and not(tnmiscurrentnm));
+            if (tnmiscurrentnm == tnmisprevnm):
+                if (tnmiscurrentnm):
+                    myvalidator.twoBoolVarsMustBeDifferentOrEqual(tnmiscurrentnm, tnmisprevnm, True,
+                                                                "tnmiscurrentnm", "tnmisprevnm");
+            mtnmfref = ("" + tname if (tnmiscurrentnm or tnmisascrrnt) else "" + utnms[prvnmi]);
             #is the previous or current tname on the mydeltablenms list
             tnmdeltble = (isadeltble and ((tname in mydeltablenms) or
                                           (tnmisprevnm and (utnms[prvnmi] in mydeltablenms))));
@@ -1573,6 +1595,7 @@ class mybase:
                                                 (tnmisprevnm and alltblshasrnmcols[prvnmi])));
             print(f"tnm in utnms = tname on change log = tnmiscurrentnm = {tnmiscurrentnm}");
             print("NOTE: the table name even if it is not on the change log may still be current!");
+            print(f"tnmisascrrnt = {tnmisascrrnt}");#if true, not on change log so assumed true.
             print(f"tnmisprevnm = {tnmisprevnm}");
             print(f"prvnmi = {prvnmi}");
             if (prvnmi in range(len(utnms))):
@@ -1580,6 +1603,7 @@ class mybase:
             print("NOTE: when we say it is a previous name, the table name was changed and " +
                   "both are present on the change log, but only the old one will be present " +
                   "on the data file.");
+            print(f"current table name is mtnmfref = {mtnmfref}");
             print(f"usenwnmsordataftble = {usenwnmsordataftble}");
             print(f"isadeltble = {isadeltble}");
             print(f"tnmdeltble = {tnmdeltble}");
@@ -1674,9 +1698,6 @@ class mybase:
                         #if it is in the unique previous names list we can assume
                         #that it corresponds with a unique table name that got renamed
                         #if this is not the case we are screwed this will crash...
-                        mtnmfref = ("" + tname if (tname in utnms) else
-                                    "" + utnms[uprevtnms.index(tname)]);
-                        print(f"current table name is mtnmfref = {mtnmfref}");
                         
                         mclsref = mycol.getClassFromTableName(mtnmfref);#need the current table name
                         #raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
@@ -1753,7 +1774,7 @@ class mybase:
                         print(f"myiline = {myiline}");
                         print(f"mtp = {mtp}");
                         
-                        mnwdatqry = myvalidator.genSQLInsertInto(tname, finclnms, vals=None);
+                        mnwdatqry = myvalidator.genSQLInsertInto(mtnmfref, finclnms, vals=None);
                         print(f"mnwdatqry = {mnwdatqry}");
                         
                         try:

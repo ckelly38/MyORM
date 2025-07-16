@@ -64,7 +64,6 @@ if (runclogtsts):
 #ideally we test all on the change log and then combinations
 #
 #need a test with at least one renamed col and/or have foreign keys point to it
-#need a test with at least one renamed table and/or have foreign keys point to it
 #need a test with a new added table
 #need a test with one new col on a table
 #need a test where the data type of a col changed
@@ -81,13 +80,17 @@ if (runinsertionsrttst):
 #if (runresviadatclogfiletstrencola):
 #      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
+#test with at least one renamed table and/or have foreign keys point to it
 runresviadatclogfiletstrnmtble = True;
 if (runresviadatclogfiletstrnmtble):
       Camper.clearAndDropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
-      cloglines = [myvalidator.renameItemString("table", "campers", "crapers", tnm="crapers")];
+      cloglines = [myvalidator.renameItemString("table", "campers", "crapers", tnm="crapers"),
+                   myvalidator.renameItemString("col", "age", "myage", tnm="crapers")];#campers
       mybase.restoreDBFromDatFileAndChangeLog("./bkdatonly.txt", cloglines);
       raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
+#tests where adding or removing a table and in what order
+#also a test where a column is renamed
 runresviadatclogfiletstrencolb = True;
 if (runresviadatclogfiletstrencolb):
       #to rename a column we will need to change the names in the class file first

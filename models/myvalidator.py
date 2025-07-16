@@ -56,7 +56,8 @@ class myvalidator:
         if (myvalidator.isvaremptyornull(varnmb)):
             return cls.twoBoolVarsMustBeDifferentOrEqual(vala, valb, usediff, varnma, "boolvarb");
         if (usediff):
-            if (vala == valb): raise ValueError(varnma + " and " + varnmb + " both cannot be true!");
+            if (vala == valb):
+                raise ValueError(varnma + " and " + varnmb + " both cannot be the same!");
         else:
             if (vala == valb): pass;
             else: raise ValueError(varnma + " and " + varnmb + " must be the same, but they were not!");
