@@ -1206,7 +1206,7 @@ class mybase:
             return mlist;
 
     @classmethod
-    def restoreDBFromDatFileAndChangeLog(cls, filepathandnm, cloglines):
+    def restoreDBFromDatFileAndChangeLog(cls, filepathandnm, cloglines, newdatarr=None):
         #at any rate, we need to:
         #1. back up the data (if that has not already been done so),
         #-but the backup files will have the OLD create table statement and all old data
@@ -1385,7 +1385,7 @@ class mybase:
         print("old data is 0\nold data new names only is 1\nnew data only 2");
         print("old and new data is 3\n");
         print(f"hasnummorethanzero = {hasnummorethanzero}");
-        print(f"hasnummorethanone = {hasnummorethanone}");
+        print(f"hasnummorethanone = {hasnummorethanone}\n");
 
         #we need the highest number for each table...
         #we need to know the old name and the new name of the col for each table...
@@ -1484,6 +1484,13 @@ class mybase:
                 raise ValueError("invalid value found for the last item on the resarr! " +
                                  "It must be one of the following: 0, 1, or 2, but it was not!");
         
+        #nwdatmustbeempty = True;
+        #for num in mxnumoneachtble:
+        #    if (1 < num):
+        #        nwdatmustbeempty = False;
+        #        break;
+        nwdatmustbeempty = not(any(1 < num for num in mxnumoneachtble));
+
         #print all of the data from the above loops up to this point
         print(f"allfintnmsflines = {allfintnmsflines}");
         print(f"allprevtnms = {allprevtnms}");
@@ -1506,9 +1513,19 @@ class mybase:
         print(f"allrnmcolobjsoneachtble = {allrnmcolobjsoneachtble}");
         print(f"alltblshasrnmcols = {alltblshasrnmcols}");
         print(f"mnnumoneachtble = {mnnumoneachtble}");
-        print(f"mxnumoneachtble = {mxnumoneachtble}\n");
+        print(f"mxnumoneachtble = {mxnumoneachtble}");
+        print(f"nwdatmustbeempty = {nwdatmustbeempty}");
+        print(f"newdatarr = {newdatarr}\n");
         #if (isadeltble): raise ValueError("NEED TO DO SOMETHING HERE...!");
-        
+
+        if (nwdatmustbeempty): myvalidator.varmustbeemptyornull(newdatarr, "newdatarr");
+        else: myvalidator.varmustnotbeempty(newdatarr, "newdatarr");
+
+
+        tnmserrmsgpta = "a table must have at most one previous name and at most one current ";
+        tnmserrmsgpta += "name, but one table with a prevname (";
+        tnmserrmsgptb = ") has a table name that is both previous and current, which is illegal! ";
+        tnmserrmsgptb += "Some effected line numbers in the change log are: ";
         for prevtnm in allprevtnms:
             if (myvalidator.isvaremptyornull(prevtnm)): pass;
             else:
@@ -1520,11 +1537,8 @@ class mybase:
                                     if (not(myvalidator.isvaremptyornull(allprevtnms[prevtnmi])) and
                                         allfintnmsflines[i] == allprevtnms[prevtnmi])];
                     finclgproblnums = myvalidator.combineTwoLists(mclglinenums, olinenums, nodups=True);
-                    raise ValueError("a table must have at most one previous name and at most one " +
-                                     "current name, but one table with a prevname (" + prevtnm +
-                                     ") has a table name that is both previous and current, " +
-                                     "which is illegal! Some effected line numbers in the change " +
-                                     "log are: " + str(finclgproblnums));
+                    raise ValueError(tnmserrmsgpta + prevtnm + tnmserrmsgptb + str(finclgproblnums));
+
 
         #we care if the table exists...
         #we care about the create table statement...

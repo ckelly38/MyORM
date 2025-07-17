@@ -66,7 +66,7 @@ if (runclogtsts):
 #need a test with at least one renamed col and/or have foreign keys point to it
 #need a test with a new added table
 #need a test with one new col on a table
-#need a test where the data type of a col changed
+#need a test where the datatype of a col changed
 
 runinsertionsrttst = False;
 if (runinsertionsrttst):
@@ -80,8 +80,25 @@ if (runinsertionsrttst):
 #if (runresviadatclogfiletstrencola):
 #      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
+
+#possible bug in createTable or insertInto statement ignores the default value assigned by the user
+#if not provided for a col.
+#this bug was found on 7-16-2025 10:45 PM create a table with a col with a default value but
+#do not provide anything for said col on an insert statement caused a problem.
+
+#test with one new col on a table
+runresviadatclogfiletstaddcola = True;
+if (runresviadatclogfiletstaddcola):
+      Camper.clearAndDropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
+      cloglines = [myvalidator.renameItemString("table", "campers", "crapers", tnm="crapers"),
+                   myvalidator.renameItemString("col", "age", "myage", tnm="crapers"),#campers
+                   myvalidator.addItemString("col", "crapers", "rank", icltp="")];
+      mybase.restoreDBFromDatFileAndChangeLog("./bkdatonly.txt", cloglines);
+      #needs something here
+      raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+
 #test with at least one renamed table and/or have foreign keys point to it
-runresviadatclogfiletstrnmtble = True;
+runresviadatclogfiletstrnmtble = False;
 if (runresviadatclogfiletstrnmtble):
       Camper.clearAndDropTable(onlyifnot=True, runbkbfr=False, runbkaftr=False);
       cloglines = [myvalidator.renameItemString("table", "campers", "crapers", tnm="crapers"),

@@ -173,9 +173,13 @@ class Camper(mybase):
                  isnonnull=True, issigned=False, isunique=True, autoincrements=False,
                  constraints=[myvalidator.genSQLCheck("namelencheck",
                                                       myvalidator.genSQLLength("name") + " >= 1")]);
-    myage = mycol(colname="myage", datatype="Integer", defaultvalue=1, isprimarykey=False, isnonnull=True,
-                issigned=False, isunique=False, autoincrements=False,
-                constraints=[myvalidator.genSQLCheck("agecheck", "myage >= 8 AND myage <= 18")]);#
+    myage = mycol(colname="myage", datatype="Integer", defaultvalue=1, isprimarykey=False,
+                  isnonnull=True, issigned=False, isunique=False, autoincrements=False,
+                  constraints=[myvalidator.genSQLCheck("agecheck", "myage >= 8 AND myage <= 18")]);#
+
+    rank = mycol(colname="rank", datatype="Integer", defaultvalue=0, isprimarykey=False,
+                 isnonnull=True, issigned=False, isunique=True, autoincrements=False,
+                 constraints=[myvalidator.genSQLCheck("rankcheck", "rank >= 0")]);
 
     # Add relationship
     #signups = db.relationship("Signup", back_populates="camper", cascade="all, delete-orphan");

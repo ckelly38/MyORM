@@ -39,11 +39,18 @@ class myvalidator:
     @classmethod
     def varmustnotbeempty(clsnm, val, varnm="varname"):
         if (varnm == None or type(varnm) == str and len(varnm) < 1):
-            return clsnm.varmustnotbeempty(val, "varname");
+            return clsnm.varmustnotbeempty(val, varnm="varname");
         elif (type(varnm) == str): pass;
         else: raise TypeError("varname must be a string!");
         if (val == None or len(val) < 1): raise ValueError(varnm + " must not be empty!");
         else: return True;
+
+    @classmethod
+    def varmustbeemptyornull(clsnm, val, varnm="varname"):
+        if (myvalidator.isvaremptyornull(varnm)):
+            return myvalidator.varmustbeemptyornull(val, varnm="varname");
+        if (myvalidator.isvaremptyornull(val)): return True;
+        else: raise ValueError(varnm + " must be empty or null, but it was not!");
 
     @classmethod
     def twoBoolVarsMustBeDifferentOrEqual(cls, vala, valb, usediff,
