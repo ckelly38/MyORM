@@ -1,0 +1,40 @@
+class Activity DOES NOT EXIST with tablename: activities and has colnames: 
+['difficulty', 'id', 'name']
+and the create table statement is:
+
+and the data: []
+class Camper EXISTS with tablename: campers and has colnames: 
+['age', 'id', 'name']
+and the create table statement is:
+CREATE TABLE campers(age INTEGER NOT NULL, id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, CONSTRAINT individualcoliduniqueconstraint UNIQUE(id), CONSTRAINT individualcolnameuniqueconstraint UNIQUE(name), CONSTRAINT agecheck CHECK(age >= 8 AND age <= 18), CONSTRAINT namelencheck CHECK(LENGTH(name) >= 1));
+and the data: [
+(15, 1, 'Susan')
+]
+class MyModelWithCompForeignKey DOES NOT EXIST with tablename: compfkeytesttable and has colnames: 
+['mycompfkcolval', 'mynewcol']
+and the create table statement is:
+
+and the data: []
+class MyModelWithCompPrimaryKey DOES NOT EXIST with tablename: comppkeytable and has colnames: 
+['mynewcola', 'mynewcolb', 'mynewcolc']
+and the create table statement is:
+
+and the data: []
+class MyOtherTestClass DOES NOT EXIST with tablename: testtableb and has colnames: 
+['myfkeyid', 'mynewcol']
+and the create table statement is:
+
+and the data: []
+class MyTestColsClass DOES NOT EXIST with tablename: testtablea and has colnames: 
+['myfkeyid', 'mynewcol']
+and the create table statement is:
+
+and the data: []
+class Signup EXISTS with tablename: signups and has colnames: 
+['activity_id', 'camper_id', 'id', 'time']
+and the create table statement is:
+CREATE TABLE signups(activity_id INTEGER NOT NULL, camper_id INTEGER NOT NULL, id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER NOT NULL, CONSTRAINT individualcoliduniqueconstraint UNIQUE(id), CONSTRAINT fkeyreqsforcolactivity_id FOREIGN KEY(activity_id) REFERENCES activities(id), CONSTRAINT fkeyreqsforcolcamper_id FOREIGN KEY(camper_id) REFERENCES campers(id), CONSTRAINT timecheck CHECK(time >= 0 AND time <= 23));
+and the data: [
+(1, 2, 2, 9)
+(1, 2, 4, 11)
+]

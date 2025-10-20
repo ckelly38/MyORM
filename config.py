@@ -16,7 +16,13 @@ import sqlite3;
 #connection method
 #My program currently does not do type enforcement for POSTGRESS, MONGODB, FIREBASE, and NOSQL.
 #I probably will not use NO SQL at all because I have never used that before.
-SQLVARIANT = "LITE";#LITE, MYSQL, SQLSERVER
-DB_NAME = "swimleague";#set by the user.
-CONN = sqlite3.connect(DB_NAME + '.db');
-CURSOR = CONN.cursor();#PRETTY MUCH EVERY LIBRARY OUT THERE HAS A METHOD FOR GETTING THIS.
+#SQLVARIANT = "LITE";#LITE, MYSQL, SQLSERVER
+#DB_NAME = "swimleague";#set by the user.
+#CONN = sqlite3.connect(DB_NAME + '.db');
+#CURSOR = CONN.cursor();#PRETTY MUCH EVERY LIBRARY OUT THERE HAS A METHOD FOR GETTING THIS.
+#isinit = False;
+#def isInitialized(self): return isinit;
+
+from myorm import MyDB;
+mydb = MyDB.MyDB.newDBFromNameAndLib("swimleague", sqlite3, "LITE");
+print(f"mydb.SQLVARIANT = {mydb.SQLVARIANT}");

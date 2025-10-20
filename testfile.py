@@ -1,8 +1,18 @@
-from init import SQLVARIANT, CURSOR, CONN;
-from models import mycol;
-from mycol import myvalidator;
-#from myvalidator import myvalidator;
-from mybase import mybase;
+from config import mydb;
+
+SQLVARIANT = mydb.getSQLType();
+CURSOR = mydb.getCursor();
+CONN = mydb.getConn();
+print(f"testfile line 6: SQLVARIANT = {SQLVARIANT}");
+
+from myorm.mycol import mycol;
+print("testfile line 8 here! mycol class imported successfully!");
+
+mycol.setMyDBRef(mydb);
+print("testfile line 9 here!");
+
+from myorm.myvalidator import myvalidator;
+from myorm.mybase import mybase;
 from models import MyTestColsClass;
 from models import MyOtherTestClass;
 from models import MyModelWithCompPrimaryKey;
@@ -10,6 +20,7 @@ from models import MyModelWithCompForeignKey;
 from models import Activity;
 from models import Camper;
 from models import Signup;
+
 #from models import *;
 #these imports are no longer needed
 #import sys;
@@ -27,7 +38,7 @@ print("INSIDE OF TEST FILE!");
 mybase.setupMain();
 
 print();
-#raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
+raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 runresviapscpttsta = False;
 if (runresviapscpttsta):

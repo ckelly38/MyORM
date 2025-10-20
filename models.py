@@ -1,7 +1,7 @@
-from mybase import mybase;
-from mybase import mycol;
-from mycol import myvalidator;
-from myrefcol import myrefcol;
+from myorm.mybase import mybase;
+from myorm.mycol import mycol;
+from myorm.myvalidator import myvalidator;
+from myorm.myrefcol import myrefcol;
 validates = mycol.validates;
 #mycol.setWarnUniqueFKeyMethod('WARN');#user warning of a problem WARN*, ERROR, or DISABLED.
 class MyTestColsClass(mybase):

@@ -1,12 +1,38 @@
-from mycol import mycol;
-from mycol import myvalidator;
-from myrefcol import myrefcol;
-from init import *;#SQLVARIANT, CURSOR, CONN
+from myorm.mycol import mycol;
+from myorm.myvalidator import myvalidator;
+from myorm.myrefcol import myrefcol;
+from myorm.MyDB import MyDB;
+#from init import *;#SQLVARIANT, CURSOR, CONN
 import traceback;
 class mybase:
     #mytablename = "basetablename";
     #mymulticolargs = None;
     #disableconstraintswarning = False;
+    
+    @classmethod
+    def getMyDBRef(cls): return mycol.getMyDB();
+    @classmethod
+    def setMyDB(cls, val): mycol.setMyDB(val);
+    @classmethod
+    def getMyLibRefClass(cls): return mycol.getMyLibRefClass();
+    @classmethod
+    def setMyLibRefClass(cls, val): mycol.setMyLibRefClass(val);
+    @classmethod
+    def getMyDBName(cls): return mycol.getMyDBName();
+    @classmethod
+    def setMyDBName(cls, val): mycol.setMyDBName(val);
+    @classmethod
+    def getMySQLType(cls): return mycol.getMySQLType();
+    @classmethod
+    def setMySQLType(cls, val): mycol.setMySQLType(val);
+    @classmethod
+    def getMyCursor(cls): return mycol.getMyCursor();
+    @classmethod
+    def setMyCursor(cls, val): mycol.setMyCursor(val);
+    @classmethod
+    def getMyConn(cls): return mycol.getMyConn();
+    @classmethod
+    def setMyConn(cls, val): return mycol.setMyConn(val);
 
     @classmethod
     def setupPartA(cls):
@@ -213,7 +239,7 @@ class mybase:
         #we also need the class reference for validation purposes.
         #USING GLOBALS DOES NOT WORK IN THIS CASE SO CANNOT DO STRING TO REF CONVERSION.
 
-        varstr = "" + SQLVARIANT;
+        varstr = "" + mybase.getMySQLType();#SQLVARIANT
         if (hasattr(type(self), "all")):
             if (type(self).all == None): type(self).all = [self];
             else: type(self).all.append(self);
@@ -464,7 +490,7 @@ class mybase:
         if (mycolobj == None):
             return self.setValueForColName(clnm, valcl, type(self).getMyColObjFromName(clnm));
         else: myvalidator.varmustnotbenull(mycolobj, "mycolobj");
-        varstr = "" + SQLVARIANT;
+        varstr = "" + mybase.getMySQLType();#SQLVARIANT;
         errmsgpta = "invalid value (";
         errmsgptb = ") used here for the data type (";
         mvaldtp = mycolobj.getDataType();
@@ -817,7 +843,7 @@ class mybase:
     
     @classmethod
     def updateAllForeignKeyObjectsForMyClass(cls):
-        #from mybase import mybase;
+        #from myorm.mybase import mybase;
         if (issubclass(cls, mybase)):
             if (myvalidator.isvaremptyornull(cls.all)): pass;
             else:
@@ -833,7 +859,7 @@ class mybase:
         if (myvalidator.isvaremptyornull(mlist)): pass;
         else:
             for mclsref in mlist:
-                #from mybase import mybase;
+                #from myorm.mybase import mybase;
                 if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
                     mclsref.updateAllForeignKeyObjectsForMyClass();   
         print("DONE UPDATING ALL OBJECT REFS FROM FOREIGN KEYS NOW!");
@@ -846,7 +872,7 @@ class mybase:
         if (myvalidator.isvaremptyornull(mlist)): pass;
         else:
             for mclsref in mlist:
-                #from mybase import mybase;
+                #from myorm.mybase import mybase;
                 if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
                     mclsref.updateAllLinkRefsForMyClass();#mclsref.setupPartB(True);
         print("DONE UPDATING ALL LINK REFS FROM FOREIGN KEYS NOW!");
@@ -870,17 +896,17 @@ class mybase:
     #convenience method that calls the method in the myvalidator for generating the
     #CREATE TABLE SQL query.
     #
-    #DEPENDS ON THE SQL VARIANT.
+    #DEPENDS ON THE SQL VARIANT or SQLVARIANT.
     @classmethod
     def genSQLCreateTableFromRef(cls, varstr=None, onlyifnot=True, isinctable=True):
         if (myvalidator.isvaremptyornull(varstr)):
-            return cls.genSQLCreateTableFromRef(varstr="" + SQLVARIANT, onlyifnot=onlyifnot,
-                                                isinctable=isinctable);
+            return cls.genSQLCreateTableFromRef(varstr="" + mybase.getMySQLType(),
+                                                onlyifnot=onlyifnot, isinctable=isinctable);
         return myvalidator.genSQLCreateTable(cls.getTableName(), varstr, cls.getMyCols(),
                                              cls.getMultiColumnConstraints(),
                                              cls.getAllTableConstraints(), onlyifnot=onlyifnot,
                                              isinctable=isinctable);
-    #DEPENDS ON THE SQL VARIANT.
+    #DEPENDS ON THE SQL VARIANT or SQLVARIANT.
     @classmethod
     def createTable(cls):
         #if the table exists and onlyifnot is False, then it will fail because the table already exists
@@ -892,13 +918,14 @@ class mybase:
             mc.primaryKeyInformationMustBeValid(cls);
             mc.foreignKeyInformationMustBeValid(fcobj=None, usenoclassobj=True);
         
-        qry = cls.genSQLCreateTableFromRef(varstr="" + SQLVARIANT, onlyifnot=False, isinctable=True);
+        qry = cls.genSQLCreateTableFromRef(varstr="" + mybase.getMySQLType(), onlyifnot=False,
+                                           isinctable=True);
         print(f"\nCREATE TABLE qry = {qry}\n");
         
         #this either failed because the table already exists or fails for some other reason
         #the user should be informed because it means there is a problem with the user's program
-        res = CURSOR.execute(qry);
-        CONN.commit();
+        res = mybase.getMyCursor().execute(qry);
+        mybase.getMyConn().commit();
         print("created " + cls.getTableAndClassNameString() + " on the DB successfully!\n");
         return True;
 
@@ -915,8 +942,8 @@ class mybase:
         
         exists = True;
         try:
-            res = CURSOR.execute(qry).fetchall();
-            CONN.commit();
+            res = mybase.getMyCursor().execute(qry).fetchall();
+            mybase.getMyConn().commit();
         except Exception as ex:
             #if (pqry): print(f"\nTABLE EXISTS qry = {qry}\n");
             #traceback.print_exc();
@@ -946,8 +973,8 @@ class mybase:
         with open(filepathandnm, "r") as mfile:
             mscrpt = mfile.read();
             mfile.close();
-        CURSOR.executescript(mscrpt);
-        CONN.commit();
+        mybase.getMyCursor().executescript(mscrpt);
+        mybase.getMyConn().commit();
         print("DB SUCCESSFULLY RESTORED!");
     
     @classmethod
@@ -1077,8 +1104,8 @@ class mybase:
             print(f"DROP TABLE QUERY dpqry = {dpqry}");
 
             try:
-                CURSOR.execute(dpqry);
-                CONN.commit();
+                mybase.getMyCursor().execute(dpqry);
+                mybase.getMyConn().commit();
             except Exception as ex:
                 print("either the table already does not exist or problem connecting with the DB!");
                 traceback.print_exc();
@@ -1091,8 +1118,8 @@ class mybase:
                     print(f"CREATE TABLE QUERY: {ctbleqry}");
                     
                     try:
-                        CURSOR.execute(ctbleqry);
-                        CONN.commit();
+                        mybase.getMyCursor().execute(ctbleqry);
+                        mybase.getMyConn().commit();
                     except Exception as ex:
                         print("either the table already exists or problem connecting to the DB!");
                         raise ex;
@@ -1122,8 +1149,8 @@ class mybase:
                         mnwdatqry = myvalidator.genSQLInsertInto(tname, mcnms, vals=None);
                         print(f"mnwdatqry = {mnwdatqry}");
                         
-                        CURSOR.execute(mnwdatqry, mtp);
-                        CONN.commit();
+                        mybase.getMyCursor().execute(mnwdatqry, mtp);
+                        mybase.getMyConn().commit();
         print("DB successfully restored from the backup data only file!");
         return True;
 
@@ -1687,8 +1714,8 @@ class mybase:
                 print(f"DROP TABLE QUERY dpqry = {dpqry}");
 
                 try:
-                    CURSOR.execute(dpqry);
-                    CONN.commit();
+                    mybase.getMyCursor().execute(dpqry);
+                    mybase.getMyConn().commit();
                 except Exception as ex:
                     print("either the table already does not exist or problem connecting with the DB!");
                     traceback.print_exc();
@@ -1715,14 +1742,15 @@ class mybase:
                         
                         mclsref = mycol.getClassFromTableName(mtnmfref);#need the current table name
                         #raise ValueError("NOT DONE YET RESTORING THE DATA 5-29-2025 8:56 PM MST!");
-                        ctbleqry = mclsref.genSQLCreateTableFromRef(varstr="" + SQLVARIANT,
+                        #DEPENDS ON THE SQL VARIANT or SQLVARIANT.
+                        ctbleqry = mclsref.genSQLCreateTableFromRef(varstr="" + mybase.getMySQLType(),
                                                                    onlyifnot=False, isinctable=True);
                         #ctbleqry = mlines[ctblineindx + 1][0:len(mlines[ctblineindx + 1]) - 1];
                         print(f"CREATE TABLE QUERY: {ctbleqry}");
                         
                         try:
-                            CURSOR.execute(ctbleqry);
-                            CONN.commit();
+                            mybase.getMyCursor().execute(ctbleqry);
+                            mybase.getMyConn().commit();
                         except Exception as ex:
                             print("either the table already exists or problem connecting to the DB!");
                             raise ex;
@@ -1792,8 +1820,8 @@ class mybase:
                         print(f"mnwdatqry = {mnwdatqry}");
                         
                         try:
-                            CURSOR.execute(mnwdatqry, mtp);
-                            CONN.commit();
+                            mybase.getMyCursor().execute(mnwdatqry, mtp);
+                            mybase.getMyConn().commit();
                         except Exception as ex:
                             datrejlistftble.append(mtp);
                             print("either the data could not be added if it violates a newly " +
@@ -1905,7 +1933,8 @@ class mybase:
                 #else:
                 mitemlist = mclsref.getAllItemsOnTable(pqry=False);
                 mdataforalltbls.append(mitemlist);
-                ctblqry = mclsref.genSQLCreateTableFromRef(varstr="" + SQLVARIANT, onlyifnot=False,
+                #DEPENDS ON THE SQL VARIANT or SQLVARIANT.
+                ctblqry = mclsref.genSQLCreateTableFromRef(varstr="" + mybase.getMySQLType(), onlyifnot=False,
                                                            isinctable=True);#the create table statement
                 ctblstmnts.append(ctblqry);
                 #print("all items on DB for class " + mclsref.__name__ + " are: ");
@@ -2111,8 +2140,8 @@ class mybase:
         print(f"\nDROP TABLE qry = {qry}\n");
         
         try:
-            res = CURSOR.execute(qry);
-            CONN.commit();
+            res = mybase.getMyCursor().execute(qry);
+            mybase.getMyConn().commit();
         except Exception as ex:
             #print(f"\nDROP TABLE qry = {qry}\n");
             print("either " + tnmonclsnmstr + " already does not exist, or problem " +
@@ -2167,8 +2196,8 @@ class mybase:
             print("\nbegin truncating the data on " + tnmandclsnmstr + " on the DB now!");
             print(f"TRUNCATE TABLE truncqry = {truncqry}");
 
-            res = CURSOR.execute(truncqry);
-            CONN.commit();
+            res = mybase.getMyCursor().execute(truncqry);
+            mybase.getMyConn().commit();
 
             print("truncated the data on " + tnmandclsnmstr + " on the DB successfully!\n");
 
@@ -2208,8 +2237,8 @@ class mybase:
             print(f"DELETE ROW mdelcrowqry = {mdelcrowqry}");
             print(f"mvals = {mvals}");
 
-            res = CURSOR.execute(mdelcrowqry, mvals);
-            CONN.commit();
+            res = mybase.getMyCursor().execute(mdelcrowqry, mvals);
+            mybase.getMyConn().commit();
 
             print("removed the data on " + tnmandclsnmstr + " from the DB successfully!\n");
 
@@ -2246,8 +2275,8 @@ class mybase:
         #print(f"limpt = {limpt}");
         print(f"SELECT QUERY myfinselqry = {myfinselqry}");
 
-        myores = CURSOR.execute(myfinselqry).fetchall();
-        CONN.commit();
+        myores = mybase.getMyCursor().execute(myfinselqry).fetchall();
+        mybase.getMyConn().commit();
         print("successfully got the item from the DB (stored in a list as the only item)!");
         return myores;
     @classmethod
@@ -2261,8 +2290,8 @@ class mybase:
         myselqry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
         if (pqry): print(f"SELECT QUERY myselqry = {myselqry}");
 
-        myores = CURSOR.execute(myselqry).fetchall();
-        CONN.commit();
+        myores = mybase.getMyCursor().execute(myselqry).fetchall();
+        mybase.getMyConn().commit();
         if (pqry): print("successfully got the items from the DB!");
         return myores;
 
@@ -2412,8 +2441,8 @@ class mybase:
 
             res = None;
             try:
-                res = CURSOR.execute(upqry, mvals).fetchone();#just if the update succeeded or not!
-                CONN.commit();
+                res = mybase.getMyCursor().execute(upqry, mvals).fetchone();#just if the update succeeded or not!
+                mybase.getMyConn().commit();
             except Exception as ex:
                 print("----------------------------------------------------------------------------");
                 print("ERROR: UPDATE FAILED!\n");
@@ -2455,8 +2484,8 @@ class mybase:
 
             res = None;
             try:
-                res = CURSOR.execute(nwvqry, mvals).fetchone();#just if the save succeeded or not!
-                CONN.commit();
+                res = mybase.getMyCursor().execute(nwvqry, mvals).fetchone();#just if the save succeeded or not!
+                mybase.getMyConn().commit();
             except Exception as ex:
                 print("----------------------------------------------------------------------------");
                 print("ERROR: SAVE FAILED!\n");

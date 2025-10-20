@@ -1,4 +1,4 @@
-from myvalidator import myvalidator;
+from myorm.myvalidator import myvalidator;
 class myrefcol:
     def __init__(self, listcolname, refclassname):
         self.setListColName(listcolname);

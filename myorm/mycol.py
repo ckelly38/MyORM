@@ -1,9 +1,10 @@
-from myvalidator import myvalidator;
+from myorm.myvalidator import myvalidator;
 import sys;
 import inspect;
 import traceback;
 import functools;
-from init import SQLVARIANT;
+from myorm.MyDB import MyDB;
+#from config import mydb;#the name is unknown the file location is unknown...
 class mycol:
     #everything to init will need to be removed to solve an import problem between
     #this and the sql generator
@@ -14,6 +15,57 @@ class mycol:
     __ransetup__= False;
     #u for unique fky for foreign key mthd for method
     __ufkyhandlermthd__ = "WARN";#can be ERROR, WARN, or DISABLED.
+    __mydbref__ = None;
+    
+    #we need the object in memory that the user created
+    #what if multiple objects exist with different variants
+    #the DB class could store a list, but that does not help us determine which one we want
+    #SQLVARIANT = MyDB.SQLVARIANT;#property object not the value...
+    #print(f"mycol: SQLVARIANT = {SQLVARIANT}");
+
+    @classmethod
+    def getMyDB(cls): return cls.__mydbref__;
+    @classmethod
+    def setMyDB(cls, val):
+        if ((val == None) or isinstance(val, MyDB)):
+            cls.__mydbref__ = val;
+            print("mycol: mydbref is set successfully!");
+            if (val == None): print("mycol: mydbref is None!");
+            else: print("mycol: mydbref is not null!");
+        else: raise ValueError("val must be an instance of MyDB!");
+    @classmethod
+    def setMyDBRef(cls, val): cls.setMyDB(val);
+    @classmethod
+    def getMyDBMustBeDefined(cls):
+        tmpdb = cls.getMyDB();
+        if (tmpdb == None): raise ValueError("THE DB OBJECT USED MUST BE DEFINED!");
+        else:
+            if (isinstance(tmpdb, MyDB)): return tmpdb;
+            else: raise ValueError("THE DATABASE OBJECT tmpdb must be an instance of MyDB!");
+    @classmethod
+    def getMyDBName(cls): return cls.getMyDBMustBeDefined().DB_NAME;
+    @classmethod
+    def getMySQLType(cls):
+        tmpdb = cls.getMyDB();
+        if (tmpdb == None): return None;
+        else: return cls.getMyDBMustBeDefined().SQLVARIANT;#want it only this...
+    @classmethod
+    def getMyLibRefClass(cls): return cls.getMyDBMustBeDefined().getLibRef();
+    @classmethod
+    def setMyLibRefClass(cls, val): cls.getMyDBMustBeDefined().setLibRef(val);
+    @classmethod
+    def getMyCursor(cls): return cls.getMyDBMustBeDefined().CURSOR;
+    @classmethod
+    def getMyConn(cls): return cls.getMyDBMustBeDefined().CONN;
+    @classmethod
+    def setMyDBName(cls, val): cls.getMyDBMustBeDefined().setDBName(val);
+    @classmethod
+    def setMySQLType(cls, val): cls.getMyDBMustBeDefined().setSQLType(val);
+    @classmethod
+    def setMyCursor(cls, val): cls.getMyDBMustBeDefined().setCursor(val);
+    @classmethod
+    def setMyConn(cls, val): cls.getMyDBMustBeDefined().setConn(val);
+
 
     #constraint counter methods
 
@@ -320,7 +372,7 @@ class mycol:
     @classmethod
     def getClassFromTableName(cls, tablename):
         myvalidator.varmustnotbeempty(tablename, "tablename");
-        from mybase import mybase;
+        from myorm.mybase import mybase;
         msbclses = [mycls for mycls in cls.getMyClassRefsMain(False)
                     if (issubclass(mycls, mybase) and not(mycls == mybase))];
         mtnms = [mycls.getTableName() for mycls in msbclses];
@@ -472,13 +524,13 @@ class mycol:
 
     def getValue(self, mobj):
         myvalidator.varmustnotbenull(mobj, "mobj (aka the context object)");
-        from mybase import mybase;
+        from myorm.mybase import mybase;
         if (issubclass(type(mobj), mybase)): return mobj.getValueForColName(self.getColName());
         else: raise ValueError("mobj must be a subclass of mybase class!");
 
     def setValue(self, mobj, val):
         myvalidator.varmustnotbenull(mobj, "mobj (aka the context object)");
-        from mybase import mybase;
+        from myorm.mybase import mybase;
         if (issubclass(type(mobj), mybase)): mobj.setValueForColName(self.getColName(), val, self);
         else: raise ValueError("mobj must be a subclass of mybase class!");
 
@@ -666,7 +718,7 @@ class mycol:
         #if the list is empty or null, then assumed valid
         #if on the list, valid
         #if not on the list and list is not empty, then not valid.
-        varstr = "" + SQLVARIANT;
+        varstr = "" + mycol.getMySQLType();#SQLVARIANT
         mvtpslist = myvalidator.getSQLDataTypesInfo(varstr);
         mval = None;
         if (type(val) == list):
@@ -708,7 +760,7 @@ class mycol:
     #otherwise, we will error out if it does not match the required value
     #somehow get the tpobj from the type.
     def setIsSigned(self, val):
-        varstr = "" + SQLVARIANT;
+        varstr = "" + mycol.getMySQLType();#SQLVARIANT
         errmsg = "invalid value set for signed the type has a default and it is the opposite of this!";
         if (type(self.getDataType()) == list):
             if (val == None): self._issigned = False;
@@ -735,7 +787,7 @@ class mycol:
     #if isnonnull is set to None, then the default for the type will be used
     #else it must be true if the nonnull default is true, otherwise it can be either true or false
     def setIsNonNull(self, val):
-        varstr = "" + SQLVARIANT;
+        varstr = "" + mycol.getMySQLType();#SQLVARIANT
         errmsg = "invalid value set for nonnull the type has a default and it is the opposite of this!";
         if (type(self.getDataType()) == list):
             if (val == None): self._isnonnull = True;
@@ -762,7 +814,7 @@ class mycol:
         #if however the type is signed, and has two different ranges, then we will need to
         #pull the parameter value from the user.
         #myvalidator.isValueValidForDataType(tpnm, val, varstr, useunsigned, isnonnull);
-        varstr = "" + SQLVARIANT;
+        varstr = "" + mycol.getMySQLType();#SQLVARIANT
         valerrmsgptc = ") found and used here for the variant (" + varstr + ")!";
         if (val == None):
             if (type(self.getDataType()) == list): self._defaultvalue = None;
@@ -950,7 +1002,7 @@ class mycol:
         #if (val == None or myvalidator.isClass(val)): pass;
         #else: raise ValueError("val must be a class not an object!");
         self._foreignClass = val;
-        from mybase import mybase;
+        from myorm.mybase import mybase;
         mybase.updateAllForeignKeyObjectsForAllClasses(not self.getIsInitialized());
 
     foreignClass = property(getForeignClass, setForeignClass);
@@ -986,7 +1038,7 @@ class mycol:
             #else: raise ValueError(f"invalid column name ({val})!");
             myvalidator.listMustContainUniqueValuesOnly(val);
             self._foreignColNames = val;
-        from mybase import mybase;
+        from myorm.mybase import mybase;
         mybase.updateAllForeignKeyObjectsForAllClasses(not self.getIsInitialized());
 
     foreignColNames = property(getForeignColNames, setForeignColNames);
@@ -1007,7 +1059,7 @@ class mycol:
             if (myvalidator.isvaremptyornull(self.foreignColNames)): pass;
             else: self.setForeignColNames(None);
         self._isforeignkey = val;
-        from mybase import mybase;
+        from myorm.mybase import mybase;
         mybase.updateAllForeignKeyObjectsForAllClasses(not self.getIsInitialized());
 
     isforeignkey = property(getIsForeignKey, setIsForeignKey);

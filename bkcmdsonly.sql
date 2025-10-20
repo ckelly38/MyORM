@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS activities;
+DROP TABLE IF EXISTS campers;
+DROP TABLE IF EXISTS compfkeytesttable;
+DROP TABLE IF EXISTS comppkeytable;
+DROP TABLE IF EXISTS testtableb;
+DROP TABLE IF EXISTS testtablea;
+DROP TABLE IF EXISTS signups;
+CREATE TABLE campers(age INTEGER NOT NULL, id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, CONSTRAINT individualcoliduniqueconstraint UNIQUE(id), CONSTRAINT individualcolnameuniqueconstraint UNIQUE(name), CONSTRAINT agecheck CHECK(age >= 8 AND age <= 18), CONSTRAINT namelencheck CHECK(LENGTH(name) >= 1));
+INSERT INTO campers(age, id, name) VALUES (15, 1, Susan);
+CREATE TABLE signups(activity_id INTEGER NOT NULL, camper_id INTEGER NOT NULL, id INTEGER PRIMARY KEY AUTOINCREMENT, time INTEGER NOT NULL, CONSTRAINT individualcoliduniqueconstraint UNIQUE(id), CONSTRAINT fkeyreqsforcolactivity_id FOREIGN KEY(activity_id) REFERENCES activities(id), CONSTRAINT fkeyreqsforcolcamper_id FOREIGN KEY(camper_id) REFERENCES campers(id), CONSTRAINT timecheck CHECK(time >= 0 AND time <= 23));
+INSERT INTO signups(activity_id, camper_id, id, time) VALUES (1, 2, 2, 9);
+INSERT INTO signups(activity_id, camper_id, id, time) VALUES (1, 2, 4, 11);
