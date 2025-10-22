@@ -1,4 +1,5 @@
 import traceback;
+import types;
 class myvalidator:
     @classmethod
     def varmustbethetypeandornull(clsnm, val, tpcls, canbenull, varnm="varname"):
@@ -135,6 +136,70 @@ class myvalidator:
 
     @classmethod
     def isClass(clsnm, val): return (type(val) == type);
+    @classmethod
+    def isModule(cls, val): return (type(val) == types.ModuleType);
+    @classmethod
+    def isClassOrModule(cls, val): return (cls.isClass(val) or cls.isModule(val));
+
+    #note: mdl is for module, but it can be a module, a class, or an object
+    @classmethod
+    def getAttrsFromModule(cls, mdl):
+        return [attrnm for attrnm in dir(mdl)
+               if not attrnm.startswith("__") and not myvalidator.isClassOrModule(getattr(mdl, attrnm))];
+
+    #note: mdl is for module, but it can be a module, a class, or an object
+    @classmethod
+    def getDBAttrOrValFromConfigModuleMain(cls, mdl, myvars, useval):
+        myvalidator.varmustnotbeempty(myvars, varnm="myvars");
+        from myorm.MyDB import MyDB;
+        tmpdbobj = None;
+        for vnm in myvars:
+            tmpval = getattr(mdl, vnm);
+            if (isinstance(tmpval, MyDB)):
+                tmpdbobj = tmpval;
+                if (useval): pass;
+                else: return vnm;
+                break;
+        myvalidator.varmustbethetypeonly(tmpdbobj, MyDB, varnm="tmpdbobj");
+        return tmpdbobj;
+    @classmethod
+    def getDBAttrFromConfigModule(cls, mdl, myvars):
+        return cls.getDBAttrOrValFromConfigModuleMain(mdl, myvars, False);
+    @classmethod
+    def getDBValFromConfigModule(cls, mdl, myvars):
+        return cls.getDBAttrOrValFromConfigModuleMain(mdl, myvars, True);
+    @classmethod
+    def getDBAttrOrValFromConfigModuleNoVars(cls, mdl, useval):
+        myvars = myvalidator.getAttrsFromModule(mdl);
+        return cls.getDBAttrOrValFromConfigModuleMain(mdl, myvars, useval);
+    @classmethod
+    def getDBAttrFromConfigModuleNoVars(cls, mdl):
+        return cls.getDBAttrOrValFromConfigModuleNoVars(mdl, False);
+    @classmethod
+    def getDBValFromConfigModuleNoVars(cls, mdl):
+        return cls.getDBAttrOrValFromConfigModuleNoVars(mdl, True);
+
+    @classmethod
+    def setupConfigModule(cls, mdl):
+        myvalidator.varmustbethetypeonly(mdl, types.ModuleType, varnm="module mdl");
+        #print(mdl.__file__);
+        
+        myfnm = mdl.__file__[mdl.__file__.rindex("/")+1:mdl.__file__.rindex(".")];
+        #print(myfnm);
+        #print(dir(mdl));
+        
+        myvars = myvalidator.getAttrsFromModule(mdl);
+        myvals = [getattr(mdl, vnm) for vnm in myvars];
+        #print(myvars);
+        #print(myvals);
+        myvalidator.twoListsMustBeTheSameSize(myvars, myvals, "myvars", "myvals");
+
+        tmpdbobj = myvalidator.getDBAttrOrValFromConfigModuleMain(mdl, myvars, True);
+        tmpdbobj.setConfigFileName(myfnm);
+        tmpdbobj.setConfigAttrNames(myvars);
+        tmpdbobj.setConfigAttrValues(myvals);
+        print("MYVALIDATOR: CONFIG MODULE SETUP SUCCESSFULLY DONE!");
+        return True;
 
     @classmethod
     def listMustContainUniqueValuesOnly(clsnm, mlist, varnm="varnm"):

@@ -1,4 +1,5 @@
 import sqlite3;
+import types;
 #WILL PROBABLY NEED OTHER DATABASE LIBRARY IMPORTS HERE. MAY WANT TO CONDITIONALLY IMPORT THEM.
 
 #GS: Python how to connect to an external database like sql server
@@ -23,6 +24,6 @@ import sqlite3;
 #isinit = False;
 #def isInitialized(self): return isinit;
 
-from myorm import MyDB;
-mydb = MyDB.MyDB.newDBFromNameAndLib("swimleague", sqlite3, "LITE");
+from myorm.MyDB import MyDB;
+mydb = MyDB.newDBFromNameAndLib("swimleague", sqlite3, "LITE");
 print(f"mydb.SQLVARIANT = {mydb.SQLVARIANT}");

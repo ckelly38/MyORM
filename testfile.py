@@ -1,18 +1,31 @@
-from config import mydb;
-
-SQLVARIANT = mydb.getSQLType();
-CURSOR = mydb.getCursor();
-CONN = mydb.getConn();
+from myorm.myvalidator import myvalidator;#setup line required
+import config;#setup line required
+#from config import mydb;
+#print(dir(config));
+myvalidator.setupConfigModule(config);#setup line required part a
+tmpdbobj = myvalidator.getDBAttrOrValFromConfigModuleNoVars(config, True);#setup line required part b
+SQLVARIANT = tmpdbobj.getSQLType();
+CURSOR = tmpdbobj.getCursor();
+CONN = tmpdbobj.getConn();
 print(f"testfile line 6: SQLVARIANT = {SQLVARIANT}");
 
-from myorm.mycol import mycol;
+from myorm.mycol import mycol;#setup line required
 print("testfile line 8 here! mycol class imported successfully!");
 
-mycol.setMyDBRef(mydb);
+mycol.setMyDBRef(tmpdbobj);#setup line required part c
 print("testfile line 9 here!");
 
-from myorm.myvalidator import myvalidator;
-from myorm.mybase import mybase;
+#note for part a, b, and c calls alternatively call:
+#mycol.setUpMyColDBRefAndConfigModule(mdl);
+#only split it out above if you need access to DB methods almost instantly or
+#later on in the test or seed file
+
+#may want to make a program to generate a basic setup or test file for the user...
+#so the programmers are not very upset.
+#so they could just generate that and they could be good to go...
+
+#all other model class imports required now
+from myorm.mybase import mybase;#setup line required
 from models import MyTestColsClass;
 from models import MyOtherTestClass;
 from models import MyModelWithCompPrimaryKey;
@@ -35,7 +48,7 @@ print("INSIDE OF TEST FILE!");
 #mycol.setMyClassRefs(myclasses);
 #mycol.getMyClassRefsMain(True);#will force the fetch of the new list if it has changed by now
 #print(issubclass(mybase, mybase));
-mybase.setupMain();
+mybase.setupMain();#setup line required
 
 print();
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");

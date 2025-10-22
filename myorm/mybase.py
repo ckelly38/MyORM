@@ -22,6 +22,10 @@ class mybase:
     @classmethod
     def setMyDBName(cls, val): mycol.setMyDBName(val);
     @classmethod
+    def getMyDBConfigFileName(cls): return mycol.getMyDBConfigFileName();
+    @classmethod
+    def setMyDBConfigFileName(cls, val): mycol.setMyDBConfigFileName(val);
+    @classmethod
     def getMySQLType(cls): return mycol.getMySQLType();
     @classmethod
     def setMySQLType(cls, val): mycol.setMySQLType(val);
@@ -1793,7 +1797,8 @@ class mybase:
                             print(f"alltblshasrnmcols[utnmi] = {alltblshasrnmcols[utnmi]}");
                         else:
                             #table name is a previous table name
-                            print(f"allrnmcolobjsoneachtble[prvnmi] = {allrnmcolobjsoneachtble[prvnmi]}");
+                            print("allrnmcolobjsoneachtble[prvnmi] = " +
+                                  f"{allrnmcolobjsoneachtble[prvnmi]}");
                             print(f"alltblshasrnmcols[prvnmi] = {alltblshasrnmcols[prvnmi]}");
                         
                         myustindx = (utnmi if (tnmiscurrentnm) else prvnmi);
@@ -1843,6 +1848,7 @@ class mybase:
         print("end of data rejection list!\n");
         return True;
 
+    #depends on the config file and what the DB variable name is called
     @classmethod
     def genpscrptfromsqlines(cls, msqlines):
         #generate the python script file lines here...
@@ -1863,7 +1869,17 @@ class mybase:
         #copy the array into the file...
         #need to import the CURSOR and CONN from the config or init...
         myvalidator.varmustnotbeempty(msqlines, "msqlines");
-        iline = "from init import CURSOR, CONN;";
+        mbfnm = mybase.getMyDBConfigFileName();
+        myvalidator.varmustnotbeempty(mbfnm, "mbfnm");
+        dbrefnm = mybase.getMyDB().getConfigNamesForValType(MyDB)[0];
+
+        #use the config file to get the attribute name that is the instance of MyDB class.
+        #when we have that attribute name, we can proceed.
+
+        #iline = "from init import CURSOR, CONN;";
+        ilinea = "from " + mbfnm + " import " + dbrefnm + ";";
+        ilineb = "CURSOR = " + dbrefnm + ".getCursor();";
+        ilinec = "CONN = " + dbrefnm + ".getConn();";
         qline = "mqries = " + str(msqlines) + ";";
         nxtline = "for qry in mqries:";
         bnxtline = "    CURSOR.execute(qry);";#\t instead of 4 spaces on these lines
@@ -1902,7 +1918,7 @@ class mybase:
         #print(f"nwlinestr = {nwlinestr}");
 
         #mflines = [iline, qline, nxtline, bnxtline, cnxtline, fline];
-        mflines = [iline];
+        mflines = [ilinea, ilineb, ilinec];
         for n in range(len(tmparr)):
             cline = tmparr[n];
             fincline = ("          " + cline if (0 < n) else "" + cline);
@@ -1934,8 +1950,9 @@ class mybase:
                 mitemlist = mclsref.getAllItemsOnTable(pqry=False);
                 mdataforalltbls.append(mitemlist);
                 #DEPENDS ON THE SQL VARIANT or SQLVARIANT.
-                ctblqry = mclsref.genSQLCreateTableFromRef(varstr="" + mybase.getMySQLType(), onlyifnot=False,
-                                                           isinctable=True);#the create table statement
+                ctblqry = mclsref.genSQLCreateTableFromRef(varstr="" + mybase.getMySQLType(),
+                                                            onlyifnot=False, isinctable=True);
+                                                            #the create table statement
                 ctblstmnts.append(ctblqry);
                 #print("all items on DB for class " + mclsref.__name__ + " are: ");
                 #print(f"all colnames are: {mclsref.getMyColNames()}");
@@ -2441,7 +2458,8 @@ class mybase:
 
             res = None;
             try:
-                res = mybase.getMyCursor().execute(upqry, mvals).fetchone();#just if the update succeeded or not!
+                #just if the update succeeded or not!
+                res = mybase.getMyCursor().execute(upqry, mvals).fetchone();
                 mybase.getMyConn().commit();
             except Exception as ex:
                 print("----------------------------------------------------------------------------");
@@ -2484,7 +2502,8 @@ class mybase:
 
             res = None;
             try:
-                res = mybase.getMyCursor().execute(nwvqry, mvals).fetchone();#just if the save succeeded or not!
+                #just if the save succeeded or not!
+                res = mybase.getMyCursor().execute(nwvqry, mvals).fetchone();
                 mybase.getMyConn().commit();
             except Exception as ex:
                 print("----------------------------------------------------------------------------");
@@ -2770,7 +2789,8 @@ class mybase:
         #That kind of stuff is not included now.
 
         #make sure the self object is always excluded.
-        #if (myvalidator.isvaremptyornull(exobjslist)):
+        noexobjs = myvalidator.isvaremptyornull(exobjslist);#no original exobjs
+        #if (noexobjs):
         #    return self.__to_dict__(myattrs=myattrs, exobjslist=[self],
         #       usesafelistonly=usesafelistonly, prefix=prefix);
 
@@ -2797,9 +2817,8 @@ class mybase:
         if (hasexrules):
             if (myvalidator.isvaremptyornull(myexrules)): pass;
             else:
-                noorigexrules = myvalidator.isvaremptyornull(exobjslist);
-                nwlist = [mxrule for mxrule in myexrules if (noorigexrules
-                                                             or mxrule not in exobjslist)];
+                #noorigexrules = noexobjs = myvalidator.isvaremptyornull(exobjslist);
+                nwlist = [mxrule for mxrule in myexrules if (noexobjs or mxrule not in exobjslist)];
                 if (myvalidator.isvaremptyornull(nwlist)): pass;
                 else:
                     finxlist = myvalidator.combineTwoLists(exobjslist, nwlist);
@@ -2930,17 +2949,15 @@ class mybase:
                             pass;
                         else:
                             #if on the exclusion list, exclude it; if not, add it to the dict.
-                            #isonexlist = (False if (myvalidator.isvaremptyornull(exobjslist)) else
-                            #              (mval in exobjslist));
+                            #isonexlist = (False if (noexobjs) else (mval in exobjslist));
                             fulnm = (attr if (myvalidator.isvaremptyornull(prefix)) else
                                     prefix + "." + attr);
                             print("attr is in the unsafe list!");
                             print(f"attr = {attr}");
                             print(f"fulnm = {fulnm}");
                             
-                            isonexlist = (False if (myvalidator.isvaremptyornull(exobjslist)) else
-                                        (fulnm in exobjslist));
-                            if (isonexlist or myvalidator.isvaremptyornull(exobjslist)): pass;
+                            isonexlist = (False if (noexobjs) else (fulnm in exobjslist));
+                            if (isonexlist or noexobjs): pass;
                             else:
                                 for exrule in exobjslist:
                                     print(f"exrule = {exrule}");
@@ -2981,9 +2998,9 @@ class mybase:
                                                for myotrrule in otherruleslist
                                                if myotrrule.startswith(attr + ".")];
                                 print(f"nwattrslist = {nwattrslist}");
-
-                                innwattrlist = (myattrs if (myvalidator.isvaremptyornull(otherruleslist))
-                                                else nwattrslist);
+                                
+                                no_orules = myvalidator.isvaremptyornull(otherruleslist);
+                                innwattrlist = (myattrs if (no_orules) else nwattrslist);
                                 print(f"innwattrlist = {innwattrlist}");
                                 #raise ValueError("NOT DONE YET!");
 
@@ -3292,11 +3309,14 @@ class mybase:
     #in the event that the user did not define it, it throws an attribute error
     #this does not get all attributes that will be serialized
     @classmethod
-    def getSerializeOnlyRules(cls):
-        return cls.getValueOfVarIfPresentOnTableMain("allonlyrules");
+    def getSerializeOnlyORExclusiveSerializeRules(cls, useexrules):
+        myvalidator.varmustbeboolean(useexrules, varnm="useexrules");
+        mky = ("allexrules" if (useexrules) else "allonlyrules");
+        return cls.getValueOfVarIfPresentOnTableMain(mky);
     @classmethod
-    def getExclusiveSerializeRules(cls):
-        return cls.getValueOfVarIfPresentOnTableMain("allexrules");
+    def getSerializeOnlyRules(cls): return cls.getSerializeOnlyORExclusiveSerializeRules(False);
+    @classmethod
+    def getExclusiveSerializeRules(cls): return cls.getSerializeOnlyORExclusiveSerializeRules(True);
 
 
 

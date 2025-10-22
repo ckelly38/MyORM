@@ -38,17 +38,15 @@ class mycol:
     @classmethod
     def getMyDBMustBeDefined(cls):
         tmpdb = cls.getMyDB();
-        if (tmpdb == None): raise ValueError("THE DB OBJECT USED MUST BE DEFINED!");
-        else:
-            if (isinstance(tmpdb, MyDB)): return tmpdb;
-            else: raise ValueError("THE DATABASE OBJECT tmpdb must be an instance of MyDB!");
+        myvalidator.varmustbethetypeonly(tmpdb, MyDB, varnm="THE DATABASE OBJECT tmpdb");
+        return tmpdb;
     @classmethod
     def getMyDBName(cls): return cls.getMyDBMustBeDefined().DB_NAME;
     @classmethod
     def getMySQLType(cls):
         tmpdb = cls.getMyDB();
-        if (tmpdb == None): return None;
-        else: return cls.getMyDBMustBeDefined().SQLVARIANT;#want it only this...
+        myvalidator.varmustbethetypeandornull(tmpdb, MyDB, True, varnm="THE DATABASE OBJECT tmpdb");
+        return (None if (tmpdb == None) else tmpdb.SQLVARIANT);
     @classmethod
     def getMyLibRefClass(cls): return cls.getMyDBMustBeDefined().getLibRef();
     @classmethod
@@ -65,7 +63,18 @@ class mycol:
     def setMyCursor(cls, val): cls.getMyDBMustBeDefined().setCursor(val);
     @classmethod
     def setMyConn(cls, val): cls.getMyDBMustBeDefined().setConn(val);
+    @classmethod
+    def getMyDBConfigFileName(cls): return cls.getMyDBMustBeDefined().CONFIGFNAME;
+    @classmethod
+    def setMyDBConfigFileName(cls, val): cls.getMyDBMustBeDefined().setConfigFileName(val);
 
+    @classmethod
+    def setUpMyColDBRefAndConfigModule(cls, mdl):
+        myvalidator.setupConfigModule(mdl);
+        tmpdbobj = myvalidator.getDBAttrOrValFromConfigModuleNoVars(mdl, True);
+        mycol.setMyDBRef(tmpdbobj);
+        print("MYCOL: DB REF AND CONFIG MODULE SUCCESSFULLY SETUP DONE!");
+        return True;
 
     #constraint counter methods
 
