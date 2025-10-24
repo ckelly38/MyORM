@@ -15,7 +15,10 @@ from myorm.myvalidator import myvalidator;
 from myorm.mybase import mybase;
 import sys;
 import traceback;
-def genFileLines(confgnm="configmodulenm", dbrefnm="tmpdbobj", usenodb=False):
+mydfconfigmnm = "configmodulenm";
+mydfdbobjrefnm = "tmpdbobj";
+mydfscriptnm = "mystartupscript.py";
+def genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm, usenodb=False):
     myvalidator.varmustbeboolean(usenodb, "usenodb");
     errmsgptb = ") must be alpha numeric, but it was not!";
     if (confgnm.isidentifier()): pass;
@@ -44,6 +47,8 @@ def genFileLines(confgnm="configmodulenm", dbrefnm="tmpdbobj", usenodb=False):
 #need to know what to call the new file and which version the user wants with db or not
 #https://www.geeksforgeeks.org/python/command-line-arguments-in-python/
 #execute it with python -m myorm.testfilegenerator newfilenameandpathtoit configmodulename dbrefnmor0
+#execute it with python -m myorm.testfilegenerator
+#execute it with python -m myorm.testfilegenerator [-nodb, --nodb, 0]
 if __name__ == "__main__":
     #print(f"Total Arguments: {len(sys.argv)}");
     #print(sys.argv[0]);
@@ -58,11 +63,24 @@ if __name__ == "__main__":
     merrmsg = "invalid number of arguments! You must have 3 arguments not including the script you ";
     merrmsg += "are executing.\nThey must be as follows:\n1. the new file name (no extension) and ";
     merrmsg += "relative path to it,\n2. the config file/module name,\n3. the db ref object name or a ";
-    merrmsg += "0 to indicate not using a db!";
+    merrmsg += "0 to indicate not using a db!\n\nAlternatively: ";
+    warnmsgapta = "since no arguments were provided, it will use the following:\n";
+    warnmsgaptb = "1. the current directory where this command was run and the file will be called ";
+    warnmsgaptb += "'" + mydfscriptnm + "'.\n2. the config module name will be: '" + mydfconfigmnm;
+    warnmsgaptb += "'.\n";
+    warnmsgaptc = "3. the database DB object reference name will be: '" + mydfdbobjrefnm;
+    warnmsgaptc += "'. And we will be using the DB.";
+    nodboptsstr = "-nodb or --nodb or 0";
+    nodboptsprvdstr = "provided and it matches " + nodboptsstr + ", it will use the following:\n";
+    warnmsgbpta = "since one argument was " + nodboptsprvdstr;
+    warnmsgbptc = "3. No DB or no database ref will be provided because of the " + nodboptsstr;
+    warnmsgbptc += "option.";
+    merrmsg += "if no arguments are provided, it will use the following:\n" + warnmsgaptb + warnmsgaptc;
+    merrmsg += "\n\nAlternatively: if one argument is " + nodboptsprvdstr + warnmsgaptb + warnmsgbptc;
     if (len(sys.argv) == 4):
         tmpdbrefornum = sys.argv[3];
         myusenodb = (tmpdbrefornum == '0');
-        mydbrefnm = ("tmpdbobj" if myusenodb else "" + tmpdbrefornum);
+        mydbrefnm = ("" + mydfdbobjrefnm if myusenodb else "" + tmpdbrefornum);
         mflines = None;
         try:
             mflines = genFileLines(confgnm="" + sys.argv[2], dbrefnm=mydbrefnm, usenodb=myusenodb);
@@ -70,5 +88,15 @@ if __name__ == "__main__":
             traceback.print_exc();
             raise ValueError(merrmsg);
         mybase.myfilewritelinesmethod(sys.argv[1] + ".py", mflines, dscptrmsg="test file script");
+        print("TEST FILE GENERATED SUCCESSFULLY!");
+    elif (len(sys.argv) == 1):
+        print(warnmsgapta + warnmsgaptb + warnmsgaptc);
+        mflines = genFileLines();
+        mybase.myfilewritelinesmethod(mydfscriptnm, mflines, dscptrmsg="test file script");
+        print("TEST FILE GENERATED SUCCESSFULLY!");
+    elif (len(sys.argv) == 2 and sys.argv[1] in ["-nodb", "--nodb", "0"]):
+        print(warnmsgbpta + warnmsgaptb + warnmsgbptc);
+        mflines = genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm, usenodb=True);
+        mybase.myfilewritelinesmethod(mydfscriptnm, mflines, dscptrmsg="test file script");
         print("TEST FILE GENERATED SUCCESSFULLY!");
     else: raise ValueError(merrmsg);
