@@ -87,16 +87,16 @@ if __name__ == "__main__":
         except Exception as ex:
             traceback.print_exc();
             raise ValueError(merrmsg);
-        mybase.myfilewritelinesmethod(sys.argv[1] + ".py", mflines, dscptrmsg="test file script");
+        mybase.blockifmyfileexistswritelines(sys.argv[1] + ".py", mflines, dscptrmsg="test file script");
         print("TEST FILE GENERATED SUCCESSFULLY!");
     elif (len(sys.argv) == 1):
         print(warnmsgapta + warnmsgaptb + warnmsgaptc);
         mflines = genFileLines();
-        mybase.myfilewritelinesmethod(mydfscriptnm, mflines, dscptrmsg="test file script");
+        mybase.blockifmyfileexistswritelines(mydfscriptnm, mflines, dscptrmsg="test file script");
         print("TEST FILE GENERATED SUCCESSFULLY!");
     elif (len(sys.argv) == 2 and sys.argv[1] in ["-nodb", "--nodb", "0"]):
         print(warnmsgbpta + warnmsgaptb + warnmsgbptc);
         mflines = genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm, usenodb=True);
-        mybase.myfilewritelinesmethod(mydfscriptnm, mflines, dscptrmsg="test file script");
+        mybase.blockifmyfileexistswritelines(mydfscriptnm, mflines, dscptrmsg="test file script");
         print("TEST FILE GENERATED SUCCESSFULLY!");
     else: raise ValueError(merrmsg);

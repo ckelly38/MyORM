@@ -4,6 +4,7 @@ from myorm.myrefcol import myrefcol;
 from myorm.MyDB import MyDB;
 #from init import *;#SQLVARIANT, CURSOR, CONN
 import traceback;
+from pathlib import Path;#needed for checking if files exit if not using os or try catch
 class mybase:
     #mytablename = "basetablename";
     #mymulticolargs = None;
@@ -2029,17 +2030,43 @@ class mybase:
 
 
     @classmethod
-    def myfilewritelinesmethod(cls, fnmandpth, flines, dscptrmsg=""):
+    def myfilewritelinesmethod(cls, fnmandpth, flines, baowiffexists="b", dscptrmsg=""):
         #actually write the stuff here...
         #we need to know what to call the new files and where to save them...
         #note opening in write mode if the file does not exist will create it
         #modes are read, write, append
+        #if the file exists, do we block or append or overwrite?
+        #if the file does not exist, then we write.
         myvalidator.stringMustHaveAtMinNumChars(fnmandpth, 3, "fnmandpth");
+        boremds = ["b", "B", "e", "E", "block", "BLOCK", "error", "ERROR"];
+        ovrwmds = ["o", "O", "w", "W", "ow", "OW", "OVER-WRITE", "over-write", "overwrite", "OVERWRITE"];
+        apndmds = ["a", "A", "append", "APPEND"];
+        worapndmds = myvalidator.combineTwoLists(apndmds, ovrwmds, nodups=True);
+        allfmds = myvalidator.combineTwoLists(boremds, worapndmds, nodups=True);
+        myvalidator.itemMustBeOneOf(baowiffexists, allfmds, varnm="on_file_exists_action_policy");
         if (myvalidator.isvarnull(dscptrmsg)):
-            return cls.myfilewritelinesmethod(fnmandpth, flines, dscptrmsg="");
+            return cls.myfilewritelinesmethod(fnmandpth, flines,
+                baowiffexists=baowiffexists, dscptrmsg="");
         if (myvalidator.isvarnull(flines)):
-            return cls.myfilewritelinesmethod(fnmandpth, [], dscptrmsg=dscptrmsg);
-        with open(fnmandpth, "w") as mfile:
+            return cls.myfilewritelinesmethod(fnmandpth, [],
+                baowiffexists=baowiffexists, dscptrmsg=dscptrmsg);
+        tmpfile = None;
+        tmpfile = Path(fnmandpth);
+        exists = tmpfile.is_file();
+        #exists = False;
+        #try:
+        #    tmpfile = open(fnmandpth, "r");
+        #    exists = True;
+        #    tmpfile.close();
+        #except FileNotFoundError as fnfe:
+        #    exists = False;
+        wfmd = "w";
+        if (exists):
+            if (myvalidator.isListAInListB([baowiffexists], boremds)):
+                raise ValueError("the file (" + fnmandpth + ") already exists!");
+            elif (myvalidator.isListAInListB([baowiffexists], apndmds)): wfmd = "a";
+            else: wfmd = "w";
+        with open(fnmandpth, wfmd) as mfile:
             for line in flines:
                 mfile.write(line);
                 mfile.write("\n");
@@ -2047,6 +2074,15 @@ class mybase:
                   "file written successfully!");
             mfile.close();
         return True;
+    @classmethod
+    def blockifmyfileexistswritelines(cls, fnmandpth, flines, dscptrmsg=""):
+        return cls.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="b", dscptrmsg=dscptrmsg);
+    @classmethod
+    def appendifmyfileexistswritelines(cls, fnmandpth, flines, dscptrmsg=""):
+        return cls.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="a", dscptrmsg=dscptrmsg);
+    @classmethod
+    def overwriteifmyfileexistswritelines(cls, fnmandpth, flines, dscptrmsg=""):
+        return cls.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="o", dscptrmsg=dscptrmsg);
 
     @classmethod
     def backupDB(cls):
@@ -2136,9 +2172,9 @@ class mybase:
         #we need to know what to call the new files and where to save them...
         #note opening in write mode if the file does not exist will create it
         #modes are read, write, append
-        cls.myfilewritelinesmethod("bkdatonly.txt", datflines, dscptrmsg="data only");
-        cls.myfilewritelinesmethod("bkcmdsonly.sql", mysqlfilelines, dscptrmsg="sql");
-        cls.myfilewritelinesmethod("bkscrpt.py", mflines, dscptrmsg="script");
+        cls.blockifmyfileexistswritelines("bkdatonly.txt", datflines, dscptrmsg="data only");
+        cls.blockifmyfileexistswritelines("bkcmdsonly.sql", mysqlfilelines, dscptrmsg="sql");
+        cls.blockifmyfileexistswritelines("bkscrpt.py", mflines, dscptrmsg="script");
         print("SUCCESSFULLY CREATED THE BACKUP FILES AND FINISHED THE BACKUP!");
         #raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
     

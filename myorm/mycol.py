@@ -300,10 +300,9 @@ class mycol:
     @classmethod
     def setWarnUniqueFKeyMethod(cls, val):
         optslist = ["WARN", "ERROR", "DISABLED"];
+        errmsg = "the handler method for unique foreign keys must be one of ";
         if (val in optslist): cls.__ufkyhandlermthd__ = "" + val;
-        else:
-            raise ValueError("the handler method for unique foreign keys must be one of " + optslist +
-                             ", but it was not!");
+        else: raise ValueError(errmsg + optslist + ", but it was not!");
 
     @classmethod
     def getUniqueForeignKeyWarningOrErrorMessage(cls, usewarn):
