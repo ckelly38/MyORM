@@ -2593,7 +2593,21 @@ class mybase:
     def getKnownAttributeNamesForSerialization(self):
         return self.getKnownAttributeNamesForRepresentation(useserial=True);
 
-    
+    #the ignoreerr boolean variable allows for attributes with the values of none instead of
+    #throwing an AttributeError for an attribute that does not exist.
+    #exobjslist is the exclusive object rules list (is a list of strings)
+    #the usesafelistonly is a boolean variable which tells it if we use the safe list only or
+    #serialize all attributes on the myattrs list.
+    #if myattrs is not None IE you provided valid attributes then only these will be included
+    #otherwise the display strings list mystrs will be returned.
+    #strstarts the string starts boolean variable determines which is displayed first the attributes
+    #or the strings. If true, the string is displayed first. If false an attribute starts it.
+    #mystrs is the display strings list before/after the attributes
+    #the idea is to display stringa attributea stringb attributeb ...
+    #until you run out of attributes once you run out of attributes the rest of the strings
+    #are added on to the return value and then the whole string is returned.
+    #like most methods below this method is also recursive.
+    #this method is the one you as the user will most likely want to override.
     def __simplerepr__(self, mystrs, myattrs=None, ignoreerr=True, strstarts=True,
                        exobjslist=None, usesafelistonly=False):
         myvalidator.varmustbeboolean(strstarts, "strstarts");
@@ -2714,8 +2728,52 @@ class mybase:
                     else: raise AttributeError(f"'{type(self).__name__}' has no attribute '{cattr}'");
                 if (not strstarts and not nostrsleft): mstr += "" + cstr;
             return mstr;
-                    
+    
+    
+    #exobjslist this is the exclusive objects list is a list of objects that are to be excluded
+    #when the method is called recursively.
+    #the usesafelistonly boolean variable uses the safe serialization list only IE if it is internal
+    #to the class it is safe and will be serialized, but if it refers to another class it is not safe.
+    #it is important to know that it calls self.getKnownAttributeNamesForRepresentation(useserial=False);
+    #if you want to control what gets displayed in the method in your class you need to override
+    #getKnownAttributeNamesForRepresentation(self) in your model class that extends mybase class.
+    #overriding that is harder than you think:
+    #
+    #override the getKnownAttributeNamesForRepresentation(self) method
+    #and put your own return of a list of strings for the attribute names you want.
+    #the representation will get these attributes and build a string with them and
+    #their values in that order.
+    #but you may accidentally exclude information you wanted...
+    #getOtherKnownSafeAttributesOnTheClass(cls) this returns a list of names of attributes on the class
+    #that is of one of the following types: int, float, str, list, tuple
+    #you may miss stuff that is easy to get like the:
+    #tablename, multi_column_constraints_list, allconstraints_list
+    #we can easily get those names by calling: cls.getNameOfVarIfPresentOnTableMain("tablename")
+    #that returns the tablename var that the class has for example.
+    #but if order matters, you are better off doing it yourself otherwise
+    #most of these return in alphabetical order.
+    #if you want just the col value names: getValueColNames(cls, mycols=None)
+    #if you want just the col names: getMyColNames(cls, mycols=None) or getMyColAttributeNames(cls)
+    #to get all of the cols colnames with their values we use:
+    #for nm in cls.getMyColAttributeNames():
+    #    mlist.append(nm);
+    #    mlist.append(nm + "_value");
+    #all is a reserved attribute name for a list of all instances of the class
 
+    #def getKnownAttributeNamesForRepresentation(self):
+    #    return ["id_value", "name_value", "age_value"];
+    #    #return type(self).getValueColNames();#uses abc order of the above list
+    #
+    #but the best way for overriding the __repr__ method is to call the simplerepr method like this:
+    #where the first strings are the display strings
+    #the myattrs are the attributes on the class
+    #def __repr__(self, exobjslist=None, usesafelistonly=False):
+    #   return self.__simplerepr__(["<Camper ", ": ", " is ", " years old>"],
+    #                       myattrs=["id_value", "name_value", "myage_value", "signups"],
+    #                       ignoreerr=True, strstarts=True, exobjslist=exobjslist,
+    #                       usesafelistonly=usesafelistonly);
+    #
+    #this puts everything inside of <MyClass attributekey: attributevalue, ... /MyClass>
     def __myrepr__(self, exobjslist=None, usesafelistonly=False):
         myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
         mstr = "<" + self.__class__.__name__ + " ";
@@ -2784,7 +2842,15 @@ class mybase:
         return mstr;
     def __repr__(self): return self.__myrepr__([self]);
 
-    
+
+    #exobjslist is the exclusive object rules list (is a list of strings)
+    #the usesafelistonly is a boolean variable which tells it if we use the safe list only or
+    #serialize all attributes on the myattrs list.
+    #if myattrs is not None IE you provided valid attributes then only these will be included
+    #otherwise all of them or the only list will be provided.
+    #lastly the prefix string tracks what object and attribute ... where we are.
+    #this helps avoid a circular reference error.
+    #due to the way this method is called, it is best have it declared like this
     def __to_dict__(self, myattrs=None, exobjslist=None, usesafelistonly=False, prefix=""):
         myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
 
