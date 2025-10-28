@@ -7,6 +7,23 @@
 #now we need a list of the class names
 #so we can do class classname(mybase):
 #each class needs tablename=None, spot for multiargs mymulticolargs=None, #tableargs=None;
+#may also have to_dict, repr, and validator methods
+#
+#each class will look something like:
+#class classname(mybase):
+#    tablename = None;
+#    mymultiargs = None;
+#    #tableargs = None;
+#
+#    #cols here
+#
+#    #params comment for to_dict and repr
+#    #repr def
+#    
+#    #todict def
+#
+#    #validator example methods
+#
 #need to get the class names from the user on the command line
 #need to know if they just want to add class names only to an existing file or create a new one (default).
 #python -m myorm.modelsgenerator newfilename [-addonly, -add, -a, -append, -appendonly, 1] classnameslist
@@ -27,6 +44,58 @@ def getTopImportLines():
         "validates = mycol.validates;",
         "#mycol.setWarnUniqueFKeyMethod('WARN');#user warning of a problem WARN*, ERROR, or DISABLED."];
 
+def addNumTabsToLine(initline, numtbs):
+    myvalidator.varmustbeanumber(numtbs, "numtbs");
+    if (initline == None): return addNumTabsToLine("", numtbs);
+    if (numtbs < 1): return initline;
+    indentstr = "";
+    for i in range(len(numtbs)): indentstr += "    ";
+    return initline + indentstr;
+
+def addNumTabsToAllLines(numtbs, alines):
+    if (alines == None): return None;
+    elif (len(alines) < 1): return [];
+    else: return [addNumTabsToLine(oline, numtbs) for oline in alines];
+
+def getReprAndToDictParameterDescriptions(numtbs=0, useboth=False):
+    myvalidator.varmustbeboolean(useboth, "useboth");
+    toplines = (["#for both to_dict and repr methods:", "#"] if useboth else []);
+    initlines = ["#exobjslist is the exclusive object rules list (is a list of strings)",
+            "#the usesafelistonly is a boolean variable which tells it if we use the safe list only or",
+            "#serialize all attributes on the myattrs list.",
+            "#if myattrs is not None IE you provided valid attributes then only these will be included",
+            "#otherwise all of them or the only list will be provided.",
+            "#lastly the prefix string tracks what object and attribute ... where we are.",
+            "#this helps avoid a circular reference error.",
+            "#due to the way this method is called, it is best have it declared like this."];
+    templines = (["" + line for line in toplines] if 0 < len(toplines) else []);
+    for miline in initlines: templines.append("" + miline);
+    return addNumTabsToAllLines(numtbs, templines);
+
+def getReprMethodExampleLines(numtbs=0):
+    initlines = ["#def __repr__(self, exobjslist=None, usesafelistonly=False):",
+            "#   return self.__simplerepr__(displystringsarr,",
+            "#                       myattrs=classattributesarruse_valueforcols,",
+            "#                       ignoreerr=True, strstarts=True, exobjslist=exobjslist,",
+            "#                       usesafelistonly=usesafelistonly);"];
+    return addNumTabsToAllLines(numtbs, initlines);
+
+def getToDictMethodExampleLines(numtbs=0):
+    retsupline = "#    return super().__to_dict__(myattrs=myattrs, exobjslist=nwlist, ";
+    retsupline += "usesafelistonly=usesafelistonly,";
+    lines = ["#def __to_dict__(self, myattrs=None, exobjslist=None, usesafelistonly=False, prefix=\"\"):",
+            "#    nwlist = myvalidator.combineTwoLists(exobjslist, exrules);", retsupline,
+            "#                               prefix=prefix);"];
+    return addNumTabsToAllLines(numtbs, lines);
+
+def getValidatorsExampleLines(numtbs=0):
+    retpt = "): return True;#return False if not valid or error";
+    initlines = ["#@validates(\"colname\")",
+                "#def isvalidcolname(self, key, val" + retpt,
+                "#", "#@validates(\"colnamea\", \"colnameb\", ...)",
+                "#def arecolsaandbvalid(self, keys, values" + retpt];
+    return addNumTabsToAllLines(numtbs, initlines);
+
 #classnameslist is a list of class string names
 def genFileLines(classlist):
     merrmsgptb = ") must be a valid variable name, but it was not!";
@@ -37,35 +106,19 @@ def genFileLines(classlist):
             if (str(mc).isidentifier()): pass;
             else: raise ValueError("the class name (" + mc + merrmsgptb);
         linesperclass = [];
+        mynmtbs = 1;
         for i in range(len(classlist)):
             mc = "" + classlist[i];
-            mclines = ["class " + mc + "(mybase):", "    tablename=None;",
-                          "    mymulticolargs=None;", "    #tableargs=None;"];
+            mclines = ["class " + mc + "(mybase):", "    tablename = None;",
+                          "    mymulticolargs = None;", "    #tableargs = None;"];
             #if (useopts):
-            #add repr method
-            #def __repr__(self, exobjslist=None, usesafelistonly=False):
-            #   return self.__simplerepr__(["<Camper ", ": ", " is ", " years old>"],
-            #                       myattrs=["id_value", "name_value", "myage_value", "signups"],
-            #                       ignoreerr=True, strstarts=True, exobjslist=exobjslist,
-            #                       usesafelistonly=usesafelistonly);
-            
-            #add to_dict method
-            #exobjslist is the exclusive object rules list (is a list of strings)
-            #the usesafelistonly is a boolean variable which tells it if we use the safe list only or
-            #serialize all attributes on the myattrs list.
-            #if myattrs is not None IE you provided valid attributes then only these will be included
-            #otherwise all of them or the only list will be provided.
-            #lastly the prefix string tracks what object and attribute ... where we are.
-            #this helps avoid a circular reference error.
-            #due to the way this method is called, it is best have it declared like this.
-            #def __to_dict__(self, myattrs=None, exobjslist=None, usesafelistonly=False, prefix=""):
-            #    #nwlist = myvalidator.combineTwoLists(exobjslist, ["activity.signups", "camper.signups"]);
-            #    nwlist = myvalidator.combineTwoLists(exobjslist, ["*.signups"]);
-            #    return super().__to_dict__(myattrs=myattrs, exobjslist=nwlist, usesafelistonly=usesafelistonly,
-            #                               prefix=prefix);
+            initdictmsglines = getReprAndToDictParameterDescriptions(numtbs=mynmtbs, useboth=True);
+            reprlines = getReprMethodExampleLines(numtbs=mynmtbs);
+            mdictlines = getToDictMethodExampleLines(numtbs=mynmtbs);
+            vldatorlines = getValidatorsExampleLines(numtbs=mynmtbs);
+            #on the final list we want new lines in between:
+            #1. params for, 2. the repr, 3. todict, 4. and the validators
 
-            #add multicol validator and single col validator method
-            #    ?;
             if (i + 1 < len(classlist)): mclines.append("");
             linesperclass.append(mclines);
         return ["" + mline for marr in linesperclass for mline in marr];
