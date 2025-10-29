@@ -312,6 +312,13 @@ class myvalidator:
         else: raise ValueError(errmsg);
 
     @classmethod
+    def doesCaseMatch(cls, stra, strb):
+        myvalidator.varmustbethetypeandornull(stra, str, True, "stra");
+        myvalidator.varmustbethetypeandornull(strb, str, True, "strb");
+        if (myvalidator.isvaremptyornull(stra)): return myvalidator.isvaremptyornull(strb);
+        else: return (stra.isupper() == strb.isupper() and stra.islower() == strb.islower());
+
+    @classmethod
     def stringContainsOnlyAlnumCharsIncludingUnderscores(cls, mstr):
         if (myvalidator.isvaremptyornull(mstr)): return True;
         else:
