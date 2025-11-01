@@ -1,0 +1,14 @@
+testfile_new_file_name: mystartupscript.py
+usedefaultconfigmodulename: false
+usenodb: false
+usedefaultdbobjname: false
+configmodulename: config
+dbobjname: mytmpdbobjref
+
+models_class_new_file_name: mytempmodels.py
+models_class_list:
+classnamea, tablenamea: -all
+classnameb, tablenameb: -validators
+classnamec, tablenamec: -repr
+classnamed, tablenamed: -to_dict
+classnamee, tablenamee: None

@@ -38,12 +38,12 @@
 #overwrite options = [-overwrite, -writeover, -ow, -write, -w];
 #classlist options = [-cl, -classlist, -models, -mdls];
 #these are not all of them
-#python -m myorm.modelsgenerator newfilename [appendopts] classnameslist optionslist
-#python -m myorm.modelsgenerator newfilename [overwriteopts] classnameslist optionslist
-#python -m myorm.modelsgenerator newfilename classnameslist optionslist
-#python -m myorm.modelsgenerator [appendopts] classnameslist optionslist
-#python -m myorm.modelsgenerator [overwriteopts] classnameslist optionslist
-#python -m myorm.modelsgenerator [classlistopts] classnameslist optionslist
+#python -m myorm.modelsgenerator newfilename [appendopts] classnameslist [optionslist]
+#python -m myorm.modelsgenerator newfilename [overwriteopts] classnameslist [optionslist]
+#python -m myorm.modelsgenerator newfilename classnameslist [optionslist]
+#python -m myorm.modelsgenerator [appendopts] classnameslist [optionslist]
+#python -m myorm.modelsgenerator [overwriteopts] classnameslist [optionslist]
+#python -m myorm.modelsgenerator [classlistopts] classnameslist [optionslist]
 #on the one only with the class list either create a new file or block.
 
 from myorm.myvalidator import myvalidator;
