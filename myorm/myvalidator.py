@@ -202,10 +202,20 @@ class myvalidator:
         return True;
 
     @classmethod
-    def listMustContainUniqueValuesOnly(clsnm, mlist, varnm="varnm"):
+    def listMustContainUniqueValuesOnly(clsnm, mlist, ignorelist=None, varnm="varnm"):
         if (clsnm.isvaremptyornull(varnm)):
-            return clsnm.listMustContainUniqueValuesOnly(mlist, "varnm");
+            return clsnm.listMustContainUniqueValuesOnly(mlist, ignorelist=ignorelist, varnm="varnm");
         if (clsnm.isvaremptyornull(mlist) or len(mlist) < 2): return True;
+        if (clsnm.isvaremptyornull(ignorelist)): pass;
+        else:
+            #ignore list is not empty. we want to filter these items out of the list first,
+            #then see if the rest of the items are unique.
+            nwlist = [item for item in mlist if item not in ignorelist];
+            #print(f"mlist = {mlist}");
+            #print(f"nwlist = {nwlist}");
+            #print(f"ignorelist = {ignorelist}");
+            return clsnm.listMustContainUniqueValuesOnly(nwlist, ignorelist=None, varnm=varnm);
+    
         myset = set(mlist);
         mynwlist = list(myset);
         if (len(mlist) == len(mynwlist)): return True;

@@ -590,6 +590,11 @@ if (runremmulcolcnsttst):
 
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
+myvalidator.listMustContainUniqueValuesOnly(["itema", "itemc", "itemb", "itemb", "itemd"],
+                                          ignorelist=["itemb"], varnm="varnm");
+myvalidator.listMustContainUniqueValuesOnly(["itema", "itemc", "itemb", "itemb", "itemd"],
+                                          ignorelist=None, varnm="varnm");
+
 print("IS VALUE IN RANGE OR STRING HAS AT MOST OR AT MIN AMOUNT OF CHARS TESTS:");
 print();
 print("mystr has at max 0 characters: " + str(myvalidator.stringHasAtMaxNumChars("mystr", 0)));#false

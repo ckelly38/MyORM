@@ -48,9 +48,12 @@ def removeNewLineFromEndOfLine(line):
     if (line.endswith("\n")): return "" + line[0:len(line) - 1];
     else: return "" + line;
 
-def getLinesFromFile(fnm):
+def getLinesFromFile(fnm, noext=True):
+    myvalidator.varmustbeboolean(noext, varnm="noext");
+    myvalidator.stringMustHaveAtMinNumChars(fnm, 1, varnm="fnm");
     mlines = None;
-    with open(fnm + ".py", 'r') as mfile:
+    finfnm = ("" + fnm + ".py" if noext else "" + fnm);
+    with open(finfnm, 'r') as mfile:
         mlines = mfile.readlines();
         mfile.close();
     return [removeNewLineFromEndOfLine(line) for line in mlines];

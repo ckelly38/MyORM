@@ -148,11 +148,14 @@ def getOptsFlagsDict():
             "allopts": allopts};
 
 #classnameslist is a list of class string names
-def genFileLines(classlist, optslist, opsflagsinfoobj):
+def genFileLines(classlist, optslist, opsflagsinfoobj, tnms=None):
     merrmsgptb = ") must be a valid variable name, but it was not!";
     merrmsgb = "invlaid number of options on the options list! There must be either no options, ";
     merrmsgb += "only one option, or there must be the same number of options as there are classes ";
     merrmsgb += "on the classlist, but this was not the case!";
+    merrmsgc = "invlaid number of tablenames on the tablenames list! There must be either no tablenames ";
+    merrmsgc += "or there must be the same number of tablenames as there are classes ";
+    merrmsgc += "on the classlist, but this was not the case!";
     rkys = ["allopts", "alloptsandnovflagslist", "usealloptslist", "myvflagslist", "alloptwithnovslist",
             "myreprflagslist", "mytodictflagslist"];
     myvalidator.objvarmusthavethesekeysonit(opsflagsinfoobj, rkys, varnm="opsflagsinfoobj");
@@ -163,16 +166,27 @@ def genFileLines(classlist, optslist, opsflagsinfoobj):
             if (str(mc).isidentifier()): pass;
             else: raise ValueError("the class name (" + mc + merrmsgptb);
         #print(f"classlist = {classlist}");
+        #print(f"tnms = {tnms}");
         #print(f"optslist = {optslist}");
         
         usenoopts = myvalidator.isvaremptyornull(optslist);
+        notnms = myvalidator.isvaremptyornull(tnms);
         useonlyoneopt = False;
         if (usenoopts): pass;
         elif (len(classlist) == len(optslist)): pass;
         elif (len(optslist) == 1): useonlyoneopt = True;
         else: raise ValueError(merrmsgb);
+        if (notnms): pass;
+        elif (len(classlist) == len(tnms)): pass;
+        else: raise ValueError(merrmsgc);
+        #print(f"notnms = {notnms}");
         #print(f"usenoopts = {usenoopts}");
         #print(f"useonlyoneopt = {useonlyoneopt}");
+
+        noneoptslist = ["none", "None", "NONE"];
+        if (notnms): pass;
+        else: myvalidator.listMustContainUniqueValuesOnly(tnms, ignorelist=noneoptslist, varnm="tnms");
+        myvalidator.listMustContainUniqueValuesOnly(classlist, varnm="classlist");
 
         allopts = opsflagsinfoobj[rkys[0]];
         alloptsandnovflagslist = opsflagsinfoobj[rkys[1]];
@@ -184,7 +198,9 @@ def genFileLines(classlist, optslist, opsflagsinfoobj):
 
         if (usenoopts): pass;
         else:
-            for coptstr in optslist: myvalidator.itemMustBeOneOf(coptstr, allopts, "coptstr");
+            for coptstr in optslist:
+                if (coptstr in noneoptslist): pass;
+                else: myvalidator.itemMustBeOneOf(coptstr, allopts, "coptstr");
 
         linesperclass = [];
         mynmtbs = 1;
@@ -194,18 +210,22 @@ def genFileLines(classlist, optslist, opsflagsinfoobj):
         #print(f"vldatorlines = {vldatorlines}");
         #print(f"mdictlines = {mdictlines}");
         #print(f"reprlines = {reprlines}");
-        #raise ValueError("NEED TO CHECK THE RESULTS OF LINE GENERATION HERE NOW!");
 
         for i in range(len(classlist)):
             mc = "" + classlist[i];
-            mclines = ["class " + mc + "(mybase):", "    tablename = None;", "    ", "    #cols here",
-                       "    ", "    mymulticolargs = None;", "    #tableargs = None;"];
-            if (usenoopts): pass;
+            tnm = ("None" if notnms else "" + tnms[i]);
+            mclines = ["class " + mc + "(mybase):", "    tablename = " + tnm + ";", "    ",
+                       "    #cols here", "    ", "    mymulticolargs = None;", "    #tableargs = None;"];
+            #print(f"i = {i}");
+            #print(f"mc = {mc}");
+            #print(f"tnm = {tnm}");
+
+            copt = (None if (usenoopts) else (optslist[0] if useonlyoneopt else optslist[i]));
+            #print(f"copt = {copt}");
+            #print(f"allopts = {allopts}");
+
+            if (usenoopts or copt in noneoptslist): pass;
             else:
-                copt = (optslist[0] if useonlyoneopt else optslist[i]);
-                #print(f"copt = {copt}");
-                #print(f"allopts = {allopts}");
-                
                 usingall = myvalidator.isListAInListB([copt], usealloptslist);
                 useboth = myvalidator.isListAInListB([copt], alloptsandnovflagslist);#all, and novs lists
                 usingnone = myvalidator.isListAInListB([copt], myvflagslist);#only validators
@@ -374,7 +394,7 @@ if __name__ == "__main__":
     
     clslines = None;
     try:
-        clslines = genFileLines(classlist, optslist, optsdictobj);
+        clslines = genFileLines(classlist, optslist, optsdictobj, tnms=None);
     except Exception as ex:
         traceback.print_exc();
         raise ValueError(merrmsg);

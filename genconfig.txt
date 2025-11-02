@@ -1,11 +1,11 @@
-testfile_new_file_name: mystartupscript.py
+testfile_new_file_name: mystartupscript
 usedefaultconfigmodulename: false
 usenodb: false
 usedefaultdbobjname: false
 configmodulename: config
 dbobjname: mytmpdbobjref
 
-models_class_new_file_name: mytempmodels.py
+modelsfile_new_file_name: mytempmodels
 models_class_list:
 classnamea, tablenamea: -all
 classnameb, tablenameb: -validators

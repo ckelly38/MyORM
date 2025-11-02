@@ -1,6 +1,8 @@
 from myorm.myvalidator import myvalidator;
 from myorm.classliststartupgen import getLinesFromFile;
 from myorm.modelsgenerator import getOptsFlagsDict;
+from myorm.modelsgenerator import genFileLines as genModelsFileLines;
+from myorm.testfilegenerator import genFileLines as genTestFileLines;
 import sys;
 
 def getAcceptedTrueOrFalseAnswers():
@@ -32,24 +34,28 @@ def stringValMustBeAlnumOrUnderscores(lnum, flines):
     myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(secptofline, varnm=myvnm);
     return True;
 
-def areLinesInModelFormat(flines, si):
+def areLinesInModelFormat(flines, si, optsdictobj):
     #now the rest must meet the following format:
     #classnamea, tablenamea: opt or None
     myvalidator.varmustnotbeempty(flines, varnm="flines");
     myvalidator.valueMustBeInMinAndMaxRange(si, 0, len(flines) - 1, varnm="si");
-    optsdictobj = getOptsFlagsDict();
     myopts = optsdictobj["allopts"];
+    myarrstrsarr = [];
+    mdlsflines = [];
     for n in range(si, len(flines)):
         cline = flines[n];
         myvnm = "second part of the line num: " + str(n + 1);
         mstrs = myvalidator.mysplitWithLen(cline, [cline.index(", "), cline.index(": ")], 2, offset=0);
         for cstr in mstrs:
-            myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(cstr, varnm="cstr");
+            tmpstr = (cstr[1:] if (cstr[0] == "-") else "" + cstr);
+            myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tmpstr, varnm="cstr");
         if (mstrs[2] == "None"): pass;
         else: myvalidator.itemMustBeOneOf(mstrs[2], myopts, varnm=myvnm);
-    return True;
+        myarrstrsarr.append(mstrs);
+        mdlsflines.append(cline);
+    return {"result": True, "mysplitstrsarrs": myarrstrsarr, "mdlsflines": mdlsflines, "origsi": si};
 
-def configFileMustBeValid(flines):
+def configFileMustBeValid(flines, optsdictobj):
     tstgenlinea = "testfile_new_file_name: ";
     tstgenlineb = "usedefaultconfigmodulename: ";
     tstgenlinec = "usenodb: ";
@@ -57,7 +63,7 @@ def configFileMustBeValid(flines):
     tstgenlinee = "configmodulename: ";
     tstgenlinef = "dbobjname: ";
 
-    mdlsgenlinea = "models_class_new_file_name: ";
+    mdlsgenlinea = "modelsfile_new_file_name: ";
     mdlsgenlineb = "models_class_list:";
     mdlsgenlinec = "classnamea, tablenamea: None";
 
@@ -104,13 +110,48 @@ def configFileMustBeValid(flines):
     else: raise ValueError("config file was wrong on line " + str(8 + offset) + "!");
     if (flines[8 + offset] == mdlsgenlineb): pass;
     else: raise ValueError("config file was wrong on line " + str(9 + offset) + "!");
-    areLinesInModelFormat(flines, 9 + offset);
-    return True;
+    mdlsresobj = areLinesInModelFormat(flines, 9 + offset, optsdictobj);
+    return {"result": True, "undbval": undbval, "offset": offset, "listlinesi": 9 + offset,
+            "mdlsresobj": mdlsresobj};
 
 if __name__ == "__main__":
     #make sure the config file is valid
     #then call the other generators
     fnm = sys.argv[1];
-    flines = getLinesFromFile(fnm);
-    configFileMustBeValid(flines);
+    flines = getLinesFromFile(fnm, noext=False);
+    print("config file lines are:");
+    for cline in flines: print(cline);
+    
+    optsdictobj = getOptsFlagsDict();
+    resdict = configFileMustBeValid(flines, optsdictobj);
+    print("config file is valid!");
+    print(resdict);
+
+    #get the information about the test file here now
+    #get the information about the models file here now
+
+    #get the information from the models results object
+    mdlsclslist = [];
+    mdlsoptslist = [];
+    mdlstnmslist = [];
+    for myarr in resdict["mdlsresobj"]["mysplitstrsarrs"]:
+        #print(myarr);
+        mdlsclslist.append("" + myarr[0]);
+        mdlstnmslist.append("" + myarr[1]);
+        mdlsoptslist.append("" + myarr[2]);
+    print(f"mdlsclslist = {mdlsclslist}");
+    print(f"mdlstnmslist = {mdlstnmslist}");
+    print(f"mdlsoptslist = {mdlsoptslist}");
+    
     #generate the files...
+    #call the models file generator correctly
+    #then call the test file generator correctly with the given information using the model
+    #information as well
+    nmdlsfilelines = genModelsFileLines(mdlsclslist, mdlsoptslist, optsdictobj, tnms=mdlstnmslist);
+    print("lines in the new models file to be generated are:");
+    for cline in nmdlsfilelines: print(cline);
+
+    nwtstfilelines = genTestFileLines(confgnm="tempconfigmodlue", dbrefnm="tmpdbref", usenodb=False);
+    print("lines in the new startup file to be generated are:");
+    for cline in nwtstfilelines: print(cline);
+    raise ValueError("NOT DONE YET 11-2-2025 2:44 AM MST!");
