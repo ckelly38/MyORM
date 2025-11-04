@@ -31,8 +31,8 @@ def genClassImportLines(clslist, fnms):
     errmsg += "have the same number as classes!";
     if (len(fnms) == 1 or len(fnms) == len(clslist)): pass;
     else: raise ValueError(errmsg);
-    for fnm in fnms: myvalidator.stringHasAtMinNumChars(fnm, 1);
-    for clsnm in clslist: myvalidator.stringHasAtMinNumChars(clsnm, 1);
+    for fnm in fnms: myvalidator.stringMustHaveAtMinNumChars(fnm, 1, varnm="fnm");
+    for clsnm in clslist: myvalidator.stringMustHaveAtMinNumChars(clsnm, 1, varnm="clsnm");
     baseline = None;
     if (len(fnms) == 1): baseline = "from " + fnms[0] + " import ";
     elif (len(fnms) == len(clslist)): pass;

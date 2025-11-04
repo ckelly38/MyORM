@@ -1,0 +1,11 @@
+testfile_new_file_name: mystartupscriptb
+usedefaultconfigmodulename: true
+usenodb: true
+
+modelsfile_new_file_name: mytempmodelsb
+models_class_list:
+classnamea, tablenamea: -all
+classnameb, tablenameb: -validators
+classnamec, tablenamec: -repr
+classnamed, tablenamed: -to_dict
+classnamee, tablenamee: None

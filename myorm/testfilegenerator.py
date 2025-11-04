@@ -18,8 +18,19 @@ import traceback;
 mydfconfigmnm = "configmodulenm";
 mydfdbobjrefnm = "tmpdbobj";
 mydfscriptnm = "mystartupscript.py";
-def genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm, usenodb=False):
+def genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm, imprtlines=None, usenodb=False):
     myvalidator.varmustbeboolean(usenodb, "usenodb");
+    myvalidator.varmustnotbeempty(mydfconfigmnm, varnm="mydfconfigmnm");
+    myvalidator.varmustnotbeempty(mydfdbobjrefnm, varnm="mydfdbobjrefnm");
+    if (myvalidator.isvaremptyornull(confgnm)):
+        return genFileLines(confgnm="" + mydfconfigmnm, dbrefnm=dbrefnm, usenodb=usenodb);
+    if (myvalidator.isvaremptyornull(dbrefnm)):
+        return genFileLines(confgnm=confgnm, dbrefnm="" + mydfdbobjrefnm, usenodb=usenodb);
+    print(f"confgnm = {confgnm}");
+    print(f"dbrefnm = {dbrefnm}");
+    print(f"usenodb = {usenodb}");
+    print(f"imprtlines = {imprtlines}");
+    
     errmsgptb = ") must be alpha numeric, but it was not!";
     if (confgnm.isidentifier()): pass;
     else: raise ValueError("the config module name string (" + str(confgnm) + errmsgptb);
@@ -39,9 +50,19 @@ def genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm, usenod
     ilinek = "CURSOR = " + dbrefnm + ".getCursor();";
     ilinel = "CONN = " + dbrefnm + ".getConn();";
     ilinem = "SQLVARIANT = " + dbrefnm + ".getSQLType();";
-    mflinesva = [ilinea, ilineb, ilinec, ilined, ilineh, ilinei, ilinej];#no db
-    mflinesvb = [ilinea, ilineb, ilinec, ilinee, ilinef, ilineg, ilineh, ilinei, ilinej,
-                ilinek, ilinel, ilinem];#with db
+    
+    mflinesva = [ilinea, ilineb, ilinec, ilined, ilineh];#no db (va init)
+    valinesptbinit = [ilinej];#no db import comment line in between these
+    mflinesvb = [ilinea, ilineb, ilinec, ilinee, ilinef, ilineg, ilineh];#with db
+    vblinesptbinit = [ilinej, ilinek, ilinel, ilinem];#with db import comment line in between these
+    if (myvalidator.isvaremptyornull(imprtlines)):
+        mflinesva.append(ilinei);
+        mflinesvb.append(ilinei);
+    else:
+        for nacline in imprtlines: mflinesva.append(nacline);
+        for nbcline in imprtlines: mflinesvb.append(nbcline);
+    for acline in valinesptbinit: mflinesva.append(acline);
+    for bcline in vblinesptbinit: mflinesvb.append(bcline);
     return (mflinesva if usenodb else mflinesvb);
 
 #need to know what to call the new file and which version the user wants with db or not
@@ -83,7 +104,8 @@ if __name__ == "__main__":
         mydbrefnm = ("" + mydfdbobjrefnm if myusenodb else "" + tmpdbrefornum);
         mflines = None;
         try:
-            mflines = genFileLines(confgnm="" + sys.argv[2], dbrefnm=mydbrefnm, usenodb=myusenodb);
+            mflines = genFileLines(confgnm="" + sys.argv[2], dbrefnm=mydbrefnm,
+                                   imprtlines=None, usenodb=myusenodb);
         except Exception as ex:
             traceback.print_exc();
             raise ValueError(merrmsg);
@@ -96,7 +118,8 @@ if __name__ == "__main__":
         print("TEST FILE GENERATED SUCCESSFULLY!");
     elif (len(sys.argv) == 2 and sys.argv[1] in ["-nodb", "--nodb", "0"]):
         print(warnmsgbpta + warnmsgaptb + warnmsgbptc);
-        mflines = genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm, usenodb=True);
+        mflines = genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm,
+                               imprtlines=None, usenodb=True);
         mybase.blockifmyfileexistswritelines(mydfscriptnm, mflines, dscptrmsg="test file script");
         print("TEST FILE GENERATED SUCCESSFULLY!");
     else: raise ValueError(merrmsg);
