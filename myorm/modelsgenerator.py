@@ -328,6 +328,18 @@ def getOptListStartIndex(margslist, clssi):
     #print(f"optsi = {optsi}");
     return optsi;
 
+def genFullModelsScriptAndWriteItNow(newfnm, wrtemd, clslines):
+    myvalidator.varmustnotbeempty(newfnm, "newfnm");
+    myvalidator.varmustnotbeempty(clslines, "clslines");
+    mflines = (clslines if (wrtemd == "a") else
+               myvalidator.combineTwoLists(getTopImportLines(), clslines, nodups=False));
+    myfunc = (mybase.appendifmyfileexistswritelines if (wrtemd == "a") else
+              (mybase.overwriteifmyfileexistswritelines if (wrtemd == "w") else
+               mybase.blockifmyfileexistswritelines));
+    myfunc(newfnm + ".py", mflines, dscptrmsg="models file script");
+    print("DONE SUCCESSFULLY GENERATED THE MODELS FILE SCRIPT!");
+
+
 if __name__ == "__main__":
     #print(f"Total Arguments: {len(sys.argv)}");
     #print(sys.argv[0]);
@@ -399,10 +411,4 @@ if __name__ == "__main__":
         traceback.print_exc();
         raise ValueError(merrmsg);
     
-    mflines = (clslines if (wrtemd == "a") else
-               myvalidator.combineTwoLists(getTopImportLines(), clslines, nodups=False));
-    myfunc = (mybase.appendifmyfileexistswritelines if (wrtemd == "a") else
-              (mybase.overwriteifmyfileexistswritelines if (wrtemd == "w") else
-               mybase.blockifmyfileexistswritelines));
-    myfunc(newfnm + ".py", mflines, dscptrmsg="models file script");
-    print("DONE SUCCESSFULLY GENERATED THE MODELS FILE SCRIPT!");
+    genFullModelsScriptAndWriteItNow(newfnm, wrtemd, clslines);

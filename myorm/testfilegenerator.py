@@ -23,13 +23,15 @@ def genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm, imprtl
     myvalidator.varmustnotbeempty(mydfconfigmnm, varnm="mydfconfigmnm");
     myvalidator.varmustnotbeempty(mydfdbobjrefnm, varnm="mydfdbobjrefnm");
     if (myvalidator.isvaremptyornull(confgnm)):
-        return genFileLines(confgnm="" + mydfconfigmnm, dbrefnm=dbrefnm, usenodb=usenodb);
+        return genFileLines(confgnm="" + mydfconfigmnm, dbrefnm=dbrefnm,
+                            imprtlines=imprtlines, usenodb=usenodb);
     if (myvalidator.isvaremptyornull(dbrefnm)):
-        return genFileLines(confgnm=confgnm, dbrefnm="" + mydfdbobjrefnm, usenodb=usenodb);
-    print(f"confgnm = {confgnm}");
-    print(f"dbrefnm = {dbrefnm}");
-    print(f"usenodb = {usenodb}");
-    print(f"imprtlines = {imprtlines}");
+        return genFileLines(confgnm=confgnm, dbrefnm="" + mydfdbobjrefnm,
+                            imprtlines=imprtlines, usenodb=usenodb);
+    #print(f"confgnm = {confgnm}");
+    #print(f"dbrefnm = {dbrefnm}");
+    #print(f"usenodb = {usenodb}");
+    #print(f"imprtlines = {imprtlines}");
     
     errmsgptb = ") must be alpha numeric, but it was not!";
     if (confgnm.isidentifier()): pass;

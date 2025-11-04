@@ -1,6 +1,6 @@
 from myorm.myvalidator import myvalidator;
 from myorm.classliststartupgen import getLinesFromFile, genClassImportLines;
-from myorm.modelsgenerator import getOptsFlagsDict;
+from myorm.modelsgenerator import getOptsFlagsDict, genFullModelsScriptAndWriteItNow;
 from myorm.modelsgenerator import genFileLines as genModelsFileLines;
 from myorm.testfilegenerator import genFileLines as genTestFileLines;
 import sys;
@@ -210,10 +210,20 @@ if __name__ == "__main__":
     print("\nlines in the new models file to be generated are:");
     for cline in nmdlsfilelines: print(cline);
 
-    print("\nmy import lines before call:");
-    print(f"myimprtlines = {myimprtlines}");
     nwtstfilelines = genTestFileLines(confgnm=cnfgmdlnm, dbrefnm=mydbrefnm,
                                       imprtlines=myimprtlines, usenodb=myusenodb);
     print("\nlines in the new startup file to be generated are:");
     for cline in nwtstfilelines: print(cline);
-    raise ValueError("NOT DONE YET 11-3-2025 10:27 AM MST!");
+
+    #if the test file exists, it is either overwritten or blocked (no append mode for this)
+    #if the models file exists, it could be overwritten or appended or blocked.
+    #
+    #In the models case it left off the top import lines (in order to support append mode),
+    #but the method below takes care of that.
+    #
+    #how does the user tell the program what write mode to use for what file?
+    #does it include this information in the generators config file as well? or via command?
+    #do we just arbitrarily say block, overwrite, or append if one exists?
+    #
+    #genFullModelsScriptAndWriteItNow(nwmdlsfnm, wrtemd, nmdlsfilelines);
+    raise ValueError("NOT DONE YET 11-3-2025 10:27 PM MST!");
