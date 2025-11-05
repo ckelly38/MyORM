@@ -67,6 +67,18 @@ def genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm, imprtl
     for bcline in vblinesptbinit: mflinesvb.append(bcline);
     return (mflinesva if usenodb else mflinesvb);
 
+def genFullTestFileScriptAndWriteItNow(fnm, mflines, useovrwrte=False):
+    myvalidator.varmustbeboolean(useovrwrte, "useovrwrte");
+    myfunc = (mybase.overwriteifmyfileexistswritelines if (useovrwrte) else
+              mybase.blockifmyfileexistswritelines);
+    myfunc(fnm, mflines, dscptrmsg="test file script");
+    print("TEST FILE GENERATED SUCCESSFULLY!");
+    return True;
+def genFullTestFileScriptAndWriteItNowBlock(fnm, mflines):
+    return genFullTestFileScriptAndWriteItNow(fnm, mflines, useovrwrte=False);
+def genFullTestFileScriptAndOverWriteItNow(fnm, mflines):
+    return genFullTestFileScriptAndWriteItNow(fnm, mflines, useovrwrte=True);
+
 #need to know what to call the new file and which version the user wants with db or not
 #https://www.geeksforgeeks.org/python/command-line-arguments-in-python/
 #execute it with python -m myorm.testfilegenerator newfilenameandpathtoit configmodulename dbrefnmor0
@@ -111,17 +123,14 @@ if __name__ == "__main__":
         except Exception as ex:
             traceback.print_exc();
             raise ValueError(merrmsg);
-        mybase.blockifmyfileexistswritelines(sys.argv[1] + ".py", mflines, dscptrmsg="test file script");
-        print("TEST FILE GENERATED SUCCESSFULLY!");
+        genFullTestFileScriptAndWriteItNow(sys.argv[1] + ".py", mflines);
     elif (len(sys.argv) == 1):
         print(warnmsgapta + warnmsgaptb + warnmsgaptc);
         mflines = genFileLines();
-        mybase.blockifmyfileexistswritelines(mydfscriptnm, mflines, dscptrmsg="test file script");
-        print("TEST FILE GENERATED SUCCESSFULLY!");
+        genFullTestFileScriptAndWriteItNow(mydfscriptnm, mflines);
     elif (len(sys.argv) == 2 and sys.argv[1] in ["-nodb", "--nodb", "0"]):
         print(warnmsgbpta + warnmsgaptb + warnmsgbptc);
         mflines = genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm,
                                imprtlines=None, usenodb=True);
-        mybase.blockifmyfileexistswritelines(mydfscriptnm, mflines, dscptrmsg="test file script");
-        print("TEST FILE GENERATED SUCCESSFULLY!");
+        genFullTestFileScriptAndWriteItNow(mydfscriptnm, mflines);
     else: raise ValueError(merrmsg);
