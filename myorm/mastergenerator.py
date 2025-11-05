@@ -3,6 +3,7 @@ from myorm.classliststartupgen import getLinesFromFile, genClassImportLines;
 from myorm.modelsgenerator import getOptsFlagsDict, genFullModelsScriptAndWriteItNow;
 from myorm.modelsgenerator import genFileLines as genModelsFileLines;
 from myorm.testfilegenerator import genFileLines as genTestFileLines;
+from myorm.testfilegenerator import genFullTestFileScriptAndWriteItNow;
 import sys;
 
 def getAcceptedTrueOrFalseAnswers():
@@ -217,13 +218,23 @@ if __name__ == "__main__":
 
     #if the test file exists, it is either overwritten or blocked (no append mode for this)
     #if the models file exists, it could be overwritten or appended or blocked.
+    #RULE: if a write mode is not provided for either file, the one missing will use block mode.
+    #RULE: if only one mode is provided for a file no matter how, it will be used.
+    #RULE: if two are provided, but they mean the same thing, treat it as if only one was provided.
     #
     #In the models case it left off the top import lines (in order to support append mode),
     #but the method below takes care of that.
     #
     #how does the user tell the program what write mode to use for what file?
     #does it include this information in the generators config file as well? or via command?
-    #do we just arbitrarily say block, overwrite, or append if one exists?
+    #do we just arbitrarily say block, overwrite, or append if one exists? NO.
+    #if two different write modes are provided (one on command and one in the genconfig file)
+    #which one has higher priority or which one will be used OR does it error out?
     #
-    #genFullModelsScriptAndWriteItNow(nwmdlsfnm, wrtemd, nmdlsfilelines);
+    
+    mytstusewrite = False;
+    mdlswrtmd = 'b';
+
+    #genFullModelsScriptAndWriteItNow(nwmdlsfnm, mdlswrtmd, nmdlsfilelines);
+    #genFullTestFileScriptAndWriteItNow(nwtstfnm, nwtstfilelines, useovrwrte=mytstusewrite);
     raise ValueError("NOT DONE YET 11-3-2025 10:27 PM MST!");

@@ -331,7 +331,7 @@ def getOptListStartIndex(margslist, clssi):
 def genFullModelsScriptAndWriteItNow(newfnm, wrtemd, clslines):
     myvalidator.varmustnotbeempty(newfnm, "newfnm");
     myvalidator.varmustnotbeempty(clslines, "clslines");
-    mflines = (clslines if (wrtemd == "a") else
+    mflines = (clslines if (mybase.myFileExists(newfnm) and wrtemd == "a") else
                myvalidator.combineTwoLists(getTopImportLines(), clslines, nodups=False));
     myfunc = (mybase.appendifmyfileexistswritelines if (wrtemd == "a") else
               (mybase.overwriteifmyfileexistswritelines if (wrtemd == "w") else

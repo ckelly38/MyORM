@@ -2028,6 +2028,19 @@ class mybase:
         #print(mlist);
         return mlist;
 
+    @classmethod
+    def myFileExists(cls, fnmandpth):
+        tmpfile = None;
+        tmpfile = Path(fnmandpth);
+        exists = tmpfile.is_file();
+        #exists = False;
+        #try:
+        #    tmpfile = open(fnmandpth, "r");
+        #    exists = True;
+        #    tmpfile.close();
+        #except FileNotFoundError as fnfe:
+        #    exists = False;
+        return exists;
 
     @classmethod
     def myfilewritelinesmethod(cls, fnmandpth, flines, baowiffexists="b", dscptrmsg=""):
@@ -2050,16 +2063,7 @@ class mybase:
         if (myvalidator.isvarnull(flines)):
             return cls.myfilewritelinesmethod(fnmandpth, [],
                 baowiffexists=baowiffexists, dscptrmsg=dscptrmsg);
-        tmpfile = None;
-        tmpfile = Path(fnmandpth);
-        exists = tmpfile.is_file();
-        #exists = False;
-        #try:
-        #    tmpfile = open(fnmandpth, "r");
-        #    exists = True;
-        #    tmpfile.close();
-        #except FileNotFoundError as fnfe:
-        #    exists = False;
+        exists = cls.myFileExists(fnmandpth);
         wfmd = "w";
         if (exists):
             if (myvalidator.isListAInListB([baowiffexists], boremds)):
