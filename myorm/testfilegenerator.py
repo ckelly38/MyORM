@@ -13,6 +13,7 @@
 
 from myorm.myvalidator import myvalidator;
 from myorm.mybase import mybase;
+from myorm.modelsgenerator import getOverWriteFlags;
 import sys;
 import traceback;
 mydfconfigmnm = "configmodulenm";
@@ -80,10 +81,12 @@ def genFullTestFileScriptAndOverWriteItNow(fnm, mflines):
     return genFullTestFileScriptAndWriteItNow(fnm, mflines, useovrwrte=True);
 
 #need to know what to call the new file and which version the user wants with db or not
+#and if we are using overwrite or block mode if the file already exists
 #https://www.geeksforgeeks.org/python/command-line-arguments-in-python/
-#execute it with python -m myorm.testfilegenerator newfilenameandpathtoit configmodulename dbrefnmor0
-#execute it with python -m myorm.testfilegenerator
-#execute it with python -m myorm.testfilegenerator [-nodb, --nodb, 0]
+#python -m myorm.testfilegenerator newfilenameandpathtoit writemd configmodulename dbrefnmor0
+#python -m myorm.testfilegenerator newfilenameandpathtoit configmodulename dbrefnmor0
+#python -m myorm.testfilegenerator
+#python -m myorm.testfilegenerator [-nodb, --nodb, 0]
 if __name__ == "__main__":
     #print(f"Total Arguments: {len(sys.argv)}");
     #print(sys.argv[0]);
@@ -95,9 +98,15 @@ if __name__ == "__main__":
     #second one is the config module name (index 2)
     #third one is either the usenodb value 0 or 1 or the dbname
     #if we give a dbobjrefnm then we are using a db
-    merrmsg = "invalid number of arguments! You must have 3 arguments not including the script you ";
+    wrteflgs = getOverWriteFlags();
+    merrmsg = "invalid number of arguments! You must have 4 arguments not including the script you ";
     merrmsg += "are executing.\nThey must be as follows:\n1. the new file name (no extension) and ";
-    merrmsg += "relative path to it,\n2. the config file/module name,\n3. the db ref object name or a ";
+    merrmsg += "relative path to it,\n2. one of the following options for overwrite mode: ";
+    merrmsg += "" + str(wrteflgs) + " (and if not the case then block mode will be used).\n";
+    merrmsg += "3. the config file/module name,\n4. the db ref object name or a ";
+    merrmsg += "0 to indicate not using a db!\n\nAlternatively: if 3 arguments were provided, it will ";
+    merrmsg += "use the following:\n1. the new file name (no extension) and relative path to it,\n";
+    merrmsg += "2. the config file/module name,\n3. the db ref object name or a ";
     merrmsg += "0 to indicate not using a db!\n\nAlternatively: ";
     warnmsgapta = "since no arguments were provided, it will use the following:\n";
     warnmsgaptb = "1. the current directory where this command was run and the file will be called ";
@@ -112,25 +121,29 @@ if __name__ == "__main__":
     warnmsgbptc += "option.";
     merrmsg += "if no arguments are provided, it will use the following:\n" + warnmsgaptb + warnmsgaptc;
     merrmsg += "\n\nAlternatively: if one argument is " + nodboptsprvdstr + warnmsgaptb + warnmsgbptc;
-    if (len(sys.argv) == 4):
-        tmpdbrefornum = sys.argv[3];
+    if (len(sys.argv) == 4 or len(sys.argv) == 5):
+        ci = (3 if (len(sys.argv) == 5) else 2);
+        di = (4 if (len(sys.argv) == 5) else 3);
+        usewtmd = (myvalidator.isListAInListB([sys.argv[2]], wrteflgs) if (len(sys.argv) == 5)
+                   else False);
+        tmpdbrefornum = sys.argv[di];
         myusenodb = (tmpdbrefornum == '0');
         mydbrefnm = ("" + mydfdbobjrefnm if myusenodb else "" + tmpdbrefornum);
         mflines = None;
         try:
-            mflines = genFileLines(confgnm="" + sys.argv[2], dbrefnm=mydbrefnm,
+            mflines = genFileLines(confgnm="" + sys.argv[ci], dbrefnm=mydbrefnm,
                                    imprtlines=None, usenodb=myusenodb);
         except Exception as ex:
             traceback.print_exc();
             raise ValueError(merrmsg);
-        genFullTestFileScriptAndWriteItNow(sys.argv[1] + ".py", mflines);
+        genFullTestFileScriptAndWriteItNow(sys.argv[1] + ".py", mflines, useovrwrte=usewtmd);
     elif (len(sys.argv) == 1):
         print(warnmsgapta + warnmsgaptb + warnmsgaptc);
         mflines = genFileLines();
-        genFullTestFileScriptAndWriteItNow(mydfscriptnm, mflines);
+        genFullTestFileScriptAndWriteItNow(mydfscriptnm, mflines, useovrwrte=False);
     elif (len(sys.argv) == 2 and sys.argv[1] in ["-nodb", "--nodb", "0"]):
         print(warnmsgbpta + warnmsgaptb + warnmsgbptc);
         mflines = genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm,
                                imprtlines=None, usenodb=True);
-        genFullTestFileScriptAndWriteItNow(mydfscriptnm, mflines);
+        genFullTestFileScriptAndWriteItNow(mydfscriptnm, mflines, useovrwrte=False);
     else: raise ValueError(merrmsg);
