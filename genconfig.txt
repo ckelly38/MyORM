@@ -1,5 +1,5 @@
 testfile_new_file_name: mystartupscript
-testfile_write_mode: a
+testfile_write_mode: b
 usedefaultconfigmodulename: false
 usenodb: false
 usedefaultdbobjname: false

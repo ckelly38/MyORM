@@ -82,7 +82,7 @@ def configFileMustBeValidAndGetInfoObj(flines, optsdictobj):
     origtstkys = ["testfile_new_file_name", "testfile_write_mode", "usedefaultconfigmodulename",
                   "usenodb", "usedefaultdbobjname", "configmodulename", "dbobjname"];
     tstgenlinea = "" + origtstkys[0] + ": ";
-    tstgenlineab = "" + origtstkys[1] + ": "; 
+    tstgenlineab = "" + origtstkys[1] + ": ";
     tstgenlineb = "" + origtstkys[2] + ": ";
     tstgenlinec = "" + origtstkys[3] + ": ";
     tstgenlined = "" + origtstkys[4] + ": ";
@@ -99,6 +99,13 @@ def configFileMustBeValidAndGetInfoObj(flines, optsdictobj):
                  "dbojbname"];
     #skpkys = "0100111";
 
+    wrteflgs = getOverWriteFlags();
+    apndflgs = getAppendFlags();
+    blkflgs = ['b'];
+    wrteblkflgs = myvalidator.combineTwoLists(wrteflgs, blkflgs, nodups=True);
+    allwrteflgs = myvalidator.combineTwoLists(wrteflgs, apndflgs, nodups=True);
+    allflgs = myvalidator.combineTwoLists(allwrteflgs, blkflgs, nodups=True);
+
     merrmsgblvl = "since we are not using a database, the default name must be used, but it was not ";
     merrmsgblvl += "therefore there is a problem with config line 4!";
 
@@ -110,7 +117,11 @@ def configFileMustBeValidAndGetInfoObj(flines, optsdictobj):
     inito = 0;
     if (tstgenlineab in flines[1]):
         lineMustHaveTheExpectedPartAtTheSpotAndBeAString(1, tstgenlineab, 0, flines);
+        tstwmdarr = myvalidator.mysplitWithDelimeter(flines[1], ": ", offset=0);
+        tstwmdval = tstwmdarr[1];
         inito = 1;
+        myvarnm = "tstwmdval=flines[1]=config file line 2";
+        myvalidator.itemMustBeOneOf("-" + tstwmdval, wrteblkflgs, varnm=myvarnm);
     lineMustHaveTheExpectedPartAtTheSpotAndBeABool(1 + inito, tstgenlineb, 0, flines);
     lineMustHaveTheExpectedPartAtTheSpotAndBeABool(2 + inito, tstgenlinec, 0, flines);
     usdfltmdlcnfgnm = getValAsBoolPartOfString(1 + inito, flines);
@@ -150,7 +161,9 @@ def configFileMustBeValidAndGetInfoObj(flines, optsdictobj):
         mdlso = 1;
         mdlswmdarr = myvalidator.mysplitWithDelimeter(flines[8 + tstttloffst], ": ", offset=0);
         mdlswmdval = mdlswmdarr[1];
-        #need to figure out how to validate it...
+        tmplni = 8 + tstttloffst;
+        myvarnm = "mdlswmdval=flines[" + str(tmplni) + "]=config file line " + str(tmplni + 1);
+        myvalidator.itemMustBeOneOf("-" + mdlswmdval, allflgs, varnm=myvarnm);
     if (flines[8 + tstttloffst + mdlso] == mdlsgenlineb): pass;
     else: raise ValueError("config file was wrong on line " + str(9 + tstttloffst + mdlso) + "!");
     mdlsresobj = areLinesInModelFormatAndGetInfoObj(flines, 9 + tstttloffst + mdlso, optsdictobj);
