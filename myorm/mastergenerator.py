@@ -252,6 +252,7 @@ def getTestFileFlags():
 #python configfilename -tst wtmd
 #python configfilename -mdls wtmd
 #python configfilename
+#note replace python with: python -m myorm.mastergenerator
 if __name__ == "__main__":
     #make sure the config file is valid
     #then call the other generators
@@ -366,22 +367,22 @@ if __name__ == "__main__":
     myresdictkys = list(resdict.keys());
     tstwmdincnfgfile = ("tstfwmd" in myresdictkys);
     mdlswmdincnfgfile = ("mdlsfwmd" in myresdictkys);
-    if (tstwmdincnfgfile): print("test file write mode is present!");
-    else: print("test file write mode is not present!");
-    if (mdlswmdincnfgfile): print("models file write mode is present!");
-    else: print("models file write mode is not present!");
+    #if (tstwmdincnfgfile): print("test file write mode is present!");
+    #else: print("test file write mode is not present!");
+    #if (mdlswmdincnfgfile): print("models file write mode is present!");
+    #else: print("models file write mode is not present!");
     
     tmptstwmdfile = (resdict["tstfwmd"] if tstwmdincnfgfile else 'b');
     tmpmdlswmdfile = (resdict["mdlsfwmd"] if mdlswmdincnfgfile else 'b');
-    print(f"tmptstwmdfile = {tmptstwmdfile}");
-    print(f"tmpmdlswmdfile = {tmpmdlswmdfile}");
+    #print(f"tmptstwmdfile = {tmptstwmdfile}");
+    #print(f"tmpmdlswmdfile = {tmpmdlswmdfile}");
 
     #if the write mode flag is present, or w, a, or b then we are good.
     #otherwise this is illegal
     fintstwmdfile = getWriteModeFromFlag("-" + tmptstwmdfile);
     finmdlswmdfile = getWriteModeFromFlag("-" + tmpmdlswmdfile);
-    print(f"fintstwmdfile = {fintstwmdfile}");
-    print(f"finmdlswmdfile = {finmdlswmdfile}");
+    #print(f"fintstwmdfile = {fintstwmdfile}");
+    #print(f"finmdlswmdfile = {finmdlswmdfile}");
 
     #now attempt to get it from the command line here...
     #need to know if one or both or none is present on the command line
@@ -396,8 +397,8 @@ if __name__ == "__main__":
         #else set the write mode to be block.
         tpa = sys.argv[2];
         wmda = (sys.argv[3] if (myvalidator.isListAInListB([sys.argv[3]], allflgs)) else 'b');
-        print(f"tpa = sys.argv[2] = {tpa}");
-        print(f"wmda = sys.argv[3] = {wmda}");
+        #print(f"tpa = sys.argv[2] = {tpa}");
+        #print(f"wmda = sys.argv[3] = {wmda}");
         
         #if type is in the test file, then the write mode is only allowed to be write or block
         #it cannot be on the append list
@@ -413,8 +414,8 @@ if __name__ == "__main__":
         if (len(sys.argv) == 6):
             tpb = sys.argv[4];
             wmdb = (sys.argv[5] if (myvalidator.isListAInListB([sys.argv[5]], allflgs)) else 'b');
-            print(f"tpb = sys.argv[4] = {tpb}");
-            print(f"wmdb = sys.argv[5] = {wmdb}");
+            #print(f"tpb = sys.argv[4] = {tpb}");
+            #print(f"wmdb = sys.argv[5] = {wmdb}");
 
             #if type is in the test file, then the write mode is only allowed to be write or block
             #it cannot be on the append list
@@ -426,20 +427,20 @@ if __name__ == "__main__":
             else: #if (myvalidator.isListAInListB([tpb], mdlsflgs)):
                 mdlswmdincmd = True;
                 initmdlswmdcmdval = getWriteModeFromFlag(wmdb);
-    print(f"tstwmdincmd = {tstwmdincmd}");
-    print(f"mdlswmdincmd = {mdlswmdincmd}");
-    print(f"inittstwmdcmdval = {inittstwmdcmdval}");
-    print(f"initmdlswmdcmdval = {initmdlswmdcmdval}");
+    #print(f"tstwmdincmd = {tstwmdincmd}");
+    #print(f"mdlswmdincmd = {mdlswmdincmd}");
+    #print(f"inittstwmdcmdval = {inittstwmdcmdval}");
+    #print(f"initmdlswmdcmdval = {initmdlswmdcmdval}");
     
     tmptstwmdcmdval = (inittstwmdcmdval if tstwmdincmd else 'b');
     tmpmdlswmdcmdval = (initmdlswmdcmdval if mdlswmdincmd else 'b');
-    print(f"tmptstwmdcmdval = {tmptstwmdcmdval}");
-    print(f"tmpmdlswmdcmdval = {tmpmdlswmdcmdval}");
+    #print(f"tmptstwmdcmdval = {tmptstwmdcmdval}");
+    #print(f"tmpmdlswmdcmdval = {tmpmdlswmdcmdval}");
 
-    print(f"tstwmdincnfgfile = {tstwmdincnfgfile}");
-    print(f"mdlswmdincnfgfile = {mdlswmdincnfgfile}");
-    print(f"fintstwmdfile = {fintstwmdfile}");
-    print(f"finmdlswmdfile = {finmdlswmdfile}");
+    #print(f"tstwmdincnfgfile = {tstwmdincnfgfile}");
+    #print(f"mdlswmdincnfgfile = {mdlswmdincnfgfile}");
+    #print(f"fintstwmdfile = {fintstwmdfile}");
+    #print(f"finmdlswmdfile = {finmdlswmdfile}");
 
     fintstwmd = None;
     if (tstwmdincnfgfile and tstwmdincmd):
@@ -460,6 +461,6 @@ if __name__ == "__main__":
     mytstusewrite = (fintstwmd == 'w');
     print(f"mytstusewrite = {mytstusewrite}");
 
-    #genFullModelsScriptAndWriteItNow(nwmdlsfnm, finmdlswmd, nmdlsfilelines);
-    #genFullTestFileScriptAndWriteItNow(nwtstfnm, nwtstfilelines, useovrwrte=mytstusewrite);
-    raise ValueError("NOT DONE YET 11-8-2025 7:27 AM MST!");
+    genFullModelsScriptAndWriteItNow(nwmdlsfnm, finmdlswmd, nmdlsfilelines);
+    genFullTestFileScriptAndWriteItNow(nwtstfnm, nwtstfilelines, useovrwrte=mytstusewrite);
+    print("DONE WITH THE MASTER GENERATOR! PROGRAM FINISHED SUCCESSFULLY!");

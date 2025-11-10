@@ -80,13 +80,16 @@ def genFullTestFileScriptAndWriteItNowBlock(fnm, mflines):
 def genFullTestFileScriptAndOverWriteItNow(fnm, mflines):
     return genFullTestFileScriptAndWriteItNow(fnm, mflines, useovrwrte=True);
 
+def getNoDBFlags(): return ["-nodb", "-noDB", "-NoDB", "-NODB", "0"];
+
+
 #need to know what to call the new file and which version the user wants with db or not
 #and if we are using overwrite or block mode if the file already exists
 #https://www.geeksforgeeks.org/python/command-line-arguments-in-python/
 #python -m myorm.testfilegenerator newfilenameandpathtoit writemd configmodulename dbrefnmor0
 #python -m myorm.testfilegenerator newfilenameandpathtoit configmodulename dbrefnmor0
+#python -m myorm.testfilegenerator nodbflg
 #python -m myorm.testfilegenerator
-#python -m myorm.testfilegenerator [-nodb, --nodb, 0]
 if __name__ == "__main__":
     #print(f"Total Arguments: {len(sys.argv)}");
     #print(sys.argv[0]);
@@ -99,6 +102,7 @@ if __name__ == "__main__":
     #third one is either the usenodb value 0 or 1 or the dbname
     #if we give a dbobjrefnm then we are using a db
     wrteflgs = getOverWriteFlags();
+    nodbopts = getNoDBFlags();
     merrmsg = "invalid number of arguments! You must have 4 arguments not including the script you ";
     merrmsg += "are executing.\nThey must be as follows:\n1. the new file name (no extension) and ";
     merrmsg += "relative path to it,\n2. one of the following options for overwrite mode: ";
@@ -114,7 +118,7 @@ if __name__ == "__main__":
     warnmsgaptb += "'.\n";
     warnmsgaptc = "3. the database DB object reference name will be: '" + mydfdbobjrefnm;
     warnmsgaptc += "'. And we will be using the DB.";
-    nodboptsstr = "-nodb or --nodb or 0";
+    nodboptsstr = str(nodbopts);
     nodboptsprvdstr = "provided and it matches " + nodboptsstr + ", it will use the following:\n";
     warnmsgbpta = "since one argument was " + nodboptsprvdstr;
     warnmsgbptc = "3. No DB or no database ref will be provided because of the " + nodboptsstr;
@@ -141,7 +145,7 @@ if __name__ == "__main__":
         print(warnmsgapta + warnmsgaptb + warnmsgaptc);
         mflines = genFileLines();
         genFullTestFileScriptAndWriteItNow(mydfscriptnm, mflines, useovrwrte=False);
-    elif (len(sys.argv) == 2 and sys.argv[1] in ["-nodb", "--nodb", "0"]):
+    elif (len(sys.argv) == 2 and sys.argv[1] in nodbopts):
         print(warnmsgbpta + warnmsgaptb + warnmsgbptc);
         mflines = genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm,
                                imprtlines=None, usenodb=True);
