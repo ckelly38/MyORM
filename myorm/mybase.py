@@ -122,8 +122,9 @@ class mybase:
                     if (mval == myrefclsref.all): callset = False;
                 if (callset): setattr(cls, mynwattrnm, myrefclsref.all);
             #print(f"DONE WITH THE SETUP PART B METHOD FOR {cls.__name__}!\n");
+    
     @classmethod
-    def updateAllLinkRefsForMyClass(cls): cls.setupPartB(True);
+    def updateAllLinkRefsForMyClass(cls): cls.setupPartB(calledinmain=True);
 
     @classmethod
     def setupPartC(cls):
@@ -155,11 +156,11 @@ class mybase:
             #due to a dependency on the all list existing and being set for all of the classes
             #(that are a subclass of mybase and not mybase),
             #we need to set the refcols here essentially after the setup method has run.
-            #therefore it must be done in a separate loop after all of partA has finished running.
+            #therefore it must be done in a separate loop after all of part A has finished running.
 
             for mclsref in mbclses:
                 #if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
-                    mclsref.setupPartB(True);
+                    mclsref.setupPartB(calledinmain=True);
                     mclsref.setupPartC();
         mycol.setRanSetup(not isempty);
 
