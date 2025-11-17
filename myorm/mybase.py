@@ -480,6 +480,340 @@ class mybase:
         return mycol.runAllValidatorsForClass(type(self).__name__, self);
 
 
+    #file exists and file writing methods
+    
+    @classmethod
+    def myFileExists(cls, fnmandpth):
+        tmpfile = None;
+        tmpfile = Path(fnmandpth);
+        exists = tmpfile.is_file();
+        #exists = False;
+        #try:
+        #    tmpfile = open(fnmandpth, "r");
+        #    exists = True;
+        #    tmpfile.close();
+        #except FileNotFoundError as fnfe:
+        #    exists = False;
+        return exists;
+
+    @classmethod
+    def myfilewritelinesmethod(cls, fnmandpth, flines, baowiffexists="b", dscptrmsg=""):
+        #actually write the stuff here...
+        #we need to know what to call the new files and where to save them...
+        #note opening in write mode if the file does not exist will create it
+        #modes are read, write, append
+        #if the file exists, do we block or append or overwrite?
+        #if the file does not exist, then we write.
+        myvalidator.stringMustHaveAtMinNumChars(fnmandpth, 3, "fnmandpth");
+        boremds = ["b", "B", "e", "E", "block", "BLOCK", "error", "ERROR"];
+        ovrwmds = ["o", "O", "w", "W", "ow", "OW", "OVER-WRITE", "over-write", "overwrite", "OVERWRITE"];
+        apndmds = ["a", "A", "append", "APPEND"];
+        worapndmds = myvalidator.combineTwoLists(apndmds, ovrwmds, nodups=True);
+        allfmds = myvalidator.combineTwoLists(boremds, worapndmds, nodups=True);
+        myvalidator.itemMustBeOneOf(baowiffexists, allfmds, varnm="on_file_exists_action_policy");
+        if (myvalidator.isvarnull(dscptrmsg)):
+            return cls.myfilewritelinesmethod(fnmandpth, flines,
+                baowiffexists=baowiffexists, dscptrmsg="");
+        if (myvalidator.isvarnull(flines)):
+            return cls.myfilewritelinesmethod(fnmandpth, [],
+                baowiffexists=baowiffexists, dscptrmsg=dscptrmsg);
+        exists = cls.myFileExists(fnmandpth);
+        wfmd = "w";
+        if (exists):
+            if (myvalidator.isListAInListB([baowiffexists], boremds)):
+                raise ValueError("the file (" + fnmandpth + ") already exists!");
+            elif (myvalidator.isListAInListB([baowiffexists], apndmds)): wfmd = "a";
+            else: wfmd = "w";
+        with open(fnmandpth, wfmd) as mfile:
+            for line in flines:
+                mfile.write(line);
+                mfile.write("\n");
+            print(dscptrmsg + (" " if (not(dscptrmsg.endswith(" "))) else "") +
+                  "file written successfully!");
+            mfile.close();
+        return True;
+    @classmethod
+    def blockifmyfileexistswritelines(cls, fnmandpth, flines, dscptrmsg=""):
+        return cls.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="b", dscptrmsg=dscptrmsg);
+    @classmethod
+    def appendifmyfileexistswritelines(cls, fnmandpth, flines, dscptrmsg=""):
+        return cls.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="a", dscptrmsg=dscptrmsg);
+    @classmethod
+    def overwriteifmyfileexistswritelines(cls, fnmandpth, flines, dscptrmsg=""):
+        return cls.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="o", dscptrmsg=dscptrmsg);
+
+
+    #possible names and values for tables, constraints, and serialization rules
+
+    @classmethod
+    def getPossibleTableNames(cls):
+        return ["mytablename", "tablename", "table_name", "my_table_name"];
+
+    @classmethod
+    def getMultiColumnConstraintVariableNames(cls):
+        return ["mymulticolumnconstraints", "mymulticolconstraints", "mcolconstraints",
+                "mymulticolumnarguments", "mymulticolarguments", "mcolarguments", "mymulticolumnargs",
+                "mymulticolargs", "multicolargs", "mcolargs", "my_multi_column_constraints",
+                "my_multicol_constraints", "mcol_constraints", "my_multi_column_arguments",
+                "my_multicol_arguments", "my_multi_col_arguments", "multi_col_arguments",
+                "mcol_arguments", "my_multi_column_args", "my_multicol_args",
+                "mcol_args", "my_multi_col_args", "multi_col_args", "my_multi_col_constraints"];
+
+    @classmethod
+    def getAllConstraintVariableNames(cls):
+        return ["allconstraints", "allcolumnconstraints", "allcolconstraints", "alltableconstraints",
+                "alltablecolconstraints", "all_constraints", "all_column_constraints",
+                "all_col_constraints", "all_table_constraints", "all_table_col_constraints",
+                "allarguments", "allcolumnarguments", "allcolarguments", "alltablearguments",
+                "alltablecolarguments", "all_arguments", "all_column_arguments", "all_col_arguments",
+                "all_table_arguments", "all_table_col_arguments", "all_tablecol_arguments",
+                "allargs", "allcolumnargs", "allcolargs", "alltableargs", "alltablecolargs",
+                "all_args", "all_column_args", "all_col_args", "all_table_args", "all_table_col_args",
+                "all_tablecol_args", "tableargs", "tablecolargs", "table_args", "table_col_args",
+                "tablecol_args"];
+
+    @classmethod
+    def getAllExclusiveSerializeRuleNames(cls):
+        return ["ex_rules", "exclusive_rules", "exrules", "exclusiverules", "exclusionrules",
+                "serialize_exclusive_rules", "serialize_ex_rules", "serialize_exclusion_only_rules",
+                "serializeexclusion_only_rules", "serializeexclusiononly_rules",
+                "serializeexclusiononlyrules", "exclusion_rules", "serialize_exclusive_only_rules",
+                "serializeexclusive_only_rules", "serializeexclusiveonly_rules",
+                "serializeexclusiveonlyrules"];
+    @classmethod
+    def getAllGeneralSerializeRuleNames(cls):
+        return ["serialize_rules", "serializerules", "serialize_only", "only_rules", "onlyrules",
+                "serialize_only_rules", "serializeonly", "serializeonlyrules"];
+
+    @classmethod
+    def getListOfPossibleNamesForVariable(cls, varnm="varnm"):
+        if (myvalidator.isvaremptyornull(varnm)): return cls.varMustBePresentOnTable("varnm");
+        errmsg = "variable name " + varnm + " not recognized or is not associated with a list!";
+        if (varnm == "tablename"): return cls.getPossibleTableNames();
+        elif (varnm == "multi_column_constraints_list"):
+            return cls.getMultiColumnConstraintVariableNames();
+        elif (varnm == "allconstraints_list"): return cls.getAllConstraintVariableNames();
+        elif (varnm == "allexrules"): return cls.getAllExclusiveSerializeRuleNames();
+        elif (varnm == "allonlyrules"): return cls.getAllGeneralSerializeRuleNames();
+        elif (varnm == "allserializerules"):
+            mlist = [item for item in cls.getAllGeneralSerializeRuleNames()];
+            for item in cls.cls.getAllExclusiveSerializeRuleNames(): mlist.append(item);
+            return mlist;
+        else: raise ValueError(errmsg);
+
+    @classmethod
+    def getValObjectIfPresent(cls, ilist=None, varnm="varnm"):
+        if (myvalidator.isvaremptyornull(ilist)):
+            mylist = cls.getListOfPossibleNamesForVariable(varnm);
+        else: mylist = ilist;
+        for attr in dir(cls):
+            for pnm in mylist:
+                if (pnm in attr): return {"value": getattr(cls, attr), "name": attr};
+        return None;
+    @classmethod
+    def getValObjectIfPresentMain(cls, varnm="varnm"):
+        return cls.getValObjectIfPresent(ilist=None, varnm=varnm);
+
+    @classmethod
+    def isVarPresentOnTable(cls, ilist=None, varnm="varnm"):
+        return (not myvalidator.isvaremptyornull(cls.getValObjectIfPresent(ilist=ilist, varnm=varnm)));
+    @classmethod
+    def isVarPresentOnTableMain(cls, varnm="varnm"):
+        return cls.isVarPresentOnTable(ilist=None, varnm=varnm);
+
+    @classmethod
+    def varMustBePresentOnTable(cls, ilist=None, varnm="varnm"):
+        if (cls.isVarPresentOnTable(ilist, varnm)): return True;
+        else: raise AttributeError("the table must have a(n) " + varnm + " in it!");
+    @classmethod
+    def varMustBePresentOnTableMain(cls, varnm="varnm"):
+        return cls.varMustBePresentOnTable(ilist=None, varnm=varnm);
+
+    
+    #possible bug found 5-4-2025 12:29 AM maybe we can return null if the name is not found?
+    #if the name is not present, what should we do? should we return null for the name or error out?
+
+    @classmethod
+    def getNameOrValueOfVarIfPresentOnTable(cls, usename, ilist=None, varnm="varnm"):
+        myvalidator.varmustbeboolean(usename, "usename");
+        myresobj = cls.getValObjectIfPresent(ilist, varnm);
+        if (myvalidator.isvaremptyornull(myresobj)):
+            #if (usename): return None;
+            #else:
+                raise AttributeError("the table must have a(n) " + varnm + " in it!");
+        else: return myresobj[("name" if usename else "value")];
+    @classmethod
+    def getNameOrValueOfVarIfPresentOnTableMain(cls, usename, varnm="varnm"):
+        return cls.getNameOrValueOfVarIfPresentOnTable(usename, ilist=None, varnm=varnm);
+    
+    @classmethod
+    def getNameOfVarIfPresentOnTable(cls, ilist=None, varnm="varnm"):
+        return cls.getNameOrValueOfVarIfPresentOnTable(cls, True, ilist=ilist, varnm=varnm);
+    @classmethod
+    def getNameOfVarIfPresentOnTableMain(cls, varnm="varnm"):
+        return cls.getNameOrValueOfVarIfPresentOnTableMain(True, varnm=varnm);
+    
+    @classmethod
+    def getValueOfVarIfPresentOnTable(cls, ilist=None, varnm="varnm"):
+        return cls.getNameOrValueOfVarIfPresentOnTable(cls, False, ilist=ilist, varnm=varnm);
+    @classmethod
+    def getValueOfVarIfPresentOnTableMain(cls, varnm="varnm"):
+        return cls.getNameOrValueOfVarIfPresentOnTableMain(False, varnm=varnm);
+    
+    @classmethod
+    def getTableName(cls): return cls.getValueOfVarIfPresentOnTableMain("tablename");
+    @classmethod
+    def getMultiColumnConstraints(cls):
+        return cls.getValueOfVarIfPresentOnTableMain("multi_column_constraints_list");
+    
+
+    #column methods
+
+    @classmethod
+    def getMyColsOrRefColsOrMyColAttributeNames(cls, retobjs, usemycols):
+        #print(f"cls = {cls}");
+        myvalidator.varmustbeboolean(usemycols, "usemycols");
+        myvalidator.varmustbeboolean(retobjs, "retobjs");
+        return [(getattr(cls, attr) if retobjs else attr)
+                for attr in dir(cls) if (type(getattr(cls, attr)) ==
+                                         (mycol if (usemycols) else myrefcol))];
+    @classmethod
+    def getMyColObjects(cls, usemycols):
+        return cls.getMyColsOrRefColsOrMyColAttributeNames(True, usemycols);
+    @classmethod
+    def getMyAttributeNamesForColsOrRefCols(cls, usemycols):
+        return cls.getMyColsOrRefColsOrMyColAttributeNames(False, usemycols);
+    @classmethod
+    def getMyCols(cls): return cls.getMyColObjects(True);
+    @classmethod
+    def getMyRefCols(cls): return cls.getMyColObjects(False);
+    @classmethod
+    def getMyColAttributeNames(cls): return cls.getMyAttributeNamesForColsOrRefCols(True);
+    @classmethod
+    def getMyRefColAttributeNames(cls): return cls.getMyAttributeNamesForColsOrRefCols(False);
+
+    @classmethod
+    def getMyOrRefColsFromClassOrParam(cls, usemycols, mycols=None):
+        myvalidator.varmustbeboolean(usemycols, "usemycols");
+        return (cls.getMyColObjects(usemycols) if myvalidator.isvaremptyornull(mycols) else mycols);
+    @classmethod
+    def getMyColsFromClassOrParam(cls, mycols=None):
+        return cls.getMyOrRefColsFromClassOrParam(True, mycols=mycols);
+    @classmethod
+    def getMyRefColsFromClassOrParam(cls, mycols=None):
+        return cls.getMyOrRefColsFromClassOrParam(False, mycols=mycols);
+
+    @classmethod
+    def getMyOrRefColNames(cls, usemycols, mycols=None):
+        return [(mclobj.colname if (usemycols) else mclobj.listcolname) for mclobj in
+                 cls.getMyOrRefColsFromClassOrParam(usemycols, mycols=mycols)];
+    #the colnames for mycol object match the attribute names for it so you may use this method or
+    #getMyColAttributeNames(cls) since they both return the same result
+    @classmethod
+    def getMyColNames(cls, mycols=None): return cls.getMyOrRefColNames(True, mycols=mycols);
+    #returns the value colnames for the refcols
+    #if this is not what you want use: getMyRefColAttributeNames(cls)
+    @classmethod
+    def getMyRefColNames(cls, mycols=None): return cls.getMyOrRefColNames(False, mycols=mycols);
+    
+    @classmethod
+    def getValueColNames(cls, mycols=None):
+        return [nm + "_value" for nm in cls.getMyColNames(mycols=mycols)];
+
+    @classmethod
+    def getMyColObjFromName(cls, mcnm, mycols=None):
+        mclist = cls.getMyColsFromClassOrParam(mycols=mycols);
+        if (myvalidator.isvaremptyornull(mclist)): pass;
+        else:
+            for mclobj in mclist:
+                if (mclobj.colname == mcnm): return mclobj;
+        errmsg = "col object with name (" + mcnm + ") and class name (" + cls.__name__ + ") not found!";
+        raise ValueError(errmsg);
+    @classmethod
+    def getColObjFromName(cls, mcnm, mycols=None): return cls.getMyColObjFromName(mcnm, mycols=mycols);
+    @classmethod
+    def getColObjectFromName(cls, mcnm, mycols=None):
+        return cls.getMyColObjFromName(mcnm, mycols=mycols);
+    @classmethod
+    def getMyColumnObjectFromName(cls, mcnm, mycols=None):
+        return cls.getMyColObjFromName(mcnm, mycols=mycols);
+    @classmethod
+    def getMyColumnObjFromName(cls, mcnm, mycols=None):
+        return cls.getMyColObjFromName(mcnm, mycols=mycols);
+
+    @classmethod
+    def areGivenColNamesOnTable(cls, mlist, mycols=None):
+        if (myvalidator.isvaremptyornull(mlist)): return False;
+        fincolnms = cls.getMyColNames(cls.getMyColsFromClassOrParam(mycols=mycols));
+        for mitem in mlist:
+            if (mitem in fincolnms): pass;
+            else: return False;
+        return True;
+
+    @classmethod
+    def getMyPrimaryOrForeignKeyCols(cls, usepkys, mycols=None):
+        myvalidator.varmustbeboolean(usepkys, "usepkys");
+        return [mclobj for mclobj in cls.getMyColsFromClassOrParam(mycols=mycols)
+                if (mclobj.isprimarykey if (usepkys) else mclobj.isforeignkey)];
+    @classmethod
+    def getMyPrimaryKeyCols(cls, mycols=None): return cls.getMyPrimaryOrForeignKeyCols(True, mycols);
+    @classmethod
+    def getMyForeignKeyCols(cls, mycols=None): return cls.getMyPrimaryOrForeignKeyCols(False, mycols);
+    
+    @classmethod
+    def getForeignKeyObjectNamesFromCols(cls, mycols=None):
+        return [mc.getForeignObjectName() for mc in cls.getMyForeignKeyCols(mycols=mycols)
+                if (cls.needToCreateAnObjectForCol(mc))];
+
+    @classmethod
+    def getIndividualColumnConstraintsOrColsWithConstraints(cls, useclist, mycols=None):
+        myvalidator.varmustbeboolean(useclist, "useclist");
+        return [(mc.getConstraints() if (useclist) else mc)
+                for mc in cls.getMyColsFromClassOrParam(mycols=mycols)
+                if not myvalidator.isvaremptyornull(mc.getConstraints())];
+    @classmethod
+    def getIndividualColumnConstraints(cls, mycols=None):
+        return cls.getIndividualColumnConstraintsOrColsWithConstraints(True, mycols=mycols);
+    @classmethod
+    def getColumnsWithConstraints(cls, mycols=None):
+        return cls.getIndividualColumnConstraintsOrColsWithConstraints(False, mycols=mycols);
+
+    @classmethod
+    def isColWithConstraintsValid(cls, mc):
+        myvalidator.varmustnotbenull(mc, "mc");
+        if (myvalidator.isvaremptyornull(mc.constraints)): pass;
+        else:
+            for thecnst in mc.constraints:
+                if (myvalidator.isvaremptyornull(thecnst)): return False;
+                else:
+                    if (" CHECK(" in thecnst):
+                        ci = thecnst.index(" CHECK(");
+                        aindxsofnm = [n for n in range(len(thecnst))
+                                    if thecnst[n:].startswith(mc.getColName())];
+                        isvld = False;
+                        if (0 < len(aindxsofnm)):
+                            for i in aindxsofnm:
+                                if (ci < i):
+                                    isvld = True;
+                                    break;
+                        if (isvld): pass;
+                        else: return False;
+                    else: return False;
+        return True;
+
+    @classmethod
+    def getColumnsWithIndividualInvalidConstraints(cls, mycols=None):
+        return [mc for mc in cls.getColumnsWithConstraints(mycols=mycols)
+                if (not cls.isColWithConstraintsValid(mc))];
+
+    @classmethod
+    def areColsWithIndividualConstraintsValid(cls, mycols=None):
+        for mc in cls.getColumnsWithConstraints(mycols=mycols):
+            if (cls.isColWithConstraintsValid(mc)): pass;
+            else: return False;
+        return True;
+    
+
     #get and set column and update object references
 
     def getValueForColName(self, clnm):
@@ -604,13 +938,11 @@ class mybase:
     #properties of the base class, but the self type should not be mybase
 
     def getLastSyncedValsDict(self): return self._lastsyncedvalsdict;
-
     def setLastSyncedValsDict(self, mval): self._lastsyncedvalsdict = mval;
-
+    
     lastsyncedvalsdict = property(getLastSyncedValsDict, setLastSyncedValsDict);
 
     def getUserProvidedColNames(self): return self._userprovidedcolnames;
-
     def setUserProvidedColNames(self, mval):
         myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, "userprovidedcolnames");
         self._userprovidedcolnames = mval;
@@ -618,7 +950,6 @@ class mybase:
     userprovidedcolnames = property(getUserProvidedColNames, setUserProvidedColNames);
 
     def getColNamesWithDefaultsUsed(self): return self._colnmswdefaultsused;
-
     def setColNamesWithDefaultsUsed(self, mval):
         myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, "colnmswdefaultsused");
         self._colnmswdefaultsused = mval;
@@ -626,7 +957,6 @@ class mybase:
     colnmswdefaultsused = property(getColNamesWithDefaultsUsed, setColNamesWithDefaultsUsed);
     
     def getColNamesWithDBValsUsed(self): return self._colnmswdbvalsused;
-
     def setColNamesWithDBValsUsed(self, mval):
         myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, "colnmswdbvalsused");
         self._colnmswdbvalsused = mval;
@@ -845,6 +1175,7 @@ class mybase:
             #print(getattr(self, mnm));
         return mobjs;
 
+
     #update all foreign key objects methods:
     
     @classmethod
@@ -964,6 +1295,41 @@ class mybase:
     def genSQLInsertIntoFromRef(cls, vals=None):
         return myvalidator.genSQLInsertInto(cls.getTableName(), cls.getMyColNames(), vals);
     
+    @classmethod
+    def getTableClasses(cls, ftchnow=False):
+        myvalidator.varmustbeboolean(ftchnow, "ftchnow");
+        return [mclsref for mclsref in mycol.getMyClassRefsMain(ftchnw=ftchnow)
+                     if (issubclass(mclsref, mybase) and not (mclsref == mybase))];
+
+    @classmethod
+    def getExistsCreateTableStatementsAndDataForAllTablesObject(cls, mtblclses):
+        mtexistsdata = [];
+        mdataforalltbls = [];
+        ctblstmnts = [];
+        for mclsref in mtblclses:
+            texists = mclsref.tableExists(pqry=False);
+            #run the select all query here...
+            if (texists):
+                mitemlist = mclsref.getAllItemsOnTable(pqry=False);
+                mdataforalltbls.append(mitemlist);
+                #DEPENDS ON THE SQL VARIANT or SQLVARIANT.
+                ctblqry = mclsref.genSQLCreateTableFromRef(varstr="" + mybase.getMySQLType(),
+                                                            onlyifnot=False, isinctable=True);
+                                                            #the create table statement
+                ctblstmnts.append(ctblqry);
+                #print("all items on DB for class " + mclsref.__name__ + " are: ");
+                #print(f"all colnames are: {mclsref.getMyColNames()}");
+                #for item in mitemlist: print(item);
+            else:
+                mdataforalltbls.append([]);
+                ctblstmnts.append("");
+            mtexistsdata.append(texists);
+            #else not sure what to do if the table does not exist on the DB
+        return {"tsexists": mtexistsdata, "ctbls": ctblstmnts, "dataftbles": mdataforalltbls};
+    def getExistsCreateTableStatementAndDataForAllTablesObjectAfterClasses(cls, ftchnow=False):
+        mtclses = cls.getTableClasses(ftchnow=ftchnow);
+        return cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mtclses);
+
 
     #BACKUP AND RESTORE METHODS NOT DONE YET 5-25-2025 12:04 AM MST
     
@@ -1850,6 +2216,68 @@ class mybase:
         print("end of data rejection list!\n");
         return True;
 
+
+    @classmethod
+    def genSQLFileLines(cls, mtexistsdata, ctblstmnts, mdataforalltbls):
+        mtblclses = cls.getTableClasses(ftchnow=False);
+        myvalidator.twoListsMustBeTheSameSize(mtexistsdata, mtblclses, "mtexistsdata", "mtblclses");
+        myvalidator.twoListsMustBeTheSameSize(ctblstmnts, mtblclses, "ctblstmnts", "mtblclses");
+        myvalidator.twoListsMustBeTheSameSize(mdataforalltbls, mtblclses,
+                                              "mdataforalltbls", "mtblclses");
+        mysqlfilelines = [mclsref.genSQLDropTableFromClass(onlyifnot=True) for mclsref in mtblclses];
+        for n in range(len(mtblclses)):
+            #create table if exists else do nothing, then generate the statements to insert the data.
+            mclsref = mtblclses[n];
+            if (mtexistsdata[n]):# or (mclsref == Signup) bug here 5-21-2025 4 AM MST
+                mysqlfilelines.append(ctblstmnts[n]);
+                #take the data then generate the insert into table statements here...
+                for item in mdataforalltbls[n]:
+                    nwvqry = mclsref.genSQLInsertIntoFromRef(vals=item);
+                    mysqlfilelines.append(nwvqry);
+        return mysqlfilelines;
+    @classmethod
+    def genSQLFileFromTExistsCTAndDataObj(cls, mdataobj):
+        myvalidator.objvarmusthavethesekeysonit(mdataobj, ["tsexists", "ctbls", "dataftbles"],
+                                                varnm="mdataobj");
+        mtexistsdata = mdataobj["tsexists"];
+        ctblstmnts = mdataobj["ctbls"];
+        mdataforalltbls = mdataobj["dataftbles"];
+        return cls.genSQLFileLines(mtexistsdata, ctblstmnts, mdataforalltbls);
+    @classmethod
+    def genSQLFileLinesFromTExistsCTAndDataForTFromObjFromClses(cls, mclses):
+        mdatobj = cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mclses);
+        return cls.genSQLFileFromTExistsCTAndDataObj(mdatobj);
+    @classmethod
+    def genSQLFileLinesFromTExistsCTAndDataForTFromObjAfterClasses(cls, ftchnow=False):
+        mtclses = cls.getTableClasses(ftchnow=ftchnow);
+        return cls.genSQLFileLinesFromTExistsCTAndDataForTFromObjFromClses(mtclses);
+
+    @classmethod
+    def genSQLFileLinesFromScriptFileLines(cls, scrptflines):
+        #qline = "mqries = " + str(msqlines) + ";";
+        #nxtline = "for qry in mqries:";
+        #         01234567890
+        #https://stackoverflow.com/questions/8494514/converting-string-to-tuple
+        #from ast import literal_eval;#this is a possible security problem.
+        
+        #si = 1;
+        ei = -1;
+        for n in reversed(range(len(scrptflines))):
+            #print(f"cscrptfline = {scrptflines[n]}");
+            if ("for qry in mqries:" in scrptflines[n]):
+                ei = n;
+                break;
+        #print(f"ei = {ei}");
+        myvalidator.valueMustBeInRange(ei, 2, len(scrptflines) - 4, True, True, "ei");
+        #mstr = scrptflines[1][9:len(scrptflines[1]) - 1];
+        #print(f"mstr = {mstr}");
+        mlist = [(scrptflines[i][11:len(scrptflines[i]) - 3] if (i + 1 == ei) else
+                  scrptflines[i][11:len(scrptflines[i]) - 2])
+                 for i in range(len(scrptflines)) if (0 < i and i < ei)];
+        #print(mlist);
+        return mlist;
+
+
     #depends on the config file and what the DB variable name is called
     @classmethod
     def genpscrptfromsqlines(cls, msqlines):
@@ -1931,163 +2359,6 @@ class mybase:
         mflines.append(fline);
         return mflines;
 
-    @classmethod
-    def getTableClasses(cls, ftchnow=False):
-        myvalidator.varmustbeboolean(ftchnow, "ftchnow");
-        return [mclsref for mclsref in mycol.getMyClassRefsMain(ftchnw=ftchnow)
-                     if (issubclass(mclsref, mybase) and not (mclsref == mybase))];
-
-    @classmethod
-    def getExistsCreateTableStatementsAndDataForAllTablesObject(cls, mtblclses):
-        mtexistsdata = [];
-        mdataforalltbls = [];
-        ctblstmnts = [];
-        #from models import Signup;#bug here 5-21-2025 4 AM MST
-        for mclsref in mtblclses:
-            texists = mclsref.tableExists(pqry=False);
-            #run the select all query here...
-            if (texists):# or (mclsref == Signup) bug here 5-21-2025 4 AM MST
-                #if (mclsref == Signup): mdataforalltbls.append([]);
-                #else:
-                mitemlist = mclsref.getAllItemsOnTable(pqry=False);
-                mdataforalltbls.append(mitemlist);
-                #DEPENDS ON THE SQL VARIANT or SQLVARIANT.
-                ctblqry = mclsref.genSQLCreateTableFromRef(varstr="" + mybase.getMySQLType(),
-                                                            onlyifnot=False, isinctable=True);
-                                                            #the create table statement
-                ctblstmnts.append(ctblqry);
-                #print("all items on DB for class " + mclsref.__name__ + " are: ");
-                #print(f"all colnames are: {mclsref.getMyColNames()}");
-                #for item in mitemlist: print(item);
-            else:
-                mdataforalltbls.append([]);
-                ctblstmnts.append("");
-            mtexistsdata.append(texists);
-            #else not sure what to do if the table does not exist on the DB
-        return {"tsexists": mtexistsdata, "ctbls": ctblstmnts, "dataftbles": mdataforalltbls};
-    def getExistsCreateTableStatementAndDataForAllTablesObjectAfterClasses(cls, ftchnow=False):
-        mtclses = cls.getTableClasses(ftchnow=ftchnow);
-        return cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mtclses);
-
-    @classmethod
-    def genSQLFileLines(cls, mtexistsdata, ctblstmnts, mdataforalltbls):
-        mtblclses = cls.getTableClasses(ftchnow=False);
-        myvalidator.twoListsMustBeTheSameSize(mtexistsdata, mtblclses, "mtexistsdata", "mtblclses");
-        myvalidator.twoListsMustBeTheSameSize(ctblstmnts, mtblclses, "ctblstmnts", "mtblclses");
-        myvalidator.twoListsMustBeTheSameSize(mdataforalltbls, mtblclses,
-                                              "mdataforalltbls", "mtblclses");
-        mysqlfilelines = [mclsref.genSQLDropTableFromClass(onlyifnot=True) for mclsref in mtblclses];
-        for n in range(len(mtblclses)):
-            #create table if exists else do nothing, then generate the statements to insert the data.
-            mclsref = mtblclses[n];
-            if (mtexistsdata[n]):# or (mclsref == Signup) bug here 5-21-2025 4 AM MST
-                mysqlfilelines.append(ctblstmnts[n]);
-                #take the data then generate the insert into table statements here...
-                for item in mdataforalltbls[n]:
-                    nwvqry = mclsref.genSQLInsertIntoFromRef(vals=item);
-                    mysqlfilelines.append(nwvqry);
-        return mysqlfilelines;
-    @classmethod
-    def genSQLFileFromTExistsCTAndDataObj(cls, mdataobj):
-        myvalidator.objvarmusthavethesekeysonit(mdataobj, ["tsexists", "ctbls", "dataftbles"],
-                                                varnm="mdataobj");
-        mtexistsdata = mdataobj["tsexists"];
-        ctblstmnts = mdataobj["ctbls"];
-        mdataforalltbls = mdataobj["dataftbles"];
-        return cls.genSQLFileLines(mtexistsdata, ctblstmnts, mdataforalltbls);
-    @classmethod
-    def genSQLFileLinesFromTExistsCTAndDataForTFromObjFromClses(cls, mclses):
-        mdatobj = cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mclses);
-        return cls.genSQLFileFromTExistsCTAndDataObj(mdatobj);
-    @classmethod
-    def genSQLFileLinesFromTExistsCTAndDataForTFromObjAfterClasses(cls, ftchnow=False):
-        mtclses = cls.getTableClasses(ftchnow=ftchnow);
-        return cls.genSQLFileLinesFromTExistsCTAndDataForTFromObjFromClses(mtclses);
-
-    @classmethod
-    def genSQLFileLinesFromScriptFileLines(cls, scrptflines):
-        #qline = "mqries = " + str(msqlines) + ";";
-        #nxtline = "for qry in mqries:";
-        #         01234567890
-        #https://stackoverflow.com/questions/8494514/converting-string-to-tuple
-        #from ast import literal_eval;#this is a possible security problem.
-        
-        #si = 1;
-        ei = -1;
-        for n in reversed(range(len(scrptflines))):
-            #print(f"cscrptfline = {scrptflines[n]}");
-            if ("for qry in mqries:" in scrptflines[n]):
-                ei = n;
-                break;
-        #print(f"ei = {ei}");
-        myvalidator.valueMustBeInRange(ei, 2, len(scrptflines) - 4, True, True, "ei");
-        #mstr = scrptflines[1][9:len(scrptflines[1]) - 1];
-        #print(f"mstr = {mstr}");
-        mlist = [(scrptflines[i][11:len(scrptflines[i]) - 3] if (i + 1 == ei) else
-                  scrptflines[i][11:len(scrptflines[i]) - 2])
-                 for i in range(len(scrptflines)) if (0 < i and i < ei)];
-        #print(mlist);
-        return mlist;
-
-    @classmethod
-    def myFileExists(cls, fnmandpth):
-        tmpfile = None;
-        tmpfile = Path(fnmandpth);
-        exists = tmpfile.is_file();
-        #exists = False;
-        #try:
-        #    tmpfile = open(fnmandpth, "r");
-        #    exists = True;
-        #    tmpfile.close();
-        #except FileNotFoundError as fnfe:
-        #    exists = False;
-        return exists;
-
-    @classmethod
-    def myfilewritelinesmethod(cls, fnmandpth, flines, baowiffexists="b", dscptrmsg=""):
-        #actually write the stuff here...
-        #we need to know what to call the new files and where to save them...
-        #note opening in write mode if the file does not exist will create it
-        #modes are read, write, append
-        #if the file exists, do we block or append or overwrite?
-        #if the file does not exist, then we write.
-        myvalidator.stringMustHaveAtMinNumChars(fnmandpth, 3, "fnmandpth");
-        boremds = ["b", "B", "e", "E", "block", "BLOCK", "error", "ERROR"];
-        ovrwmds = ["o", "O", "w", "W", "ow", "OW", "OVER-WRITE", "over-write", "overwrite", "OVERWRITE"];
-        apndmds = ["a", "A", "append", "APPEND"];
-        worapndmds = myvalidator.combineTwoLists(apndmds, ovrwmds, nodups=True);
-        allfmds = myvalidator.combineTwoLists(boremds, worapndmds, nodups=True);
-        myvalidator.itemMustBeOneOf(baowiffexists, allfmds, varnm="on_file_exists_action_policy");
-        if (myvalidator.isvarnull(dscptrmsg)):
-            return cls.myfilewritelinesmethod(fnmandpth, flines,
-                baowiffexists=baowiffexists, dscptrmsg="");
-        if (myvalidator.isvarnull(flines)):
-            return cls.myfilewritelinesmethod(fnmandpth, [],
-                baowiffexists=baowiffexists, dscptrmsg=dscptrmsg);
-        exists = cls.myFileExists(fnmandpth);
-        wfmd = "w";
-        if (exists):
-            if (myvalidator.isListAInListB([baowiffexists], boremds)):
-                raise ValueError("the file (" + fnmandpth + ") already exists!");
-            elif (myvalidator.isListAInListB([baowiffexists], apndmds)): wfmd = "a";
-            else: wfmd = "w";
-        with open(fnmandpth, wfmd) as mfile:
-            for line in flines:
-                mfile.write(line);
-                mfile.write("\n");
-            print(dscptrmsg + (" " if (not(dscptrmsg.endswith(" "))) else "") +
-                  "file written successfully!");
-            mfile.close();
-        return True;
-    @classmethod
-    def blockifmyfileexistswritelines(cls, fnmandpth, flines, dscptrmsg=""):
-        return cls.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="b", dscptrmsg=dscptrmsg);
-    @classmethod
-    def appendifmyfileexistswritelines(cls, fnmandpth, flines, dscptrmsg=""):
-        return cls.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="a", dscptrmsg=dscptrmsg);
-    @classmethod
-    def overwriteifmyfileexistswritelines(cls, fnmandpth, flines, dscptrmsg=""):
-        return cls.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="o", dscptrmsg=dscptrmsg);
 
     @classmethod
     def backupDB(cls):
@@ -2182,7 +2453,13 @@ class mybase:
         cls.blockifmyfileexistswritelines("bkscrpt.py", mflines, dscptrmsg="script");
         print("SUCCESSFULLY CREATED THE BACKUP FILES AND FINISHED THE BACKUP!");
         #raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
+        return True;
     
+
+    #DONE WITH BACKING UP AND RESTORING THE DB METHODS.
+
+    #BEGIN DROP TABLE AND CLEARING DATA METHODS SECTION HERE.
+
     @classmethod
     def genSQLDropTableFromClass(cls, onlyifnot=False):
         return myvalidator.genSQLDropTable(cls.getTableName(), onlyifnot=onlyifnot);
@@ -2588,15 +2865,123 @@ class mybase:
         if (runbkaftr): type(self).backupDB();
 
         print("\nDONE WITH THE SAVE() NOW!\n");
-        #raise ValueError("NOT DONE YET 4-30-2025 9:33 PM MST!");
+        return True;
 
 
     #begin serialization and representation methods here
 
+    #this gets the rules that the user has defined in their class which extends mybase class
+    #in the event that the user did not define it, it throws an attribute error
+    #this does not get all attributes that will be serialized
+    @classmethod
+    def getSerializeOnlyORExclusiveSerializeRules(cls, useexrules):
+        myvalidator.varmustbeboolean(useexrules, varnm="useexrules");
+        mky = ("allexrules" if (useexrules) else "allonlyrules");
+        return cls.getValueOfVarIfPresentOnTableMain(mky);
+    @classmethod
+    def getSerializeOnlyRules(cls): return cls.getSerializeOnlyORExclusiveSerializeRules(False);
+    @classmethod
+    def getExclusiveSerializeRules(cls): return cls.getSerializeOnlyORExclusiveSerializeRules(True);
+
+
+    @classmethod
+    def getOtherKnownSafeAttributesOnTheClass(cls):
+        return [attr for attr in dir(cls)
+                if (type(getattr(cls, attr)) in [int, float, str, list, tuple] and
+                    attr not in ["__module__", "all"])];
+        #mycol could be on the list of stuff to serialize,
+        #but there is already a method specifically for that
+
+    @classmethod
+    def getKnownAttributeNamesOnTheClass(cls, useserial=False):
+        myvalidator.varmustbeboolean(useserial, "useserial");
+        mycols = cls.getMyCols();
+        safelist = cls.getOtherKnownSafeAttributesOnTheClass();
+        unsafelist = cls.getForeignKeyObjectNamesFromCols(mycols);
+        mlist = myvalidator.combineTwoLists(safelist, unsafelist);
+        #print(f"safelist = {safelist}");
+        #print(f"unsafelist = {unsafelist}");
+        #print(f"init mlist = {mlist}");
+        
+        myvalidator.varmustnotbeempty(mlist, "mlist");
+        mxlist = [];#exclusion list for serialization
+        for nm in cls.getMyColAttributeNames():
+            if (useserial): mxlist.append(nm);
+            else:
+                if (nm not in mlist): mlist.append(nm);
+            if (nm + "_value" not in mlist): mlist.append(nm + "_value");
+        #print(f"NEW mlist = {mlist}");
+        
+        myrefcols = cls.getMyRefCols();
+        for nm in cls.getMyRefColAttributeNames():
+            if (useserial): mxlist.append(nm);
+            else:
+                if (nm not in mlist): mlist.append(nm);
+        for nm in cls.getMyRefColNames(myrefcols):
+            if (nm not in mlist): mlist.append(nm);
+        #print(f"NEW mlist = {mlist}");
+        
+        tnmattrnm = cls.getNameOfVarIfPresentOnTableMain("tablename");
+        mcsattrnm = cls.getNameOfVarIfPresentOnTableMain("multi_column_constraints_list");
+        acsattrnm = cls.getNameOfVarIfPresentOnTableMain("allconstraints_list");
+        
+        exrulesnm = None;
+        hasexrules = True;
+        try:
+            exrulesnm = cls.getNameOfVarIfPresentOnTableMain("allexrules");
+        except Exception as ex:
+            hasexrules = False;
+        onlyrulesnm = None;
+        hasonlyrules = True;
+        try:
+            onlyrulesnm = cls.getNameOfVarIfPresentOnTableMain("allonlyrules");
+        except Exception as ex:
+            hasonlyrules = False;
+        
+        if (useserial):
+            mxlist.append(tnmattrnm);
+            mxlist.append(mcsattrnm);
+            mxlist.append(acsattrnm);
+            if (hasexrules): mxlist.append(exrulesnm);
+            if (hasonlyrules): mxlist.append(onlyrulesnm);
+        else:
+            if (tnmattrnm not in mlist): mlist.append(tnmattrnm);
+            if (mcsattrnm not in mlist): mlist.append(mcsattrnm);
+            if (acsattrnm not in mlist): mlist.append(acsattrnm);
+            if (hasexrules and exrulesnm not in mlist): mlist.append(exrulesnm);
+            if (hasonlyrules and onlyrulesnm not in mlist): mlist.append(onlyrulesnm);
+        if (useserial): mxlist.append("all");
+        elif ("all" not in mlist): mlist.append("all");
+        #print(f"FINAL mlist = {mlist}");
+        
+        myretlist = [item for item in mlist if item not in mxlist];
+        #print(f"myretlist = {myretlist}");
+        
+        myvalidator.listMustContainUniqueValuesOnly(myretlist, "myretlist");
+        return myretlist;
+    @classmethod
+    def getAllKnownAttributeNamesOnTheClass(cls):
+        return cls.getKnownAttributeNamesOnTheClass(useserial=False);
+    @classmethod
+    def getKnownAttributeNamesOnTheClassForSerialization(cls):
+        return cls.getKnownAttributeNamesOnTheClass(useserial=True);
+    @classmethod
+    def getTheExclusionListForSerialization(cls):
+        alllist = cls.getAllKnownAttributeNamesOnTheClass();
+        serlist = cls.getKnownAttributeNamesOnTheClassForSerialization();
+        if (myvalidator.isvaremptyornull(serlist)): return alllist;
+        else: return [item for item in alllist if item not in serlist];
+
+
+    #serialization methods below this point depend on the actual object and not the mybase class
+
     def getKnownAttributeNamesForRepresentation(self, useserial=False):
-        return [nm for nm in type(self).getKnownAttributeNamesOnTheClass(useserial)];
+        return [nm for nm in type(self).getKnownAttributeNamesOnTheClass(useserial=useserial)];
     def getKnownAttributeNamesForSerialization(self):
         return self.getKnownAttributeNamesForRepresentation(useserial=True);
+
+
+    #the methods that actually do the serialization begin here
 
     #the ignoreerr boolean variable allows for attributes with the values of none instead of
     #throwing an AttributeError for an attribute that does not exist.
@@ -2764,7 +3149,7 @@ class mybase:
     #    mlist.append(nm);
     #    mlist.append(nm + "_value");
     #all is a reserved attribute name for a list of all instances of the class
-
+    #
     #def getKnownAttributeNamesForRepresentation(self):
     #    return ["id_value", "name_value", "age_value"];
     #    #return type(self).getValueColNames();#uses abc order of the above list
@@ -3144,376 +3529,7 @@ class mybase:
         
 
     #class methods of the base class, but not constructors.
-
-    @classmethod
-    def getMyColsOrRefColsOrMyColAttributeNames(cls, retobjs, usemycols):
-        #print(f"cls = {cls}");
-        myvalidator.varmustbeboolean(usemycols, "usemycols");
-        myvalidator.varmustbeboolean(retobjs, "retobjs");
-        return [(getattr(cls, attr) if retobjs else attr)
-                for attr in dir(cls) if (type(getattr(cls, attr)) ==
-                                         (mycol if (usemycols) else myrefcol))];
-    @classmethod
-    def getMyColObjects(cls, usemycols):
-        return cls.getMyColsOrRefColsOrMyColAttributeNames(True, usemycols);
-    @classmethod
-    def getMyAttributeNamesForColsOrRefCols(cls, usemycols):
-        return cls.getMyColsOrRefColsOrMyColAttributeNames(False, usemycols);
-    @classmethod
-    def getMyCols(cls): return cls.getMyColObjects(True);
-    @classmethod
-    def getMyRefCols(cls): return cls.getMyColObjects(False);
-    @classmethod
-    def getMyColAttributeNames(cls): return cls.getMyAttributeNamesForColsOrRefCols(True);
-    @classmethod
-    def getMyRefColAttributeNames(cls): return cls.getMyAttributeNamesForColsOrRefCols(False);
-
-    @classmethod
-    def getMyOrRefColsFromClassOrParam(cls, usemycols, mycols=None):
-        myvalidator.varmustbeboolean(usemycols, "usemycols");
-        return (cls.getMyColObjects(usemycols) if myvalidator.isvaremptyornull(mycols) else mycols);
-    @classmethod
-    def getMyColsFromClassOrParam(cls, mycols=None):
-        return cls.getMyOrRefColsFromClassOrParam(True, mycols);
-    @classmethod
-    def getMyRefColsFromClassOrParam(cls, mycols=None):
-        return cls.getMyOrRefColsFromClassOrParam(False, mycols);
-
-    @classmethod
-    def getMyOrRefColNames(cls, usemycols, mycols=None):
-        return [(mclobj.colname if (usemycols) else mclobj.listcolname) for mclobj in
-                 cls.getMyOrRefColsFromClassOrParam(usemycols, mycols)];
-    #the colnames for mycol object match the attribute names for it so you may use this method or
-    #getMyColAttributeNames(cls) since they both return the same result
-    @classmethod
-    def getMyColNames(cls, mycols=None): return cls.getMyOrRefColNames(True, mycols);
-    #returns the value colnames for the refcols
-    #if this is not what you want use: getMyRefColAttributeNames(cls)
-    @classmethod
-    def getMyRefColNames(cls, mycols=None): return cls.getMyOrRefColNames(False, mycols);
     
-    @classmethod
-    def getValueColNames(cls, mycols=None): return [nm + "_value" for nm in cls.getMyColNames(mycols)];
-
-    @classmethod
-    def getMyColObjFromName(cls, mcnm, mycols=None):
-        mclist = cls.getMyColsFromClassOrParam(mycols);
-        if (myvalidator.isvaremptyornull(mclist)): pass;
-        else:
-            for mclobj in mclist:
-                if (mclobj.colname == mcnm): return mclobj;
-        errmsg = "col object with name (" + mcnm + ") and class name (" + cls.__name__ + ") not found!";
-        raise ValueError(errmsg);
-    @classmethod
-    def getColObjFromName(cls, mcnm, mycols=None): return cls.getMyColObjFromName(mcnm, mycols=mycols);
-    @classmethod
-    def getColObjectFromName(cls, mcnm, mycols=None):
-        return cls.getMyColObjFromName(mcnm, mycols=mycols);
-    @classmethod
-    def getMyColumnObjectFromName(cls, mcnm, mycols=None):
-        return cls.getMyColObjFromName(mcnm, mycols=mycols);
-    @classmethod
-    def getMyColumnObjFromName(cls, mcnm, mycols=None):
-        return cls.getMyColObjFromName(mcnm, mycols=mycols);
-
-    @classmethod
-    def areGivenColNamesOnTable(cls, mlist, mycols=None):
-        if (myvalidator.isvaremptyornull(mlist)): return False;
-        fincolnms = cls.getMyColNames(cls.getMyColsFromClassOrParam(mycols));
-        for mitem in mlist:
-            if (mitem in fincolnms): pass;
-            else: return False;
-        return True;
-
-    @classmethod
-    def getMyPrimaryOrForeignKeyCols(cls, usepkys, mycols=None):
-        myvalidator.varmustbeboolean(usepkys, "usepkys");
-        return [mclobj for mclobj in cls.getMyColsFromClassOrParam(mycols)
-                if (mclobj.isprimarykey if (usepkys) else mclobj.isforeignkey)];
-    @classmethod
-    def getMyPrimaryKeyCols(cls, mycols=None): return cls.getMyPrimaryOrForeignKeyCols(True, mycols);
-    @classmethod
-    def getMyForeignKeyCols(cls, mycols=None): return cls.getMyPrimaryOrForeignKeyCols(False, mycols);
-    
-    @classmethod
-    def getForeignKeyObjectNamesFromCols(cls, mycols=None):
-        return [mc.getForeignObjectName() for mc in cls.getMyForeignKeyCols(mycols)
-                if (cls.needToCreateAnObjectForCol(mc))];
-
-    @classmethod
-    def getIndividualColumnConstraintsOrColsWithConstraints(cls, useclist, mycols=None):
-        myvalidator.varmustbeboolean(useclist, "useclist");
-        return [(mc.getConstraints() if (useclist) else mc)
-                for mc in cls.getMyColsFromClassOrParam(mycols)
-                if not myvalidator.isvaremptyornull(mc.getConstraints())];
-    @classmethod
-    def getIndividualColumnConstraints(cls, mycols=None):
-        return cls.getIndividualColumnConstraintsOrColsWithConstraints(True, mycols);
-    @classmethod
-    def getColumnsWithConstraints(cls, mycols=None):
-        return cls.getIndividualColumnConstraintsOrColsWithConstraints(False, mycols);
-
-    @classmethod
-    def isColWithConstraintsValid(cls, mc):
-        myvalidator.varmustnotbenull(mc, "mc");
-        if (myvalidator.isvaremptyornull(mc.constraints)): pass;
-        else:
-            for thecnst in mc.constraints:
-                if (myvalidator.isvaremptyornull(thecnst)): return False;
-                else:
-                    if (" CHECK(" in thecnst):
-                        ci = thecnst.index(" CHECK(");
-                        aindxsofnm = [n for n in range(len(thecnst))
-                                    if thecnst[n:].startswith(mc.getColName())];
-                        isvld = False;
-                        if (0 < len(aindxsofnm)):
-                            for i in aindxsofnm:
-                                if (ci < i):
-                                    isvld = True;
-                                    break;
-                        if (isvld): pass;
-                        else: return False;
-                    else: return False;
-        return True;
-
-    @classmethod
-    def getColumnsWithIndividualInvalidConstraints(cls, mycols=None):
-        return [mc for mc in cls.getColumnsWithConstraints(mycols)
-                if (not cls.isColWithConstraintsValid(mc))];
-
-    @classmethod
-    def areColsWithIndividualConstraintsValid(cls, mycols=None):
-        for mc in cls.getColumnsWithConstraints(mycols):
-            if (cls.isColWithConstraintsValid(mc)): pass;
-            else: return False;
-        return True;
-    
-    @classmethod
-    def getPossibleTableNames(cls):
-        return ["mytablename", "tablename", "table_name", "my_table_name"];
-
-    @classmethod
-    def getMultiColumnConstraintVariableNames(cls):
-        return ["mymulticolumnconstraints", "mymulticolconstraints", "mcolconstraints",
-                "mymulticolumnarguments", "mymulticolarguments", "mcolarguments", "mymulticolumnargs",
-                "mymulticolargs", "multicolargs", "mcolargs", "my_multi_column_constraints",
-                "my_multicol_constraints", "mcol_constraints", "my_multi_column_arguments",
-                "my_multicol_arguments", "my_multi_col_arguments", "multi_col_arguments",
-                "mcol_arguments", "my_multi_column_args", "my_multicol_args",
-                "mcol_args", "my_multi_col_args", "multi_col_args", "my_multi_col_constraints"];
-
-    @classmethod
-    def getAllConstraintVariableNames(cls):
-        return ["allconstraints", "allcolumnconstraints", "allcolconstraints", "alltableconstraints",
-                "alltablecolconstraints", "all_constraints", "all_column_constraints",
-                "all_col_constraints", "all_table_constraints", "all_table_col_constraints",
-                "allarguments", "allcolumnarguments", "allcolarguments", "alltablearguments",
-                "alltablecolarguments", "all_arguments", "all_column_arguments", "all_col_arguments",
-                "all_table_arguments", "all_table_col_arguments", "all_tablecol_arguments",
-                "allargs", "allcolumnargs", "allcolargs", "alltableargs", "alltablecolargs",
-                "all_args", "all_column_args", "all_col_args", "all_table_args", "all_table_col_args",
-                "all_tablecol_args", "tableargs", "tablecolargs", "table_args", "table_col_args",
-                "tablecol_args"];
-
-    @classmethod
-    def getAllExclusiveSerializeRuleNames(cls):
-        return ["ex_rules", "exclusive_rules", "exrules", "exclusiverules", "exclusionrules",
-                "serialize_exclusive_rules", "serialize_ex_rules", "serialize_exclusion_only_rules",
-                "serializeexclusion_only_rules", "serializeexclusiononly_rules",
-                "serializeexclusiononlyrules", "exclusion_rules", "serialize_exclusive_only_rules",
-                "serializeexclusive_only_rules", "serializeexclusiveonly_rules",
-                "serializeexclusiveonlyrules"];
-    @classmethod
-    def getAllGeneralSerializeRuleNames(cls):
-        return ["serialize_rules", "serializerules", "serialize_only", "only_rules", "onlyrules",
-                "serialize_only_rules", "serializeonly", "serializeonlyrules"];
-
-    @classmethod
-    def getListOfPossibleNamesForVariable(cls, varnm="varnm"):
-        if (myvalidator.isvaremptyornull(varnm)): return cls.varMustBePresentOnTable("varnm");
-        errmsg = "variable name " + varnm + " not recognized or is not associated with a list!";
-        if (varnm == "tablename"): return cls.getPossibleTableNames();
-        elif (varnm == "multi_column_constraints_list"):
-            return cls.getMultiColumnConstraintVariableNames();
-        elif (varnm == "allconstraints_list"): return cls.getAllConstraintVariableNames();
-        elif (varnm == "allexrules"): return cls.getAllExclusiveSerializeRuleNames();
-        elif (varnm == "allonlyrules"): return cls.getAllGeneralSerializeRuleNames();
-        elif (varnm == "allserializerules"):
-            mlist = [item for item in cls.getAllGeneralSerializeRuleNames()];
-            for item in cls.cls.getAllExclusiveSerializeRuleNames(): mlist.append(item);
-            return mlist;
-        else: raise ValueError(errmsg);
-
-    @classmethod
-    def getValObjectIfPresent(cls, ilist=None, varnm="varnm"):
-        if (myvalidator.isvaremptyornull(ilist)):
-            mylist = cls.getListOfPossibleNamesForVariable(varnm);
-        else: mylist = ilist;
-        for attr in dir(cls):
-            for pnm in mylist:
-                if (pnm in attr): return {"value": getattr(cls, attr), "name": attr};
-        return None;
-    @classmethod
-    def getValObjectIfPresentMain(cls, varnm="varnm"): return cls.getValObjectIfPresent(None, varnm);
-
-    @classmethod
-    def isVarPresentOnTable(cls, ilist=None, varnm="varnm"):
-        return (not myvalidator.isvaremptyornull(cls.getValObjectIfPresent(ilist, varnm)));
-    @classmethod
-    def isVarPresentOnTableMain(cls, varnm="varnm"): return cls.isVarPresentOnTable(None, varnm);
-
-    @classmethod
-    def varMustBePresentOnTable(cls, ilist=None, varnm="varnm"):
-        if (cls.isVarPresentOnTable(ilist, varnm)): return True;
-        else: raise AttributeError("the table must have a(n) " + varnm + " in it!");
-    @classmethod
-    def varMustBePresentOnTableMain(cls, varnm="varnm"):
-        return cls.varMustBePresentOnTable(None, varnm);
-
-    
-    #possible bug found 5-4-2025 12:29 AM maybe we can return null if the name is not found?
-    #if the name is not present, what should we do? should we return null for the name or error out?
-
-    @classmethod
-    def getNameOrValueOfVarIfPresentOnTable(cls, usename, ilist=None, varnm="varnm"):
-        myvalidator.varmustbeboolean(usename, "usename");
-        myresobj = cls.getValObjectIfPresent(ilist, varnm);
-        if (myvalidator.isvaremptyornull(myresobj)):
-            #if (usename): return None;
-            #else:
-                raise AttributeError("the table must have a(n) " + varnm + " in it!");
-        else: return myresobj[("name" if usename else "value")];
-    @classmethod
-    def getNameOrValueOfVarIfPresentOnTableMain(cls, usename, varnm="varnm"):
-        return cls.getNameOrValueOfVarIfPresentOnTable(usename, None, varnm);
-    
-    @classmethod
-    def getNameOfVarIfPresentOnTable(cls, ilist=None, varnm="varnm"):
-        return cls.getNameOrValueOfVarIfPresentOnTable(cls, True, ilist, varnm);
-    @classmethod
-    def getNameOfVarIfPresentOnTableMain(cls, varnm="varnm"):
-        return cls.getNameOrValueOfVarIfPresentOnTableMain(True, varnm);
-    
-    @classmethod
-    def getValueOfVarIfPresentOnTable(cls, ilist=None, varnm="varnm"):
-        return cls.getNameOrValueOfVarIfPresentOnTable(cls, False, ilist, varnm);
-    @classmethod
-    def getValueOfVarIfPresentOnTableMain(cls, varnm="varnm"):
-        return cls.getNameOrValueOfVarIfPresentOnTableMain(False, varnm);
-    
-    @classmethod
-    def getTableName(cls): return cls.getValueOfVarIfPresentOnTableMain("tablename");
-    @classmethod
-    def getMultiColumnConstraints(cls):
-        return cls.getValueOfVarIfPresentOnTableMain("multi_column_constraints_list");
-    
-
-    #most serialization methods are here
-
-    #the two immediately below are convenience methods based on the above functions
-
-    #this gets the rules that the user has defined in their class which extends mybase class
-    #in the event that the user did not define it, it throws an attribute error
-    #this does not get all attributes that will be serialized
-    @classmethod
-    def getSerializeOnlyORExclusiveSerializeRules(cls, useexrules):
-        myvalidator.varmustbeboolean(useexrules, varnm="useexrules");
-        mky = ("allexrules" if (useexrules) else "allonlyrules");
-        return cls.getValueOfVarIfPresentOnTableMain(mky);
-    @classmethod
-    def getSerializeOnlyRules(cls): return cls.getSerializeOnlyORExclusiveSerializeRules(False);
-    @classmethod
-    def getExclusiveSerializeRules(cls): return cls.getSerializeOnlyORExclusiveSerializeRules(True);
-
-
-
-    @classmethod
-    def getOtherKnownSafeAttributesOnTheClass(cls):
-        return [attr for attr in dir(cls)
-                if (type(getattr(cls, attr)) in [int, float, str, list, tuple] and
-                    attr not in ["__module__", "all"])];
-        #mycol could be on the list of stuff to serialize,
-        #but there is already a method specifically for that
-
-    @classmethod
-    def getKnownAttributeNamesOnTheClass(cls, useserial=False):
-        myvalidator.varmustbeboolean(useserial, "useserial");
-        mycols = cls.getMyCols();
-        safelist = cls.getOtherKnownSafeAttributesOnTheClass();
-        unsafelist = cls.getForeignKeyObjectNamesFromCols(mycols);
-        mlist = myvalidator.combineTwoLists(safelist, unsafelist);
-        #print(f"safelist = {safelist}");
-        #print(f"unsafelist = {unsafelist}");
-        #print(f"init mlist = {mlist}");
-        
-        myvalidator.varmustnotbeempty(mlist, "mlist");
-        mxlist = [];#exclusion list for serialization
-        for nm in cls.getMyColAttributeNames():
-            if (useserial): mxlist.append(nm);
-            else:
-                if (nm not in mlist): mlist.append(nm);
-            if (nm + "_value" not in mlist): mlist.append(nm + "_value");
-        #print(f"NEW mlist = {mlist}");
-        
-        myrefcols = cls.getMyRefCols();
-        for nm in cls.getMyRefColAttributeNames():
-            if (useserial): mxlist.append(nm);
-            else:
-                if (nm not in mlist): mlist.append(nm);
-        for nm in cls.getMyRefColNames(myrefcols):
-            if (nm not in mlist): mlist.append(nm);
-        #print(f"NEW mlist = {mlist}");
-        
-        tnmattrnm = cls.getNameOfVarIfPresentOnTableMain("tablename");
-        mcsattrnm = cls.getNameOfVarIfPresentOnTableMain("multi_column_constraints_list");
-        acsattrnm = cls.getNameOfVarIfPresentOnTableMain("allconstraints_list");
-        
-        exrulesnm = None;
-        hasexrules = True;
-        try:
-            exrulesnm = cls.getNameOfVarIfPresentOnTableMain("allexrules");
-        except Exception as ex:
-            hasexrules = False;
-        onlyrulesnm = None;
-        hasonlyrules = True;
-        try:
-            onlyrulesnm = cls.getNameOfVarIfPresentOnTableMain("allonlyrules");
-        except Exception as ex:
-            hasonlyrules = False;
-        
-        if (useserial):
-            mxlist.append(tnmattrnm);
-            mxlist.append(mcsattrnm);
-            mxlist.append(acsattrnm);
-            if (hasexrules): mxlist.append(exrulesnm);
-            if (hasonlyrules): mxlist.append(onlyrulesnm);
-        else:
-            if (tnmattrnm not in mlist): mlist.append(tnmattrnm);
-            if (mcsattrnm not in mlist): mlist.append(mcsattrnm);
-            if (acsattrnm not in mlist): mlist.append(acsattrnm);
-            if (hasexrules and exrulesnm not in mlist): mlist.append(exrulesnm);
-            if (hasonlyrules and onlyrulesnm not in mlist): mlist.append(onlyrulesnm);
-        if (useserial): mxlist.append("all");
-        elif ("all" not in mlist): mlist.append("all");
-        #print(f"FINAL mlist = {mlist}");
-        
-        myretlist = [item for item in mlist if item not in mxlist];
-        #print(f"myretlist = {myretlist}");
-        
-        myvalidator.listMustContainUniqueValuesOnly(myretlist, "myretlist");
-        return myretlist;
-    @classmethod
-    def getAllKnownAttributeNamesOnTheClass(cls): return cls.getKnownAttributeNamesOnTheClass(False);
-    @classmethod
-    def getKnownAttributeNamesOnTheClassForSerialization(cls):
-        return cls.getKnownAttributeNamesOnTheClass(True);
-    @classmethod
-    def getTheExclusionListForSerialization(cls):
-        alllist = cls.getAllKnownAttributeNamesOnTheClass();
-        serlist = cls.getKnownAttributeNamesOnTheClassForSerialization();
-        if (myvalidator.isvaremptyornull(serlist)): return alllist;
-        else: return [item for item in alllist if item not in serlist];
-
 
     #constraint methods here
 
@@ -3524,6 +3540,7 @@ class mybase:
             mlist = cls.getMultiColumnConstraints();
         except Exception as ex:
             setattr(cls, "mymulticolargs", mlist);
+        return mlist;
     
 
     #possible bug found 5-4-2025 12:29 AM MISSING METHOD
