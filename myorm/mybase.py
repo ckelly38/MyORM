@@ -666,6 +666,10 @@ class mybase:
     def getMultiColumnConstraints(cls):
         return cls.getValueOfVarIfPresentOnTableMain("multi_column_constraints_list");
     
+    @classmethod
+    def getTableAndClassNameString(cls):
+        return "the table " + cls.getTableName() + " on class " + cls.__name__;
+
 
     #column methods
 
@@ -1219,13 +1223,26 @@ class mybase:
         for mc in self.getMyColNames(fincols):
             print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
     
-    
     @classmethod
-    def getTableAndClassNameString(cls):
-        return "the table " + cls.getTableName() + " on class " + cls.__name__;
+    def printUniqueForeignKeyWarning(cls, pstack=True):
+        myfkycols = cls.getMyForeignKeyCols();
+        ufkycolnms = [fcol.getColName() for fcol in myfkycols if (fcol.getIsUnique())];
+        if (myvalidator.isvaremptyornull(ufkycolnms)): pass;
+        else:
+            print("WARNING: the following columns for the class " + cls.__name__ +
+                  f" have unique foreign keys: {ufkycolnms}");
+            print(mycol.getUniqueForeignKeyWarningMessage());
+            if (pstack):
+                traceback.print_stack();
+                print();
+            else:
+                print("NOTE: THE ABOVE WARNING MAY NOT BE RELATED TO THE ERROR! " +
+                      "CHECK THE TRACE BELOW:\n");
+
 
 
     #database CRUD methods section may depend on which database itself you are using.
+
 
     #NOT DONE YET WITH ALL OF THESE 4-30-2025 9:30 PM MST
 
@@ -1331,8 +1348,647 @@ class mybase:
         return cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mtclses);
 
 
+    #get all or the first or last items on the db table methods
+
+    #despite implying that it would return it returns a list from the fetchall method on the DB.
+    #if the list is empty, you still get an empty list, but no item.
+    #otherwise the DB method throws an error.
+    #however the list will have either 1 or no items on it.
+    @classmethod
+    def getFirstOrLastItemOnTable(cls, usefirst):
+        pkycolnms = cls.getMyColNames(cls.getMyPrimaryKeyCols());
+        myselqry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
+        ordrbypt = myvalidator.genOrderByOneTableOneVal(pkycolnms, cls.getTableName(),
+                                                        False, usefirst);#singleinctname, boolval
+        #srdrvals = myvalidator.genSortOrderByAscVal(len(pkycolnms), False);
+        #ordrbypt = myvalidator.genOrderBy(pkycolnms, [cls.getTableName()], False, sorder=srdrvals);
+        limpt = myvalidator.genSQLimit(1, offset=0);
+        myfinselqry = myselqry + " " + ordrbypt + " " + limpt;
+        #print(srdrvals);
+        #print(f"myselqry = {myselqry}");
+        #print(f"ordrbypt = {ordrbypt}");
+        #print(f"limpt = {limpt}");
+        print(f"SELECT QUERY myfinselqry = {myfinselqry}");
+
+        myores = mybase.getMyCursor().execute(myfinselqry).fetchall();
+        mybase.getMyConn().commit();
+        print("successfully got the item from the DB (stored in a list as the only item)!");
+        return myores;
+    @classmethod
+    def getFirstItemOnTable(cls): return cls.getFirstOrLastItemOnTable(True);
+    @classmethod
+    def getLastItemOnTable(cls): return cls.getFirstOrLastItemOnTable(False);
+
+    @classmethod
+    def getAllItemsOnTable(cls, pqry=True):
+        myvalidator.varmustbeboolean(pqry, "pqry");
+        myselqry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
+        if (pqry): print(f"SELECT QUERY myselqry = {myselqry}");
+
+        myores = mybase.getMyCursor().execute(myselqry).fetchall();
+        mybase.getMyConn().commit();
+        if (pqry): print("successfully got the items from the DB!");
+        return myores;
+
+    
+    #BEGIN DROP TABLE AND CLEARING DATA METHODS SECTION HERE.
+
+    @classmethod
+    def genSQLDropTableFromClass(cls, onlyifnot=False):
+        return myvalidator.genSQLDropTable(cls.getTableName(), onlyifnot=onlyifnot);
+
+    @classmethod
+    def dropTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
+        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
+        if (runbkbfr): cls.backupDB();
+
+        tnmonclsnmstr = "" + cls.getTableAndClassNameString();
+        qry = cls.genSQLDropTableFromClass(onlyifnot=onlyifnot);
+        print(f"\nDROP TABLE qry = {qry}\n");
+        
+        try:
+            res = mybase.getMyCursor().execute(qry);
+            mybase.getMyConn().commit();
+        except Exception as ex:
+            #print(f"\nDROP TABLE qry = {qry}\n");
+            print("either " + tnmonclsnmstr + " already does not exist, or problem " +
+                  "connecting with the DB!");
+            traceback.print_exc();
+
+        print("deleted " + tnmonclsnmstr + " on the DB successfully!\n");
+
+        if (runbkaftr): cls.backupDB();
+        return True;
+    
+    @classmethod
+    def deleteTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
+        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+    @classmethod
+    def delTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
+        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+    @classmethod
+    def removeTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
+        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+    @classmethod
+    def remTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
+        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+    
+
+    #WE CANNOT ADD IF EXISTS TO THE TRUNCATE NOR TO THE DELETE COMMANDS.
+    @classmethod
+    def genSQLTruncateTableFromRef(cls): return myvalidator.genSQLTruncateTable(cls.getTableName());
+    @classmethod
+    def genSQLDeleteFromRef(cls, colnms=None):
+        finclnms = (cls.getMyColNames(cls.getMyPrimaryKeyCols())
+                    if (myvalidator.isvaremptyornull(colnms)) else ["" + item for item in colnms]);
+        return myvalidator.genSQLDelete(cls.getTableName(), finclnms);
+    @classmethod
+    def genSQLDeleteNoWhereFromRef(cls): return myvalidator.genSQLDeleteNoWhere(cls.getTableName());
+    @classmethod
+    def genSQLClearTableFromRef(cls): return cls.genSQLDeleteNoWhereFromRef();
+
+    #SQLite does support the DELETE command and if no where is provided, then it acts as a truncate.
+    #THE DELETE command is implemented on most DBs.
+    @classmethod
+    def truncateTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
+        myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");
+        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
+        tnmandclsnmstr = "" + cls.getTableAndClassNameString();
+        errmsg = tnmandclsnmstr + " must exist in order for it to be truncated or cleared.";
+        if (cls.tableExists()):
+            if (runbkbfr): cls.backupDB();
+
+            truncqry = cls.genSQLDeleteNoWhereFromRef() + ";";
+            print("\nbegin truncating the data on " + tnmandclsnmstr + " on the DB now!");
+            print(f"TRUNCATE TABLE truncqry = {truncqry}");
+
+            res = mybase.getMyCursor().execute(truncqry);
+            mybase.getMyConn().commit();
+
+            print("truncated the data on " + tnmandclsnmstr + " on the DB successfully!\n");
+
+            if (runbkaftr): cls.backupDB();
+        else: 
+            if (onlyifnot): pass;
+            else: raise ValueError(errmsg);
+        return True;
+    @classmethod
+    def clearTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
+        return cls.truncateTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+
+    @classmethod
+    def clearThenDropTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
+        cls.truncateTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=False);
+        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=False, runbkaftr=runbkaftr);
+    @classmethod
+    def clearAndDropTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
+        return cls.clearThenDropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+
+    def deleteMyRowFromTable(self, onlyifnot=True, runbkbfr=False, runbkaftr=False):
+        myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");
+        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
+        tnmandclsnmstr = "" + type(self).getTableAndClassNameString();
+        errmsg = tnmandclsnmstr + " must exist in order for it to be removed or deleted.";
+        if (type(self).tableExists()):
+            if (runbkbfr): type(self).backupDB();
+
+            mpkycols = type(self).getMyPrimaryKeyCols();
+            mdelcrowqry = type(self).genSQLDeleteFromRef(colnms=None);
+            #pkeycola = ?, colb = ? ...
+            #need to get the values for the primary key cols only.
+            mvals = tuple(self.genValsListForColNames(type(self).getMyColNames(mpkycols)));
+        
+            print("\nbegin removing the row on " + tnmandclsnmstr + " from the DB now!");
+            print(f"DELETE ROW mdelcrowqry = {mdelcrowqry}");
+            print(f"mvals = {mvals}");
+
+            res = mybase.getMyCursor().execute(mdelcrowqry, mvals);
+            mybase.getMyConn().commit();
+
+            print("removed the data on " + tnmandclsnmstr + " from the DB successfully!\n");
+
+            if (runbkaftr): type(self).backupDB();
+        else: 
+            if (onlyifnot): pass;
+            else: raise ValueError(errmsg);
+        return True;
+    
+    @classmethod
+    def deleteARowFromTable(cls, colnms, colvals, onlyifnot=True, runbkbfr=False, runbkaftr=False):
+        myobj = cls.getObjectFromGivenKeysAndValues(cls.all, colnms, colvals);
+        myvalidator.varmustnotbenull(myobj, "myobj");
+        return myobj.deleteMyRowFromTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
+
+
+    #NOT DONE YET AND NOT WELL TESTED YET 5-8-2025 4:21 AM MST
+
+    #possible bug found: no access to old values or not storing the old values...
+    #if we are not storing the old values, then when we try to run update, we do not really
+    #have access to what we need especially when we change everything.
+    #
+    #for example: assume a person has an ID, a first name, and a last name
+    #let us assume a major problem occured or that this person committed something illegal
+    #so they got a new ID number, a new first name, and a new last name
+    #
+    #but the DB still has all of the old information in there.
+    #if the class does not store the old values somehow, we cannot get access to it to change it.
+    #
+    #so either we store a previous version of the values...
+    #or we insert or update the new values immediately when set is called in the column class.
+    #the only problem with the other is what happens if the attribute does not exist?
+    #what happens if it does, but was added on setup not when a value was set?
+    #it seems storing a previous version of the values is a better solution.
+    #
+    #currently implemented solution is to store the old values (last synced values)
+    #but there is an issue of this not being accurate on start up...
+    #due to syncing not set to automatically run yet.
+
+    #this either saves or updates the DB
+    #this method determines which of two SQL commands to execute here
+    #INSERT INTO tname (colnamea, colnameb, ...) VALUES (?, ...);
+    #OR
+    #UPDATE tname SET colname = ?, ... WHERE pkycolname = ?, ...
+    #oldvalues for the primary key cols are used to look up the row in the DB
+    #which are pulled from the last synced values 
+    #the values before that are the new values.
+    #Of course a values tuple (generated by the program) will be passed in along with the command.
+    #in order to decide what to do, the program needs the last synced values for each object to
+    #be stored in each object (results in duplicate data, but updates are faster and more convenient)
+    #
+    #DEPENDS ON THE SQL VARIANT.
+    def save(self, runbkbfr=False, runbkaftr=False):
+        #if the table does not exist, create it first.
+        #if the table exists do nothing.
+        #then proceed to save the data.
+        #we may need to add new data onto the database, or update data if it is on the DB.
+        #depending on what we need to do, the commands could change.
+        #may want to backup the OLD data before we do this.
+        #may want to run a backup of NEW data after we do this.
+        print("\nBEGIN SAVE():\n");
+        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");        
+
+        fkydataerrmsg = "the foreign key data is wrong, the columns were found, ";
+        fkydataerrmsg += "but no object was found with the given values!";
+        for mc in type(self).getMyCols():
+            mc.primaryKeyInformationMustBeValid(type(self));
+            mc.foreignKeyInformationMustBeValid(fcobj=self, usenoclassobj=False);
+            if (mc.isForeignKey()):
+               if (mc.doesForeignKeyValuesExistOnObjectsList(self)): pass;
+               else: raise ValueError(fkydataerrmsg);
+
+        print(f"\nINSIDE SAVE() for class {type(self).__name__}:");
+
+        #may want to run a backup of the OLD DATA ON THE DB here
+        if (runbkbfr): type(self).backupDB();
+
+        texists = type(self).tableExists();
+        if (texists): pass;
+        else: type(self).createTable();
+            
+
+        #need to determine the proper SQL command to execute here...
+        #since the object contains the new data already, in order to update it:
+        #we need to know a value of the data or have a way to get the row specifically uniquely.
+        #maybe by an ID.
+
+        #if the table exists, then we could do either update or add new data to it
+        #but if the table did not exist until create was called in this method,
+        #then adding new data only.
+
+        #if the lastsyncedvalsdict exists and is not None, then we have already put data on the DB
+        #for this object, so updating it not saving it.
+
+        prevvdict = self.getLastSyncedValsDict();
+        print(f"lastsyncedvalsdict = {prevvdict}");
+
+        pkycolnms = type(self).getMyColNames(type(self).getMyPrimaryKeyCols());
+        print(f"pkycolnms = {pkycolnms}");
+
+        useupdate = ((not (myvalidator.isvaremptyornull(prevvdict))) if (texists) else False);
+        
+        if (useupdate):
+            #get the data uniquely then generate the update DB command
+            #UPDATE tablename SET colnamea = newvalue, colnameb = newvalue, ...
+            # WHERE colnamea = oldvalue; (or just use the primary key to access it).
+            
+            print("\nwe are updating the data here now!\n");
+
+            simpvdict = self.genSimpleValsDict(mycols=None);
+            print(f"simpvdict = {simpvdict}\n");
+
+            #the col names will be the same...
+            diffkys = [mky for mky in list(simpvdict.keys()) if not (simpvdict[mky] == prevvdict[mky])];
+            mcnms = [mky[0:mky.rindex("_value")] for mky in diffkys];
+            #print(f"diffkys = {diffkys}");
+            #print(f"mcnms = {mcnms}");
+
+            #if we are using the primary key arbitrarily, what should we use when one or all of the
+            #primary key columns are being updated?
+            #A: We should use a UNIQUE key col assuming it is not being updated.
+            #What if all unique column data is being updated including the primary key?
+            #if we do not have access to what the old value was: we are screwed.
+            #if we do just use the old primary key or one unique key col to access the data
+            #if we have to provide multiple values we can.
+
+            wrval = myvalidator.genColNameEqualsValString(pkycolnms, nvals=None);#primarykey col = ?;
+            #print(f"wrval = {wrval}");
+            
+            #if the primary key is composed of multiple columns then all of their values will need
+            #to be pulled here in order.
+            upqry = myvalidator.genSQLUpdate(type(self).getTableName(), mcnms, wrval, nvals=None);
+            print(f"\nUPDATE QUERY upqry = {upqry}");
+
+            #if the pkycolnames are not included in the colnames that got modified, then add them here
+            tmpvalslist = self.genValsListForColNames(mcnms);
+            oldpkyvalslist = [prevvdict[pkclnm + "_value"] for pkclnm in pkycolnms];
+            mvals = tuple(myvalidator.combineTwoLists(tmpvalslist, oldpkyvalslist));
+            #print(f"tmpvalslist = {tmpvalslist}");
+            #print(f"oldpkyvalslist = {oldpkyvalslist}");
+            print(f"mvals = {mvals}\n");
+
+            res = None;
+            try:
+                #just if the update succeeded or not!
+                res = mybase.getMyCursor().execute(upqry, mvals).fetchone();
+                mybase.getMyConn().commit();
+            except Exception as ex:
+                print("----------------------------------------------------------------------------");
+                print("ERROR: UPDATE FAILED!\n");
+                type(self).printUniqueForeignKeyWarning(pstack=False);
+                raise ex;
+            
+            print("\ndata successfully updated on the DB!\n");
+
+            print(f"simpvdict = {simpvdict}");
+            self.setLastSyncedValsDict(simpvdict);
+        else:
+            #we are putting the data on the DB for the first time generate the INSERT INTO command
+            #INSERT INTO tablename (colnamea, colnameb, ...) VALUES (values_tuple);
+            #however when calling the cursor method we need ?s in for the values and a values tuple
+            #to be past in. The number of ?s will match the number of colnames given...
+            
+            print("\nputting the data on the table for the first time!\n");
+            
+            #if the user provided the col names in the constructor, we need it
+            #if the user set column values after, and not a value like None, but before calling save, 
+            #we need it
+
+            dbcolnames = self.getColNamesWithDBValsUsed();
+
+            #print(f"userpcolnames = {self.getUserProvidedColNames()}");#list for sure includes these
+            #print(f"dftcolnames = {self.getColNamesWithDefaultsUsed()}");#list may include these or not
+            print(f"dbcolnames = {dbcolnames}");#list for sure excludes these
+
+            allcolnames = type(self).getMyColNames();
+            mcnms = [item for item in allcolnames if item not in dbcolnames];
+            print(f"allcolnames = {allcolnames}");
+            print(f"colnames to be saved = mcnms = {mcnms}");
+            
+            nwvqry = myvalidator.genSQLInsertInto(type(self).getTableName(), mcnms, vals=None);
+            print(f"\nSAVE QUERY nwvqry = {nwvqry}");
+
+            mvals = self.genValsTupleForColNames(mcnms);
+            print(f"mvals = {mvals}\n");
+
+            res = None;
+            try:
+                #just if the save succeeded or not!
+                res = mybase.getMyCursor().execute(nwvqry, mvals).fetchone();
+                mybase.getMyConn().commit();
+            except Exception as ex:
+                print("----------------------------------------------------------------------------");
+                print("ERROR: SAVE FAILED!\n");
+                type(self).printUniqueForeignKeyWarning(pstack=False);
+                raise ex;
+
+            print("\nthe new data was successfully added onto the DB!\n");
+
+            myores = type(self).getLastItemOnTable();
+            print(f"myores = {myores}");
+
+            #returns list of items in the order in which the colums were created in...
+            #the list also has the order in which the items were created in
+            #unless the query is different
+
+            finitem = myores[len(myores) - 1];
+            #cols are in allcols order...
+            finitemdict = {};
+            for n in range(len(finitem)):
+                clnm = allcolnames[n];
+                finitemdict[clnm + "_value"] = finitem[n];
+            print(f"finitemdict = {finitemdict}");
+
+            #need to get the values for the columns that were not passed in and set those
+            for clnm in allcolnames:
+                if (clnm in dbcolnames):
+                    self.setValueForCol(clnm, finitemdict[clnm + "_value"], mycolobj=None);
+
+            print("\ndata successfully added onto the DB and new object values were set!\n");
+
+            #create a last synced vals dict...
+            #add onto previous vals on DB or the last synced vals
+            #the values are from the the get it...
+            #and if the result provided values they should be set here and included in this.
+            mdict = self.genSimpleValsDict(mycols=None);
+            print(f"mdict = {mdict}");
+            self.setLastSyncedValsDict(mdict);
+
+        #may want to run a backup of the NEW DATA ON THE DB here
+        if (runbkaftr): type(self).backupDB();
+
+        print("\nDONE WITH THE SAVE() NOW!\n");
+        return True;
+
+
     #BACKUP AND RESTORE METHODS NOT DONE YET 5-25-2025 12:04 AM MST
     
+    #BEGIN BACKUP METHODS HERE
+    
+    @classmethod
+    def genSQLFileLines(cls, mtexistsdata, ctblstmnts, mdataforalltbls):
+        mtblclses = cls.getTableClasses(ftchnow=False);
+        myvalidator.twoListsMustBeTheSameSize(mtexistsdata, mtblclses, "mtexistsdata", "mtblclses");
+        myvalidator.twoListsMustBeTheSameSize(ctblstmnts, mtblclses, "ctblstmnts", "mtblclses");
+        myvalidator.twoListsMustBeTheSameSize(mdataforalltbls, mtblclses,
+                                              "mdataforalltbls", "mtblclses");
+        mysqlfilelines = [mclsref.genSQLDropTableFromClass(onlyifnot=True) for mclsref in mtblclses];
+        for n in range(len(mtblclses)):
+            #create table if exists else do nothing, then generate the statements to insert the data.
+            mclsref = mtblclses[n];
+            if (mtexistsdata[n]):
+                mysqlfilelines.append(ctblstmnts[n]);
+                #take the data then generate the insert into table statements here...
+                for item in mdataforalltbls[n]:
+                    nwvqry = mclsref.genSQLInsertIntoFromRef(vals=item);
+                    mysqlfilelines.append(nwvqry);
+        return mysqlfilelines;
+    @classmethod
+    def genSQLFileFromTExistsCTAndDataObj(cls, mdataobj):
+        myvalidator.objvarmusthavethesekeysonit(mdataobj, ["tsexists", "ctbls", "dataftbles"],
+                                                varnm="mdataobj");
+        mtexistsdata = mdataobj["tsexists"];
+        ctblstmnts = mdataobj["ctbls"];
+        mdataforalltbls = mdataobj["dataftbles"];
+        return cls.genSQLFileLines(mtexistsdata, ctblstmnts, mdataforalltbls);
+    @classmethod
+    def genSQLFileLinesFromTExistsCTAndDataForTFromObjFromClses(cls, mclses):
+        mdatobj = cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mclses);
+        return cls.genSQLFileFromTExistsCTAndDataObj(mdatobj);
+    @classmethod
+    def genSQLFileLinesFromTExistsCTAndDataForTFromObjAfterClasses(cls, ftchnow=False):
+        mtclses = cls.getTableClasses(ftchnow=ftchnow);
+        return cls.genSQLFileLinesFromTExistsCTAndDataForTFromObjFromClses(mtclses);
+
+    @classmethod
+    def genSQLFileLinesFromScriptFileLines(cls, scrptflines):
+        #qline = "mqries = " + str(msqlines) + ";";
+        #nxtline = "for qry in mqries:";
+        #         01234567890
+        #https://stackoverflow.com/questions/8494514/converting-string-to-tuple
+        #from ast import literal_eval;#this is a possible security problem.
+        
+        #si = 1;
+        ei = -1;
+        for n in reversed(range(len(scrptflines))):
+            #print(f"cscrptfline = {scrptflines[n]}");
+            if ("for qry in mqries:" in scrptflines[n]):
+                ei = n;
+                break;
+        #print(f"ei = {ei}");
+        myvalidator.valueMustBeInRange(ei, 2, len(scrptflines) - 4, True, True, "ei");
+        #mstr = scrptflines[1][9:len(scrptflines[1]) - 1];
+        #print(f"mstr = {mstr}");
+        mlist = [(scrptflines[i][11:len(scrptflines[i]) - 3] if (i + 1 == ei) else
+                  scrptflines[i][11:len(scrptflines[i]) - 2])
+                 for i in range(len(scrptflines)) if (0 < i and i < ei)];
+        #print(mlist);
+        return mlist;
+
+
+    #depends on the config file and what the DB variable name is called
+    @classmethod
+    def genpscrptfromsqlines(cls, msqlines):
+        #generate the python script file lines here...
+        #we need to be able to call our methods to add the data.
+        #do we want to do this via objects or directly?
+        #the objects currently exist in this program...
+        #so this may be a problem when generating the new script.
+        #keep in mind the new script may be executed on a completely different machine
+        #after this program has closed and the objects probably will not be in memory.
+        #?;
+        #we want to drop all of the tables
+        #we can use the command or current classes
+        #dropTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False)
+        #(above depends on the class being the same and that the table names are the same)
+        #or we can write one that does not...
+        #or we can store the sql queries in it and just run all of the queries...
+        #take the above...
+        #copy the array into the file...
+        #need to import the CURSOR and CONN from the config or init...
+        myvalidator.varmustnotbeempty(msqlines, "msqlines");
+        mbfnm = mybase.getMyDBConfigFileName();
+        myvalidator.varmustnotbeempty(mbfnm, "mbfnm");
+        dbrefnm = mybase.getMyDB().getConfigNamesForValType(MyDB)[0];
+
+        #use the config file to get the attribute name that is the instance of MyDB class.
+        #when we have that attribute name, we can proceed.
+
+        #iline = "from init import CURSOR, CONN;";
+        ilinea = "from " + mbfnm + " import " + dbrefnm + ";";
+        ilineb = "CURSOR = " + dbrefnm + ".getCursor();";
+        ilinec = "CONN = " + dbrefnm + ".getConn();";
+        qline = "mqries = " + str(msqlines) + ";";
+        nxtline = "for qry in mqries:";
+        bnxtline = "    CURSOR.execute(qry);";#\t instead of 4 spaces on these lines
+        cnxtline = "    CONN.commit();";#\t instead of 4 spaces on these lines
+        fline = "print('DB RESTORED SUCCESSFULLY!');"
+        
+        #have a leveling algorithmn go over the qline...
+        #enmbasestr = "ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', ";
+        #enmodptstr = "'something else, other', 'last'";
+        #finenmstr = enmbasestr + "'mychar\\\'s poses)sive', " + enmodptstr;
+        #oenumpstr = enmbasestr + "'mychar\'s poses)sive', " + enmodptstr + ")";
+        #myindxstr = "CONSTRAINT individualcoliduniqueconstraint";
+        #tmpindx = qline.index(myindxstr);
+        #tmpqline = qline[0:tmpindx] + oenumpstr + ", " + qline[tmpindx:];
+        #print(myvalidator.getLevelsForValStr(oenumpstr));
+        #print(myvalidator.getLevelsForValStr(qline));
+        #print(myvalidator.oLevelsAlgorithm(qline));
+        #print(myvalidator.oLevelsAlgorithm(tmpqline));
+
+        #if is quote and level is 2 and prev level is 3
+        #if next character is a comma insert the newline here...
+        mlvlsobj = myvalidator.oLevelsAlgorithm(qline);
+        #print(mlvlsobj);
+
+        cmais = [];
+        for i in range(len(mlvlsobj['finlvs'])):
+            clvl = mlvlsobj['finlvs'][i];
+            mc = mlvlsobj['val'][i];
+            plvl = (1 if (i == 0) else mlvlsobj['finlvs'][i - 1]);
+            if (clvl == 2 and plvl == 3):
+                if (i + 1 < len(mlvlsobj['finlvs'])):
+                    nxtmc = mlvlsobj['val'][i + 1];
+                    if (nxtmc == ','): cmais.append(i + 2);#i+2 where we want to put the newline
+        tmparr = myvalidator.mysplitWithLen(qline, cmais, 1, offset=0);
+        #nwlinestr = myvalidator.myjoin("\n", tmparr);
+        #print(f"nwlinestr = {nwlinestr}");
+
+        #mflines = [iline, qline, nxtline, bnxtline, cnxtline, fline];
+        mflines = [ilinea, ilineb, ilinec];
+        for n in range(len(tmparr)):
+            cline = tmparr[n];
+            fincline = ("          " + cline if (0 < n) else "" + cline);
+            mflines.append(fincline);
+        mflines.append(nxtline);
+        mflines.append(bnxtline);
+        mflines.append(cnxtline);
+        mflines.append(fline);
+        return mflines;
+
+
+    @classmethod
+    def backupDB(cls):
+        #the backup entails everything that is on the DB...
+        #may need a new location set...
+        #we want to create a list of the SQL commands run
+        #we want all of the data on the DB...
+        #we also need to know the sequence of the backups like a date and time stamp...
+        #
+        #maybe what triggered it? User, or adding, removeing or changing a constraint,
+        #or adding, deleting, or changing column names or other column properties,
+        #or saving, updating data, or deleting data (row or rows),
+        #or deleting, adding, or changing tables (like the name, constraints)
+        #
+        #USER, constraint, table, data
+        #
+        #what if there are multiple differences? like data, constraints, tables
+        #(in this case, it would have been triggered by the USER)
+        #adding and dropping contsraints after the table exists
+        #causes a problem for saving the data later on (needs backed up immediately).
+        #
+        #most changes you make are readily apparent execpt one: renaming of existing tables or cols.
+        #since the data only file will include the classname and the tablename,
+        #this will be apparent there that is unless you changed the class name too.
+        #
+        #if you did not change the class name, but changed the table name,
+        #you can tell in the file that you just changed the table name
+        #
+        #if you changed both the class name and the table name, among other changes,
+        #then it will look like an entirely different table (when comparing these, so be careful).
+        #
+        #we need to know where to save the different types of files.
+        #
+        #we need to make the following files:
+        #-a python script to execute
+        #-an SQL file of commands to execute
+        #-a data only file
+        #
+        #we need to select all from all tables that this program knows of...
+        mtblclses = cls.getTableClasses(ftchnow=False);
+        mdatobj = cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mtblclses);
+        mtexistsdata = mdatobj["tsexists"];
+        ctblstmnts = mdatobj["ctbls"];
+        mdataforalltbls = mdatobj["dataftbles"];
+        
+        #print the data and other results here...
+        datflines = [];
+        for n in range(len(mtblclses)):
+            mclsref = mtblclses[n];
+            clsexiststr = "class " + mclsref.__name__ + " ";
+            clsexiststr += ("EXISTS" if (mtexistsdata[n]) else "DOES NOT EXIST");
+            clsexiststr += " with tablename: " + mclsref.getTableName();
+            clsexiststr += " and has colnames: ";
+            datflines.append(clsexiststr);
+            clnmsstr = str(mclsref.getMyColNames());
+            datflines.append(clnmsstr);
+            ctranstr = "and the create table statement is:";
+            datflines.append(ctranstr);
+            datflines.append(ctblstmnts[n]);
+            dattranstr = "and the data: [";
+            if (myvalidator.isvaremptyornull(mdataforalltbls[n])): dattranstr += "]"; 
+            datflines.append(dattranstr);
+            print("\n" + clsexiststr + "\n" + clnmsstr + "\n" + ctranstr + "\n\n" + ctblstmnts[n]);
+            print("\n\n" + dattranstr);
+            if (myvalidator.isvaremptyornull(mdataforalltbls[n])): pass;
+            else:
+                for item in mdataforalltbls[n]:
+                    datflines.append(str(item));
+                    print(item);
+                datflines.append("]");
+                print("]");
+        #print("\nPRINTING THE DATA ONLY FILE LINES HERE:");
+        #for line in datflines: print(line);
+
+        print("\nBEGIN GENERATING THE SQL COMMAND FILE ONLY HERE:");
+
+        mysqlfilelines = cls.genSQLFileLines(mtexistsdata, ctblstmnts, mdataforalltbls);
+        for line in mysqlfilelines: print(line);
+        
+        #generate the python script file here
+        mflines = cls.genpscrptfromsqlines(mysqlfilelines);
+
+        print("\nBEGIN GENERATING THE PYTHON FILE ONLY HERE:");
+        for line in mflines: print(line);
+
+        #actually write the stuff here...
+        #we need to know what to call the new files and where to save them...
+        #note opening in write mode if the file does not exist will create it
+        #modes are read, write, append
+        cls.blockifmyfileexistswritelines("bkdatonly.txt", datflines, dscptrmsg="data only");
+        cls.blockifmyfileexistswritelines("bkcmdsonly.sql", mysqlfilelines, dscptrmsg="sql");
+        cls.blockifmyfileexistswritelines("bkscrpt.py", mflines, dscptrmsg="script");
+        print("SUCCESSFULLY CREATED THE BACKUP FILES AND FINISHED THE BACKUP!");
+        #raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
+        return True;
+    
+
+    #BEGIN RESTORE DATA TO THE DATABASE METHODS HERE NOT DONE YET 5-25-2025 12:04 AM MST
+
     #NEED A METHOD TO ATTEMPT TO ADD DATA BACK AFTER A NEW COL IS ADDED
     # OR A NEW CONSTRAINT OR A NEW TABLE NAME, ETC.
 
@@ -2217,656 +2873,9 @@ class mybase:
         return True;
 
 
-    @classmethod
-    def genSQLFileLines(cls, mtexistsdata, ctblstmnts, mdataforalltbls):
-        mtblclses = cls.getTableClasses(ftchnow=False);
-        myvalidator.twoListsMustBeTheSameSize(mtexistsdata, mtblclses, "mtexistsdata", "mtblclses");
-        myvalidator.twoListsMustBeTheSameSize(ctblstmnts, mtblclses, "ctblstmnts", "mtblclses");
-        myvalidator.twoListsMustBeTheSameSize(mdataforalltbls, mtblclses,
-                                              "mdataforalltbls", "mtblclses");
-        mysqlfilelines = [mclsref.genSQLDropTableFromClass(onlyifnot=True) for mclsref in mtblclses];
-        for n in range(len(mtblclses)):
-            #create table if exists else do nothing, then generate the statements to insert the data.
-            mclsref = mtblclses[n];
-            if (mtexistsdata[n]):# or (mclsref == Signup) bug here 5-21-2025 4 AM MST
-                mysqlfilelines.append(ctblstmnts[n]);
-                #take the data then generate the insert into table statements here...
-                for item in mdataforalltbls[n]:
-                    nwvqry = mclsref.genSQLInsertIntoFromRef(vals=item);
-                    mysqlfilelines.append(nwvqry);
-        return mysqlfilelines;
-    @classmethod
-    def genSQLFileFromTExistsCTAndDataObj(cls, mdataobj):
-        myvalidator.objvarmusthavethesekeysonit(mdataobj, ["tsexists", "ctbls", "dataftbles"],
-                                                varnm="mdataobj");
-        mtexistsdata = mdataobj["tsexists"];
-        ctblstmnts = mdataobj["ctbls"];
-        mdataforalltbls = mdataobj["dataftbles"];
-        return cls.genSQLFileLines(mtexistsdata, ctblstmnts, mdataforalltbls);
-    @classmethod
-    def genSQLFileLinesFromTExistsCTAndDataForTFromObjFromClses(cls, mclses):
-        mdatobj = cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mclses);
-        return cls.genSQLFileFromTExistsCTAndDataObj(mdatobj);
-    @classmethod
-    def genSQLFileLinesFromTExistsCTAndDataForTFromObjAfterClasses(cls, ftchnow=False):
-        mtclses = cls.getTableClasses(ftchnow=ftchnow);
-        return cls.genSQLFileLinesFromTExistsCTAndDataForTFromObjFromClses(mtclses);
-
-    @classmethod
-    def genSQLFileLinesFromScriptFileLines(cls, scrptflines):
-        #qline = "mqries = " + str(msqlines) + ";";
-        #nxtline = "for qry in mqries:";
-        #         01234567890
-        #https://stackoverflow.com/questions/8494514/converting-string-to-tuple
-        #from ast import literal_eval;#this is a possible security problem.
-        
-        #si = 1;
-        ei = -1;
-        for n in reversed(range(len(scrptflines))):
-            #print(f"cscrptfline = {scrptflines[n]}");
-            if ("for qry in mqries:" in scrptflines[n]):
-                ei = n;
-                break;
-        #print(f"ei = {ei}");
-        myvalidator.valueMustBeInRange(ei, 2, len(scrptflines) - 4, True, True, "ei");
-        #mstr = scrptflines[1][9:len(scrptflines[1]) - 1];
-        #print(f"mstr = {mstr}");
-        mlist = [(scrptflines[i][11:len(scrptflines[i]) - 3] if (i + 1 == ei) else
-                  scrptflines[i][11:len(scrptflines[i]) - 2])
-                 for i in range(len(scrptflines)) if (0 < i and i < ei)];
-        #print(mlist);
-        return mlist;
-
-
-    #depends on the config file and what the DB variable name is called
-    @classmethod
-    def genpscrptfromsqlines(cls, msqlines):
-        #generate the python script file lines here...
-        #we need to be able to call our methods to add the data.
-        #do we want to do this via objects or directly?
-        #the objects currently exist in this program...
-        #so this may be a problem when generating the new script.
-        #keep in mind the new script may be executed on a completely different machine
-        #after this program has closed and the objects probably will not be in memory.
-        #?;
-        #we want to drop all of the tables
-        #we can use the command or current classes
-        #dropTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False)
-        #(above depends on the class being the same and that the table names are the same)
-        #or we can write one that does not...
-        #or we can store the sql queries in it and just run all of the queries...
-        #take the above...
-        #copy the array into the file...
-        #need to import the CURSOR and CONN from the config or init...
-        myvalidator.varmustnotbeempty(msqlines, "msqlines");
-        mbfnm = mybase.getMyDBConfigFileName();
-        myvalidator.varmustnotbeempty(mbfnm, "mbfnm");
-        dbrefnm = mybase.getMyDB().getConfigNamesForValType(MyDB)[0];
-
-        #use the config file to get the attribute name that is the instance of MyDB class.
-        #when we have that attribute name, we can proceed.
-
-        #iline = "from init import CURSOR, CONN;";
-        ilinea = "from " + mbfnm + " import " + dbrefnm + ";";
-        ilineb = "CURSOR = " + dbrefnm + ".getCursor();";
-        ilinec = "CONN = " + dbrefnm + ".getConn();";
-        qline = "mqries = " + str(msqlines) + ";";
-        nxtline = "for qry in mqries:";
-        bnxtline = "    CURSOR.execute(qry);";#\t instead of 4 spaces on these lines
-        cnxtline = "    CONN.commit();";#\t instead of 4 spaces on these lines
-        fline = "print('DB RESTORED SUCCESSFULLY!');"
-        
-        #have a leveling algorithmn go over the qline...
-        #enmbasestr = "ENUM('something, other', 'some ofht', 'this, some, other, else', 'else', ";
-        #enmodptstr = "'something else, other', 'last'";
-        #finenmstr = enmbasestr + "'mychar\\\'s poses)sive', " + enmodptstr;
-        #oenumpstr = enmbasestr + "'mychar\'s poses)sive', " + enmodptstr + ")";
-        #myindxstr = "CONSTRAINT individualcoliduniqueconstraint";
-        #tmpindx = qline.index(myindxstr);
-        #tmpqline = qline[0:tmpindx] + oenumpstr + ", " + qline[tmpindx:];
-        #print(myvalidator.getLevelsForValStr(oenumpstr));
-        #print(myvalidator.getLevelsForValStr(qline));
-        #print(myvalidator.oLevelsAlgorithm(qline));
-        #print(myvalidator.oLevelsAlgorithm(tmpqline));
-
-        #if is quote and level is 2 and prev level is 3
-        #if next character is a comma insert the newline here...
-        mlvlsobj = myvalidator.oLevelsAlgorithm(qline);
-        #print(mlvlsobj);
-
-        cmais = [];
-        for i in range(len(mlvlsobj['finlvs'])):
-            clvl = mlvlsobj['finlvs'][i];
-            mc = mlvlsobj['val'][i];
-            plvl = (1 if (i == 0) else mlvlsobj['finlvs'][i - 1]);
-            if (clvl == 2 and plvl == 3):
-                if (i + 1 < len(mlvlsobj['finlvs'])):
-                    nxtmc = mlvlsobj['val'][i + 1];
-                    if (nxtmc == ','): cmais.append(i + 2);#i+2 where we want to put the newline
-        tmparr = myvalidator.mysplitWithLen(qline, cmais, 1, offset=0);
-        #nwlinestr = myvalidator.myjoin("\n", tmparr);
-        #print(f"nwlinestr = {nwlinestr}");
-
-        #mflines = [iline, qline, nxtline, bnxtline, cnxtline, fline];
-        mflines = [ilinea, ilineb, ilinec];
-        for n in range(len(tmparr)):
-            cline = tmparr[n];
-            fincline = ("          " + cline if (0 < n) else "" + cline);
-            mflines.append(fincline);
-        mflines.append(nxtline);
-        mflines.append(bnxtline);
-        mflines.append(cnxtline);
-        mflines.append(fline);
-        return mflines;
-
-
-    @classmethod
-    def backupDB(cls):
-        #the backup entails everything that is on the DB...
-        #may need a new location set...
-        #we want to create a list of the SQL commands run
-        #we want all of the data on the DB...
-        #we also need to know the sequence of the backups like a date and time stamp...
-        #
-        #maybe what triggered it? User, or adding, removeing or changing a constraint,
-        #or adding, deleting, or changing column names or other column properties,
-        #or saving, updating data, or deleting data (row or rows),
-        #or deleting, adding, or changing tables (like the name, constraints)
-        #
-        #USER, constraint, table, data
-        #
-        #what if there are multiple differences? like data, constraints, tables
-        #(in this case, it would have been triggered by the USER)
-        #adding and dropping contsraints after the table exists
-        #causes a problem for saving the data later on (needs backed up immediately).
-        #
-        #most changes you make are readily apparent execpt one: renaming of existing tables or cols.
-        #since the data only file will include the classname and the tablename,
-        #this will be apparent there that is unless you changed the class name too.
-        #
-        #if you did not change the class name, but changed the table name,
-        #you can tell in the file that you just changed the table name
-        #
-        #if you changed both the class name and the table name, among other changes,
-        #then it will look like an entirely different table (when comparing these, so be careful).
-        #
-        #we need to know where to save the different types of files.
-        #
-        #we need to make the following files:
-        #-a python script to execute
-        #-an SQL file of commands to execute
-        #-a data only file
-        #
-        #we need to select all from all tables that this program knows of...
-        mtblclses = cls.getTableClasses(ftchnow=False);
-        mdatobj = cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mtblclses);
-        mtexistsdata = mdatobj["tsexists"];
-        ctblstmnts = mdatobj["ctbls"];
-        mdataforalltbls = mdatobj["dataftbles"];
-        
-        #print the data and other results here...
-        datflines = [];
-        for n in range(len(mtblclses)):
-            mclsref = mtblclses[n];
-            clsexiststr = "class " + mclsref.__name__ + " ";
-            clsexiststr += ("EXISTS" if (mtexistsdata[n]) else "DOES NOT EXIST");
-            clsexiststr += " with tablename: " + mclsref.getTableName();
-            clsexiststr += " and has colnames: ";
-            datflines.append(clsexiststr);
-            clnmsstr = str(mclsref.getMyColNames());
-            datflines.append(clnmsstr);
-            ctranstr = "and the create table statement is:";
-            datflines.append(ctranstr);
-            datflines.append(ctblstmnts[n]);
-            dattranstr = "and the data: [";
-            if (myvalidator.isvaremptyornull(mdataforalltbls[n])): dattranstr += "]"; 
-            datflines.append(dattranstr);
-            print("\n" + clsexiststr + "\n" + clnmsstr + "\n" + ctranstr + "\n\n" + ctblstmnts[n]);
-            print("\n\n" + dattranstr);
-            if (myvalidator.isvaremptyornull(mdataforalltbls[n])): pass;
-            else:
-                for item in mdataforalltbls[n]:
-                    datflines.append(str(item));
-                    print(item);
-                datflines.append("]");
-                print("]");
-        #print("\nPRINTING THE DATA ONLY FILE LINES HERE:");
-        #for line in datflines: print(line);
-
-        print("\nBEGIN GENERATING THE SQL COMMAND FILE ONLY HERE:");
-
-        mysqlfilelines = cls.genSQLFileLines(mtexistsdata, ctblstmnts, mdataforalltbls);
-        for line in mysqlfilelines: print(line);
-        
-        #generate the python script file here
-        mflines = cls.genpscrptfromsqlines(mysqlfilelines);
-
-        print("\nBEGIN GENERATING THE PYTHON FILE ONLY HERE:");
-        for line in mflines: print(line);
-
-        #actually write the stuff here...
-        #we need to know what to call the new files and where to save them...
-        #note opening in write mode if the file does not exist will create it
-        #modes are read, write, append
-        cls.blockifmyfileexistswritelines("bkdatonly.txt", datflines, dscptrmsg="data only");
-        cls.blockifmyfileexistswritelines("bkcmdsonly.sql", mysqlfilelines, dscptrmsg="sql");
-        cls.blockifmyfileexistswritelines("bkscrpt.py", mflines, dscptrmsg="script");
-        print("SUCCESSFULLY CREATED THE BACKUP FILES AND FINISHED THE BACKUP!");
-        #raise ValueError("NEED TO DO THE BACKUP HERE, BUT NOT DONE YET 5-8-2025 12:04 AM MST!");
-        return True;
-    
-
     #DONE WITH BACKING UP AND RESTORING THE DB METHODS.
 
-    #BEGIN DROP TABLE AND CLEARING DATA METHODS SECTION HERE.
-
-    @classmethod
-    def genSQLDropTableFromClass(cls, onlyifnot=False):
-        return myvalidator.genSQLDropTable(cls.getTableName(), onlyifnot=onlyifnot);
-
-    @classmethod
-    def dropTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
-        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
-        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
-        if (runbkbfr): cls.backupDB();
-
-        tnmonclsnmstr = "" + cls.getTableAndClassNameString();
-        qry = cls.genSQLDropTableFromClass(onlyifnot=onlyifnot);
-        print(f"\nDROP TABLE qry = {qry}\n");
-        
-        try:
-            res = mybase.getMyCursor().execute(qry);
-            mybase.getMyConn().commit();
-        except Exception as ex:
-            #print(f"\nDROP TABLE qry = {qry}\n");
-            print("either " + tnmonclsnmstr + " already does not exist, or problem " +
-                  "connecting with the DB!");
-            traceback.print_exc();
-
-        print("deleted " + tnmonclsnmstr + " on the DB successfully!\n");
-
-        if (runbkaftr): cls.backupDB();
-        return True;
     
-    @classmethod
-    def deleteTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
-        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
-    @classmethod
-    def delTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
-        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
-    @classmethod
-    def removeTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
-        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
-    @classmethod
-    def remTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
-        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
-    
-
-    #WE CANNOT ADD IF EXISTS TO THE TRUNCATE NOR TO THE DELETE COMMANDS.
-    @classmethod
-    def genSQLTruncateTableFromRef(cls): return myvalidator.genSQLTruncateTable(cls.getTableName());
-    @classmethod
-    def genSQLDeleteFromRef(cls, colnms=None):
-        finclnms = (cls.getMyColNames(cls.getMyPrimaryKeyCols())
-                    if (myvalidator.isvaremptyornull(colnms)) else ["" + item for item in colnms]);
-        return myvalidator.genSQLDelete(cls.getTableName(), finclnms);
-    @classmethod
-    def genSQLDeleteNoWhereFromRef(cls): return myvalidator.genSQLDeleteNoWhere(cls.getTableName());
-    @classmethod
-    def genSQLClearTableFromRef(cls): return cls.genSQLDeleteNoWhereFromRef();
-
-    #SQLite does support the DELETE command and if no where is provided, then it acts as a truncate.
-    #THE DELETE command is implemented on most DBs.
-    @classmethod
-    def truncateTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
-        myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");
-        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
-        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
-        tnmandclsnmstr = "" + cls.getTableAndClassNameString();
-        errmsg = tnmandclsnmstr + " must exist in order for it to be truncated or cleared.";
-        if (cls.tableExists()):
-            if (runbkbfr): cls.backupDB();
-
-            truncqry = cls.genSQLDeleteNoWhereFromRef() + ";";
-            print("\nbegin truncating the data on " + tnmandclsnmstr + " on the DB now!");
-            print(f"TRUNCATE TABLE truncqry = {truncqry}");
-
-            res = mybase.getMyCursor().execute(truncqry);
-            mybase.getMyConn().commit();
-
-            print("truncated the data on " + tnmandclsnmstr + " on the DB successfully!\n");
-
-            if (runbkaftr): cls.backupDB();
-        else: 
-            if (onlyifnot): pass;
-            else: raise ValueError(errmsg);
-        return True;
-    @classmethod
-    def clearTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
-        return cls.truncateTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
-
-    @classmethod
-    def clearThenDropTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
-        cls.truncateTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=False);
-        return cls.dropTable(onlyifnot=onlyifnot, runbkbfr=False, runbkaftr=runbkaftr);
-    @classmethod
-    def clearAndDropTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
-        return cls.clearThenDropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
-
-    def deleteMyRowFromTable(self, onlyifnot=True, runbkbfr=False, runbkaftr=False):
-        myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");
-        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
-        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
-        tnmandclsnmstr = "" + type(self).getTableAndClassNameString();
-        errmsg = tnmandclsnmstr + " must exist in order for it to be removed or deleted.";
-        if (type(self).tableExists()):
-            if (runbkbfr): type(self).backupDB();
-
-            mpkycols = type(self).getMyPrimaryKeyCols();
-            mdelcrowqry = type(self).genSQLDeleteFromRef(colnms=None);
-            #pkeycola = ?, colb = ? ...
-            #need to get the values for the primary key cols only.
-            mvals = tuple(self.genValsListForColNames(type(self).getMyColNames(mpkycols)));
-        
-            print("\nbegin removing the row on " + tnmandclsnmstr + " from the DB now!");
-            print(f"DELETE ROW mdelcrowqry = {mdelcrowqry}");
-            print(f"mvals = {mvals}");
-
-            res = mybase.getMyCursor().execute(mdelcrowqry, mvals);
-            mybase.getMyConn().commit();
-
-            print("removed the data on " + tnmandclsnmstr + " from the DB successfully!\n");
-
-            if (runbkaftr): type(self).backupDB();
-        else: 
-            if (onlyifnot): pass;
-            else: raise ValueError(errmsg);
-        return True;
-    
-    @classmethod
-    def deleteARowFromTable(cls, colnms, colvals, onlyifnot=True, runbkbfr=False, runbkaftr=False):
-        myobj = cls.getObjectFromGivenKeysAndValues(cls.all, colnms, colvals);
-        myvalidator.varmustnotbenull(myobj, "myobj");
-        return myobj.deleteMyRowFromTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
-
-
-    #despite implying that it would return it returns a list from the fetchall method on the DB.
-    #if the list is empty, you still get an empty list, but no item.
-    #otherwise the DB method throws an error.
-    #however the list will have either 1 or no items on it.
-    @classmethod
-    def getFirstOrLastItemOnTable(cls, usefirst):
-        pkycolnms = cls.getMyColNames(cls.getMyPrimaryKeyCols());
-        myselqry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
-        ordrbypt = myvalidator.genOrderByOneTableOneVal(pkycolnms, cls.getTableName(),
-                                                        False, usefirst);#singleinctname, boolval
-        #srdrvals = myvalidator.genSortOrderByAscVal(len(pkycolnms), False);
-        #ordrbypt = myvalidator.genOrderBy(pkycolnms, [cls.getTableName()], False, sorder=srdrvals);
-        limpt = myvalidator.genSQLimit(1, offset=0);
-        myfinselqry = myselqry + " " + ordrbypt + " " + limpt;
-        #print(srdrvals);
-        #print(f"myselqry = {myselqry}");
-        #print(f"ordrbypt = {ordrbypt}");
-        #print(f"limpt = {limpt}");
-        print(f"SELECT QUERY myfinselqry = {myfinselqry}");
-
-        myores = mybase.getMyCursor().execute(myfinselqry).fetchall();
-        mybase.getMyConn().commit();
-        print("successfully got the item from the DB (stored in a list as the only item)!");
-        return myores;
-    @classmethod
-    def getFirstItemOnTable(cls): return cls.getFirstOrLastItemOnTable(True);
-    @classmethod
-    def getLastItemOnTable(cls): return cls.getFirstOrLastItemOnTable(False);
-
-    @classmethod
-    def getAllItemsOnTable(cls, pqry=True):
-        myvalidator.varmustbeboolean(pqry, "pqry");
-        myselqry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
-        if (pqry): print(f"SELECT QUERY myselqry = {myselqry}");
-
-        myores = mybase.getMyCursor().execute(myselqry).fetchall();
-        mybase.getMyConn().commit();
-        if (pqry): print("successfully got the items from the DB!");
-        return myores;
-
-    @classmethod
-    def printUniqueForeignKeyWarning(cls, pstack=True):
-        myfkycols = cls.getMyForeignKeyCols();
-        ufkycolnms = [fcol.getColName() for fcol in myfkycols if (fcol.getIsUnique())];
-        if (myvalidator.isvaremptyornull(ufkycolnms)): pass;
-        else:
-            print("WARNING: the following columns for the class " + cls.__name__ +
-                  f" have unique foreign keys: {ufkycolnms}");
-            print(mycol.getUniqueForeignKeyWarningMessage());
-            if (pstack):
-                traceback.print_stack();
-                print();
-            else:
-                print("NOTE: THE ABOVE WARNING MAY NOT BE RELATED TO THE ERROR! " +
-                      "CHECK THE TRACE BELOW:\n");
-
-
-    #NOT DONE YET AND NOT WELL TESTED YET 5-8-2025 4:21 AM MST
-
-    #possible bug found: no access to old values or not storing the old values...
-    #if we are not storing the old values, then when we try to run update, we do not really
-    #have access to what we need especially when we change everything.
-    #
-    #for example: assume a person has an ID, a first name, and a last name
-    #let us assume a major problem occured or that this person committed something illegal
-    #so they got a new ID number, a new first name, and a new last name
-    #
-    #but the DB still has all of the old information in there.
-    #if the class does not store the old values somehow, we cannot get access to it to change it.
-    #
-    #so either we store a previous version of the values...
-    #or we insert or update the new values immediately when set is called in the column class.
-    #the only problem with the other is what happens if the attribute does not exist?
-    #what happens if it does, but was added on setup not when a value was set?
-    #it seems storing a previous version of the values is a better solution.
-    #
-    #currently implemented solution is to store the old values (last synced values)
-    #but there is an issue of this not being accurate on start up...
-    #due to syncing not set to automatically run yet.
-
-    #this either saves or updates the DB
-    #this method determines which of two SQL commands to execute here
-    #INSERT INTO tname (colnamea, colnameb, ...) VALUES (?, ...);
-    #OR
-    #UPDATE tname SET colname = ?, ... WHERE pkycolname = ?, ...
-    #oldvalues for the primary key cols are used to look up the row in the DB
-    #which are pulled from the last synced values 
-    #the values before that are the new values.
-    #Of course a values tuple (generated by the program) will be passed in along with the command.
-    #in order to decide what to do, the program needs the last synced values for each object to
-    #be stored in each object (results in duplicate data, but updates are faster and more convenient)
-    #
-    #DEPENDS ON THE SQL VARIANT.
-    def save(self, runbkbfr=False, runbkaftr=False):
-        #if the table does not exist, create it first.
-        #if the table exists do nothing.
-        #then proceed to save the data.
-        #we may need to add new data onto the database, or update data if it is on the DB.
-        #depending on what we need to do, the commands could change.
-        #may want to backup the OLD data before we do this.
-        #may want to run a backup of NEW data after we do this.
-        print("\nBEGIN SAVE():\n");
-        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
-        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");        
-
-        fkydataerrmsg = "the foreign key data is wrong, the columns were found, ";
-        fkydataerrmsg += "but no object was found with the given values!";
-        for mc in type(self).getMyCols():
-            mc.primaryKeyInformationMustBeValid(type(self));
-            mc.foreignKeyInformationMustBeValid(fcobj=self, usenoclassobj=False);
-            if (mc.isForeignKey()):
-               if (mc.doesForeignKeyValuesExistOnObjectsList(self)): pass;
-               else: raise ValueError(fkydataerrmsg);
-
-        print(f"\nINSIDE SAVE() for class {type(self).__name__}:");
-
-        #may want to run a backup of the OLD DATA ON THE DB here
-        if (runbkbfr): type(self).backupDB();
-
-        texists = type(self).tableExists();
-        if (texists): pass;
-        else: type(self).createTable();
-            
-
-        #need to determine the proper SQL command to execute here...
-        #since the object contains the new data already, in order to update it:
-        #we need to know a value of the data or have a way to get the row specifically uniquely.
-        #maybe by an ID.
-
-        #if the table exists, then we could do either update or add new data to it
-        #but if the table did not exist until create was called in this method,
-        #then adding new data only.
-
-        #if the lastsyncedvalsdict exists and is not None, then we have already put data on the DB
-        #for this object, so updating it not saving it.
-
-        prevvdict = self.getLastSyncedValsDict();
-        print(f"lastsyncedvalsdict = {prevvdict}");
-
-        pkycolnms = type(self).getMyColNames(type(self).getMyPrimaryKeyCols());
-        print(f"pkycolnms = {pkycolnms}");
-
-        useupdate = ((not (myvalidator.isvaremptyornull(prevvdict))) if (texists) else False);
-        
-        if (useupdate):
-            #get the data uniquely then generate the update DB command
-            #UPDATE tablename SET colnamea = newvalue, colnameb = newvalue, ...
-            # WHERE colnamea = oldvalue; (or just use the primary key to access it).
-            
-            print("\nwe are updating the data here now!\n");
-
-            simpvdict = self.genSimpleValsDict(mycols=None);
-            print(f"simpvdict = {simpvdict}\n");
-
-            #the col names will be the same...
-            diffkys = [mky for mky in list(simpvdict.keys()) if not (simpvdict[mky] == prevvdict[mky])];
-            mcnms = [mky[0:mky.rindex("_value")] for mky in diffkys];
-            #print(f"diffkys = {diffkys}");
-            #print(f"mcnms = {mcnms}");
-
-            #if we are using the primary key arbitrarily, what should we use when one or all of the
-            #primary key columns are being updated?
-            #A: We should use a UNIQUE key col assuming it is not being updated.
-            #What if all unique column data is being updated including the primary key?
-            #if we do not have access to what the old value was: we are screwed.
-            #if we do just use the old primary key or one unique key col to access the data
-            #if we have to provide multiple values we can.
-
-            wrval = myvalidator.genColNameEqualsValString(pkycolnms, nvals=None);#primarykey col = ?;
-            #print(f"wrval = {wrval}");
-            
-            #if the primary key is composed of multiple columns then all of their values will need
-            #to be pulled here in order.
-            upqry = myvalidator.genSQLUpdate(type(self).getTableName(), mcnms, wrval, nvals=None);
-            print(f"\nUPDATE QUERY upqry = {upqry}");
-
-            #if the pkycolnames are not included in the colnames that got modified, then add them here
-            tmpvalslist = self.genValsListForColNames(mcnms);
-            oldpkyvalslist = [prevvdict[pkclnm + "_value"] for pkclnm in pkycolnms];
-            mvals = tuple(myvalidator.combineTwoLists(tmpvalslist, oldpkyvalslist));
-            #print(f"tmpvalslist = {tmpvalslist}");
-            #print(f"oldpkyvalslist = {oldpkyvalslist}");
-            print(f"mvals = {mvals}\n");
-
-            res = None;
-            try:
-                #just if the update succeeded or not!
-                res = mybase.getMyCursor().execute(upqry, mvals).fetchone();
-                mybase.getMyConn().commit();
-            except Exception as ex:
-                print("----------------------------------------------------------------------------");
-                print("ERROR: UPDATE FAILED!\n");
-                type(self).printUniqueForeignKeyWarning(pstack=False);
-                raise ex;
-            
-            print("\ndata successfully updated on the DB!\n");
-
-            print(f"simpvdict = {simpvdict}");
-            self.setLastSyncedValsDict(simpvdict);
-        else:
-            #we are putting the data on the DB for the first time generate the INSERT INTO command
-            #INSERT INTO tablename (colnamea, colnameb, ...) VALUES (values_tuple);
-            #however when calling the cursor method we need ?s in for the values and a values tuple
-            #to be past in. The number of ?s will match the number of colnames given...
-            
-            print("\nputting the data on the table for the first time!\n");
-            
-            #if the user provided the col names in the constructor, we need it
-            #if the user set column values after, and not a value like None, but before calling save, 
-            #we need it
-
-            dbcolnames = self.getColNamesWithDBValsUsed();
-
-            #print(f"userpcolnames = {self.getUserProvidedColNames()}");#list for sure includes these
-            #print(f"dftcolnames = {self.getColNamesWithDefaultsUsed()}");#list may include these or not
-            print(f"dbcolnames = {dbcolnames}");#list for sure excludes these
-
-            allcolnames = type(self).getMyColNames();
-            mcnms = [item for item in allcolnames if item not in dbcolnames];
-            print(f"allcolnames = {allcolnames}");
-            print(f"colnames to be saved = mcnms = {mcnms}");
-            
-            nwvqry = myvalidator.genSQLInsertInto(type(self).getTableName(), mcnms, vals=None);
-            print(f"\nSAVE QUERY nwvqry = {nwvqry}");
-
-            mvals = self.genValsTupleForColNames(mcnms);
-            print(f"mvals = {mvals}\n");
-
-            res = None;
-            try:
-                #just if the save succeeded or not!
-                res = mybase.getMyCursor().execute(nwvqry, mvals).fetchone();
-                mybase.getMyConn().commit();
-            except Exception as ex:
-                print("----------------------------------------------------------------------------");
-                print("ERROR: SAVE FAILED!\n");
-                type(self).printUniqueForeignKeyWarning(pstack=False);
-                raise ex;
-
-            print("\nthe new data was successfully added onto the DB!\n");
-
-            myores = type(self).getLastItemOnTable();
-            print(f"myores = {myores}");
-
-            #returns list of items in the order in which the colums were created in...
-            #the list also has the order in which the items were created in
-            #unless the query is different
-
-            finitem = myores[len(myores) - 1];
-            #cols are in allcols order...
-            finitemdict = {};
-            for n in range(len(finitem)):
-                clnm = allcolnames[n];
-                finitemdict[clnm + "_value"] = finitem[n];
-            print(f"finitemdict = {finitemdict}");
-
-            #need to get the values for the columns that were not passed in and set those
-            for clnm in allcolnames:
-                if (clnm in dbcolnames):
-                    self.setValueForCol(clnm, finitemdict[clnm + "_value"], mycolobj=None);
-
-            print("\ndata successfully added onto the DB and new object values were set!\n");
-
-            #create a last synced vals dict...
-            #add onto previous vals on DB or the last synced vals
-            #the values are from the the get it...
-            #and if the result provided values they should be set here and included in this.
-            mdict = self.genSimpleValsDict(mycols=None);
-            print(f"mdict = {mdict}");
-            self.setLastSyncedValsDict(mdict);
-
-        #may want to run a backup of the NEW DATA ON THE DB here
-        if (runbkaftr): type(self).backupDB();
-
-        print("\nDONE WITH THE SAVE() NOW!\n");
-        return True;
-
 
     #begin serialization and representation methods here
 
