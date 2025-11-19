@@ -6,10 +6,12 @@ from myorm.MyDB import MyDB;
 import traceback;
 from pathlib import Path;#needed for checking if files exit if not using os or try catch
 class mybase:
-    #mytablename = "basetablename";
-    #mymulticolargs = None;
+    #mytablename = "basetablename";#no longer needed here because added in durring setup or constructor
+    #mymulticolargs = None;#no longer needed here because added in durring setup or constructor
     #disableconstraintswarning = False;
     
+    #MyDB methods needed for DB command execution and for backing up and restoring the DB
+
     @classmethod
     def getMyDBRef(cls): return mycol.getMyDB();
     @classmethod
@@ -39,6 +41,18 @@ class mybase:
     @classmethod
     def setMyConn(cls, val): return mycol.setMyConn(val);
 
+
+    #setup methods section
+
+    #this first checks to see if it has a tablename (if not present, AttributeError)
+    #this then tries to get the multicolargs if not on there it adds the attribute and sets it to None.
+    #this then tries to get the tableargs if not on there it adds the attribute and sets it to None.
+    #this then makes sures that the colnames, colattributenames, refcolnames, refcolattrnames
+    #are all unique.
+    #this also makes sure that the colnames and the colattributenames are the same size.
+    #this also makes sure that the refcolnames and the refcolattributenames are the same size.
+    #this also makes sure that all of the cols with individual column constraints are valid.
+    #finally it adds the all list attribute to the class.
     @classmethod
     def setupPartA(cls):
         print("\nINSIDE BASE SETUP CLASS METHOD!");
@@ -90,10 +104,18 @@ class mybase:
         else: setattr(cls, "all", None);
 
         print(f"DONE WITH THE SETUP PART A METHOD FOR {cls.__name__}!\n");
+        return True;
     
     #depends on the all list existing and being set for all of the classes that is a subclass of mybase
     #and not mybase before this runs.
-    #this method sets up the refcols here.
+    #this method sets up the link refcols here.
+    #it gets the refcols on the DB Model Class defined by the user
+    #then it makes sure that the ref class exists in memory.
+    #If not it exits prematurely, but not fatal if not called in main setup (due to a timing problem).
+    #If the ref class exists in memory, then it syncs the list if needed.
+    #note this method could be called in the mycol constructor sometime and the mycol constructor
+    #runs before the classes are fully setup initially and when col information is changed
+    #(unfortunately this cannot be prevented due to execution order so the error maybe safely ignored).
     @classmethod
     def setupPartB(cls, calledinmain=False):
         myvalidator.varmustbeboolean(calledinmain, "calledinmain");
@@ -114,7 +136,7 @@ class mybase:
                     #traceback.print_exc();
                     print(f"class name {myrefclsnm} was not found (so setup exited prematurely)!");
                     if (calledinmain): raise ex;
-                    else: return None;
+                    else: return True;
                 
                 callset = True;
                 if (hasattr(cls, mynwattrnm)):
@@ -122,10 +144,14 @@ class mybase:
                     if (mval == myrefclsref.all): callset = False;
                 if (callset): setattr(cls, mynwattrnm, myrefclsref.all);
             #print(f"DONE WITH THE SETUP PART B METHOD FOR {cls.__name__}!\n");
-    
+        return True;
     @classmethod
     def updateAllLinkRefsForMyClass(cls): cls.setupPartB(calledinmain=True);
 
+    #this gets all of the cols for the DB Model subclass of mybase class,
+    #then it sets the containing class name as the name of the calling class not mycol
+    #then it makes sure that the primary key information is valid
+    #if the col is a foreign key, it makes sure that the foreign key information is valid
     @classmethod
     def setupPartC(cls):
         if (issubclass(cls, mybase) and not (cls == mybase)):
@@ -137,10 +163,21 @@ class mybase:
                     if (mc.foreignKeyInformationMustBeValid(fcobj=None, usenoclassobj=True)): pass;
                     else: raise ValueError("the foreign key column information must be valid!");
             print(f"DONE WITH THE SETUP PART C METHOD FOR {cls.__name__}!\n");
+        return True;
 
+    #this tells the setup methods what order to run in.
+    #this first gets a list of the DB model classes from the memory if it is empty it exits incomplete
+    #if not empty, then it gets the classes in memory and it gets their tablenames
+    #then it calls setupPartA for every ref class.
+    #then it makes sure that the table names are all unique.
+    #after all of part A has run for every ref class, now we can run parts B and C in that order.
+    #then setup is complete.
+    #it is important to note that the mybase class constructor method itself will call this if it has
+    #not already run the setup method... IE the setup method must complete.
+    #otherwise the next base object and it retries to run the setup...
     @classmethod
     def setupMain(cls):
-        mlist = mycol.getMyClassRefsMain(True);
+        mlist = mycol.getMyClassRefsMain(ftchnw=True);
         isempty = myvalidator.isvaremptyornull(mlist);
         if (isempty): pass;
         else:
@@ -163,6 +200,7 @@ class mybase:
                     mclsref.setupPartB(calledinmain=True);
                     mclsref.setupPartC();
         mycol.setRanSetup(not isempty);
+        return True;
 
 
     #DEPENDS ON THE SQL VARIANT
@@ -426,24 +464,21 @@ class mybase:
     #uses alphabetic order for colnames
     @classmethod
     def newBase(cls, myvals):
-        myvalidator.varmustnotbeempty(myvals, "myvals");
-        return cls(cls.getMyColNames(cls.getMyCols()), myvals);
+        myvalidator.varmustnotbeempty(myvals, varnm="myvals");
+        return cls(cls.getMyColNames(mycols=cls.getMyCols()), myvals);
     
     #note can also pass in a list of tuples in here without a problem
     @classmethod
     def newBaseFromObjsOrListOfLists(cls, mlistofobjsorlists, useobjs):
-        myvalidator.varmustbeboolean(useobjs, "useobjs");
-        myvalidator.varmustnotbeempty(mlistofobjsorlists, "mlistofobjsorlists");
-        #although we could use a list comprehension here, this is more efficient.
+        myvalidator.varmustbeboolean(useobjs, varnm="useobjs");
+        myvalidator.varmustnotbeempty(mlistofobjsorlists, varnm="mlistofobjsorlists");
+        #although we could use two list comprehensions here, this is more efficient
+        #because we only do the loop once.
         clnms = [];
         clvls = [];
         for mobjorlist in mlistofobjsorlists:
-            if (useobjs):
-                clnms.append(list(mobjorlist.keys())[0]);
-                clvls.append(list(mobjorlist.values())[0]);
-            else:
-                clnms.append(mobjorlist[0]);
-                clvls.append(mobjorlist[1]);
+            clnms.append(list(mobjorlist.keys())[0] if useobjs else mobjorlist[0]);
+            clvls.append(list(mobjorlist.values())[1] if useobjs else mobjorlist[1]);
         return cls(clnms, clvls);
     @classmethod
     def newBaseFromObjsList(cls, myobjslist):
@@ -597,15 +632,14 @@ class mybase:
         elif (varnm == "allonlyrules"): return cls.getAllGeneralSerializeRuleNames();
         elif (varnm == "allserializerules"):
             mlist = [item for item in cls.getAllGeneralSerializeRuleNames()];
-            for item in cls.cls.getAllExclusiveSerializeRuleNames(): mlist.append(item);
+            for item in cls.getAllExclusiveSerializeRuleNames(): mlist.append(item);
             return mlist;
         else: raise ValueError(errmsg);
 
     @classmethod
     def getValObjectIfPresent(cls, ilist=None, varnm="varnm"):
-        if (myvalidator.isvaremptyornull(ilist)):
-            mylist = cls.getListOfPossibleNamesForVariable(varnm);
-        else: mylist = ilist;
+        mylist = (cls.getListOfPossibleNamesForVariable(varnm)
+                  if (myvalidator.isvaremptyornull(ilist)) else ilist);
         for attr in dir(cls):
             for pnm in mylist:
                 if (pnm in attr): return {"value": getattr(cls, attr), "name": attr};
@@ -636,7 +670,7 @@ class mybase:
     @classmethod
     def getNameOrValueOfVarIfPresentOnTable(cls, usename, ilist=None, varnm="varnm"):
         myvalidator.varmustbeboolean(usename, "usename");
-        myresobj = cls.getValObjectIfPresent(ilist, varnm);
+        myresobj = cls.getValObjectIfPresent(ilist=ilist, varnm=varnm);
         if (myvalidator.isvaremptyornull(myresobj)):
             #if (usename): return None;
             #else:

@@ -5,7 +5,7 @@ class myrefcol:
         self.setRefClassColName(refclassname);
 
     def getListOrRefClassColName(self, uselist):
-        myvalidator.varmustbeboolean(uselist, "uselist");
+        myvalidator.varmustbeboolean(uselist, varnm="uselist");
         return (self._listcolname if (uselist) else self._refclassname);
     def getListColName(self): return self.getListOrRefClassColName(True);
     def getRefClassColName(self): return self.getListOrRefClassColName(False);
