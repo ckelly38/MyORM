@@ -118,7 +118,7 @@ class mybase:
     #(unfortunately this cannot be prevented due to execution order so the error maybe safely ignored).
     @classmethod
     def setupPartB(cls, calledinmain=False):
-        myvalidator.varmustbeboolean(calledinmain, "calledinmain");
+        myvalidator.varmustbeboolean(calledinmain, varnm="calledinmain");
         if (issubclass(cls, mybase) and not (cls == mybase)):
             #print(f"BEGIN THE SETUP PART B METHOD FOR {cls.__name__}!\n");
             for myrefcolobj in cls.getMyRefCols():
@@ -465,7 +465,7 @@ class mybase:
     @classmethod
     def newBase(cls, myvals):
         myvalidator.varmustnotbeempty(myvals, varnm="myvals");
-        return cls(cls.getMyColNames(mycols=cls.getMyCols()), myvals);
+        return cls(colnames=cls.getMyColNames(mycols=cls.getMyCols()), colvalues=myvals);
     
     #note can also pass in a list of tuples in here without a problem
     @classmethod
@@ -479,7 +479,7 @@ class mybase:
         for mobjorlist in mlistofobjsorlists:
             clnms.append(list(mobjorlist.keys())[0] if useobjs else mobjorlist[0]);
             clvls.append(list(mobjorlist.values())[1] if useobjs else mobjorlist[1]);
-        return cls(clnms, clvls);
+        return cls(colnames=clnms, colvalues=clvls);
     @classmethod
     def newBaseFromObjsList(cls, myobjslist):
         return cls.newBaseFromObjsOrListOfLists(myobjslist, True);
@@ -489,8 +489,8 @@ class mybase:
 
     @classmethod
     def newBaseFromDataObj(cls, mydataobj):
-        myvalidator.varmustnotbenull(mydataobj, "mydataobj");
-        return cls(list(mydataobj.keys()), list(mydataobj.values()));
+        myvalidator.varmustnotbenull(mydataobj, varnm="mydataobj");
+        return cls(colnames=list(mydataobj.keys()), colvalues=list(mydataobj.values()));
     
     #constructor methods above up to and including __init__
 
@@ -669,7 +669,7 @@ class mybase:
 
     @classmethod
     def getNameOrValueOfVarIfPresentOnTable(cls, usename, ilist=None, varnm="varnm"):
-        myvalidator.varmustbeboolean(usename, "usename");
+        myvalidator.varmustbeboolean(usename, varnm="usename");
         myresobj = cls.getValObjectIfPresent(ilist=ilist, varnm=varnm);
         if (myvalidator.isvaremptyornull(myresobj)):
             #if (usename): return None;
@@ -710,8 +710,8 @@ class mybase:
     @classmethod
     def getMyColsOrRefColsOrMyColAttributeNames(cls, retobjs, usemycols):
         #print(f"cls = {cls}");
-        myvalidator.varmustbeboolean(usemycols, "usemycols");
-        myvalidator.varmustbeboolean(retobjs, "retobjs");
+        myvalidator.varmustbeboolean(usemycols, varnm="usemycols");
+        myvalidator.varmustbeboolean(retobjs, varnm="retobjs");
         return [(getattr(cls, attr) if retobjs else attr)
                 for attr in dir(cls) if (type(getattr(cls, attr)) ==
                                          (mycol if (usemycols) else myrefcol))];
@@ -732,7 +732,7 @@ class mybase:
 
     @classmethod
     def getMyOrRefColsFromClassOrParam(cls, usemycols, mycols=None):
-        myvalidator.varmustbeboolean(usemycols, "usemycols");
+        myvalidator.varmustbeboolean(usemycols, varnm="usemycols");
         return (cls.getMyColObjects(usemycols) if myvalidator.isvaremptyornull(mycols) else mycols);
     @classmethod
     def getMyColsFromClassOrParam(cls, mycols=None):
@@ -790,7 +790,7 @@ class mybase:
 
     @classmethod
     def getMyPrimaryOrForeignKeyCols(cls, usepkys, mycols=None):
-        myvalidator.varmustbeboolean(usepkys, "usepkys");
+        myvalidator.varmustbeboolean(usepkys, varnm="usepkys");
         return [mclobj for mclobj in cls.getMyColsFromClassOrParam(mycols=mycols)
                 if (mclobj.isprimarykey if (usepkys) else mclobj.isforeignkey)];
     @classmethod
@@ -805,7 +805,7 @@ class mybase:
 
     @classmethod
     def getIndividualColumnConstraintsOrColsWithConstraints(cls, useclist, mycols=None):
-        myvalidator.varmustbeboolean(useclist, "useclist");
+        myvalidator.varmustbeboolean(useclist, varnm="useclist");
         return [(mc.getConstraints() if (useclist) else mc)
                 for mc in cls.getMyColsFromClassOrParam(mycols=mycols)
                 if not myvalidator.isvaremptyornull(mc.getConstraints())];
@@ -818,7 +818,7 @@ class mybase:
 
     @classmethod
     def isColWithConstraintsValid(cls, mc):
-        myvalidator.varmustnotbenull(mc, "mc");
+        myvalidator.varmustnotbenull(mc, varnm="mc");
         if (myvalidator.isvaremptyornull(mc.constraints)): pass;
         else:
             for thecnst in mc.constraints:
@@ -867,7 +867,7 @@ class mybase:
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
         if (mycolobj == None):
             return self.setValueForColName(clnm, valcl, type(self).getMyColObjFromName(clnm));
-        else: myvalidator.varmustnotbenull(mycolobj, "mycolobj");
+        else: myvalidator.varmustnotbenull(mycolobj, varnm="mycolobj");
         varstr = "" + mybase.getMySQLType();#SQLVARIANT;
         errmsgpta = "invalid value (";
         errmsgptb = ") used here for the data type (";
@@ -895,8 +895,8 @@ class mybase:
                     myfccolnames = myfcoldatainfoobj["myfccolnames"];
                     mycolis = myfcoldatainfoobj["mycolis"];
                     mcolobjs = myfcoldatainfoobj["mcolobjs"];
-                    myvalidator.varmustnotbenull(self, "self");
-                    myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
+                    myvalidator.varmustnotbenull(self, varnm="self");
+                    myvalidator.varmustnotbeempty(myfccolnames, varnm="myfccolnames");
                     #names referenced by the foreign key
                     #print(f"mycolobj.foreignColNames = {mycolobj.foreignColNames}");
                     #print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
@@ -959,12 +959,12 @@ class mybase:
     
     def genValsListForColNames(self, colnames):
         #get a list of values for colnames then return tuple of it
-        myvalidator.varmustnotbeempty(colnames, "colnames");
+        myvalidator.varmustnotbeempty(colnames, varnm="colnames");
         return [self.getValueForColName(cnm) for cnm in colnames];
 
     def genValsTupleForColNames(self, colnames):
         #get a list of values for colnames then return tuple of it
-        myvalidator.varmustnotbeempty(colnames, "colnames");
+        myvalidator.varmustnotbeempty(colnames, varnm="colnames");
         return tuple(self.genValsListForColNames(colnames));
 
     def genSimpleValsDict(self, mycols=None):
@@ -982,21 +982,21 @@ class mybase:
 
     def getUserProvidedColNames(self): return self._userprovidedcolnames;
     def setUserProvidedColNames(self, mval):
-        myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, "userprovidedcolnames");
+        myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, varnm="userprovidedcolnames");
         self._userprovidedcolnames = mval;
 
     userprovidedcolnames = property(getUserProvidedColNames, setUserProvidedColNames);
 
     def getColNamesWithDefaultsUsed(self): return self._colnmswdefaultsused;
     def setColNamesWithDefaultsUsed(self, mval):
-        myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, "colnmswdefaultsused");
+        myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, varnm="colnmswdefaultsused");
         self._colnmswdefaultsused = mval;
 
     colnmswdefaultsused = property(getColNamesWithDefaultsUsed, setColNamesWithDefaultsUsed);
     
     def getColNamesWithDBValsUsed(self): return self._colnmswdbvalsused;
     def setColNamesWithDBValsUsed(self, mval):
-        myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, "colnmswdbvalsused");
+        myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, varnm="colnmswdbvalsused");
         self._colnmswdbvalsused = mval;
 
     colnmswdbvalsused = property(getColNamesWithDBValsUsed, setColNamesWithDBValsUsed);
@@ -1049,7 +1049,7 @@ class mybase:
 
     def getForeignKeyObjectFromCol(self, mc):
         #print(f"mc = {mc}");
-        myvalidator.varmustnotbenull(mc, "mc");
+        myvalidator.varmustnotbenull(mc, varnm="mc");
         #using the foreign key column information stored in the column,
         #we can get attributes like foreignClass="Camper", foreignColNames=["id"], and
         #our colname="camper_id"
@@ -1103,11 +1103,11 @@ class mybase:
 
     @classmethod
     def needToCreateAnObjectForCol(cls, mc):
-        myvalidator.varmustbethetypeonly(mc, mycol, "mc");
+        myvalidator.varmustbethetypeonly(mc, mycol, varnm="mc");
         fobjnm = mc.getForeignObjectName();
         if (myvalidator.isvaremptyornull(fobjnm)): return False;
         else:
-            myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(fobjnm, "fobjnm");
+            myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(fobjnm, varnm="fobjnm");
             return True;
 
     def getForeignKeyObjectsFromCols(self, mycols=None):
@@ -1175,8 +1175,8 @@ class mybase:
         mobjs = self.getForeignKeyObjectsFromCols(mycols);
         #print(f"mobjs = {mobjs}");
 
-        myvalidator.listMustContainUniqueValuesOnly(mobjnms, "mobjnms");
-        myvalidator.twoArraysMustBeTheSameSize(mobjnms, mobjs);
+        myvalidator.listMustContainUniqueValuesOnly(mobjnms, varnm="mobjnms");
+        myvalidator.twoArraysMustBeTheSameSize(mobjnms, mobjs, arranm="mobjnms", arrbnm="mobjs");
 
         for n in range(len(mobjnms)):
             mobj = mobjs[n];
@@ -1229,7 +1229,7 @@ class mybase:
     @classmethod
     def updateAllForeignKeyObjectsForAllClasses(cls, ftchnw=False):
         print("\nUPDATING ALL OBJECT REFS FROM FOREIGN KEYS NOW:\n");
-        myvalidator.varmustbeboolean(ftchnw, "ftchnw");
+        myvalidator.varmustbeboolean(ftchnw, varnm="ftchnw");
         mlist = mycol.getMyClassRefsMain(ftchnw);
         if (myvalidator.isvaremptyornull(mlist)): pass;
         else:
@@ -1242,7 +1242,7 @@ class mybase:
     @classmethod
     def updateAllLinkRefsForAllClasses(cls, ftchnw=False):
         print("\nUPDATING ALL LINK REFS FROM FOREIGN KEYS NOW:\n");
-        myvalidator.varmustbeboolean(ftchnw, "ftchnw");
+        myvalidator.varmustbeboolean(ftchnw, varnm="ftchnw");
         mlist = mycol.getMyClassRefsMain(ftchnw);
         if (myvalidator.isvaremptyornull(mlist)): pass;
         else:
@@ -1323,7 +1323,7 @@ class mybase:
         #in fact PRAGMA is only supported by SQL LITE. SQL has some other ways and it depends on the DB.
         #however, if the SELECT fails, that means that the table does not exist.
         #all databases and dialects of SQL support SELECT so, the SELECT command of SQL will be used.
-        myvalidator.varmustbeboolean(pqry, "pqry");
+        myvalidator.varmustbeboolean(pqry, varnm="pqry");
         qry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
         qry += " " + myvalidator.genSQLimit(1, offset=0);
         if (pqry): print(f"\nTABLE EXISTS qry = {qry}\n");
@@ -1348,7 +1348,7 @@ class mybase:
     
     @classmethod
     def getTableClasses(cls, ftchnow=False):
-        myvalidator.varmustbeboolean(ftchnow, "ftchnow");
+        myvalidator.varmustbeboolean(ftchnow, varnm="ftchnow");
         return [mclsref for mclsref in mycol.getMyClassRefsMain(ftchnw=ftchnow)
                      if (issubclass(mclsref, mybase) and not (mclsref == mybase))];
 
@@ -1415,7 +1415,7 @@ class mybase:
 
     @classmethod
     def getAllItemsOnTable(cls, pqry=True):
-        myvalidator.varmustbeboolean(pqry, "pqry");
+        myvalidator.varmustbeboolean(pqry, varnm="pqry");
         myselqry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
         if (pqry): print(f"SELECT QUERY myselqry = {myselqry}");
 
@@ -1433,8 +1433,8 @@ class mybase:
 
     @classmethod
     def dropTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
-        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
-        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
+        myvalidator.varmustbeboolean(runbkbfr, varnm="runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, varnm="runbkaftr");
         if (runbkbfr): cls.backupDB();
 
         tnmonclsnmstr = "" + cls.getTableAndClassNameString();
@@ -1486,9 +1486,9 @@ class mybase:
     #THE DELETE command is implemented on most DBs.
     @classmethod
     def truncateTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
-        myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");
-        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
-        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
+        myvalidator.varmustbeboolean(onlyifnot, varnm="onlyifnot");
+        myvalidator.varmustbeboolean(runbkbfr, varnm="runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, varnm="runbkaftr");
         tnmandclsnmstr = "" + cls.getTableAndClassNameString();
         errmsg = tnmandclsnmstr + " must exist in order for it to be truncated or cleared.";
         if (cls.tableExists()):
@@ -1521,9 +1521,9 @@ class mybase:
         return cls.clearThenDropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
 
     def deleteMyRowFromTable(self, onlyifnot=True, runbkbfr=False, runbkaftr=False):
-        myvalidator.varmustbeboolean(onlyifnot, "onlyifnot");
-        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
-        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
+        myvalidator.varmustbeboolean(onlyifnot, varnm="onlyifnot");
+        myvalidator.varmustbeboolean(runbkbfr, varnm="runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, varnm="runbkaftr");
         tnmandclsnmstr = "" + type(self).getTableAndClassNameString();
         errmsg = tnmandclsnmstr + " must exist in order for it to be removed or deleted.";
         if (type(self).tableExists()):
@@ -1553,7 +1553,7 @@ class mybase:
     @classmethod
     def deleteARowFromTable(cls, colnms, colvals, onlyifnot=True, runbkbfr=False, runbkaftr=False):
         myobj = cls.getObjectFromGivenKeysAndValues(cls.all, colnms, colvals);
-        myvalidator.varmustnotbenull(myobj, "myobj");
+        myvalidator.varmustnotbenull(myobj, varnm="myobj");
         return myobj.deleteMyRowFromTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
 
 
@@ -1602,8 +1602,8 @@ class mybase:
         #may want to backup the OLD data before we do this.
         #may want to run a backup of NEW data after we do this.
         print("\nBEGIN SAVE():\n");
-        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
-        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");        
+        myvalidator.varmustbeboolean(runbkbfr, varnm="runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, varnm="runbkaftr");        
 
         fkydataerrmsg = "the foreign key data is wrong, the columns were found, ";
         fkydataerrmsg += "but no object was found with the given values!";
@@ -1863,9 +1863,9 @@ class mybase:
         #take the above...
         #copy the array into the file...
         #need to import the CURSOR and CONN from the config or init...
-        myvalidator.varmustnotbeempty(msqlines, "msqlines");
+        myvalidator.varmustnotbeempty(msqlines, varnm="msqlines");
         mbfnm = mybase.getMyDBConfigFileName();
-        myvalidator.varmustnotbeempty(mbfnm, "mbfnm");
+        myvalidator.varmustnotbeempty(mbfnm, varnm="mbfnm");
         dbrefnm = mybase.getMyDB().getConfigNamesForValType(MyDB)[0];
 
         #use the config file to get the attribute name that is the instance of MyDB class.
@@ -2607,8 +2607,8 @@ class mybase:
         print(f"newdatarr = {newdatarr}\n");
         #if (isadeltble): raise ValueError("NEED TO DO SOMETHING HERE...!");
 
-        if (nwdatmustbeempty): myvalidator.varmustbeemptyornull(newdatarr, "newdatarr");
-        else: myvalidator.varmustnotbeempty(newdatarr, "newdatarr");
+        if (nwdatmustbeempty): myvalidator.varmustbeemptyornull(newdatarr, varnm="newdatarr");
+        else: myvalidator.varmustnotbeempty(newdatarr, varnm="newdatarr");
 
 
         tnmserrmsgpta = "a table must have at most one previous name and at most one current ";
@@ -2937,7 +2937,7 @@ class mybase:
 
     @classmethod
     def getKnownAttributeNamesOnTheClass(cls, useserial=False):
-        myvalidator.varmustbeboolean(useserial, "useserial");
+        myvalidator.varmustbeboolean(useserial, varnm="useserial");
         mycols = cls.getMyCols();
         safelist = cls.getOtherKnownSafeAttributesOnTheClass();
         unsafelist = cls.getForeignKeyObjectNamesFromCols(mycols);
@@ -2946,7 +2946,7 @@ class mybase:
         #print(f"unsafelist = {unsafelist}");
         #print(f"init mlist = {mlist}");
         
-        myvalidator.varmustnotbeempty(mlist, "mlist");
+        myvalidator.varmustnotbeempty(mlist, varnm="mlist");
         mxlist = [];#exclusion list for serialization
         for nm in cls.getMyColAttributeNames():
             if (useserial): mxlist.append(nm);
@@ -3043,9 +3043,9 @@ class mybase:
     #this method is the one you as the user will most likely want to override.
     def __simplerepr__(self, mystrs, myattrs=None, ignoreerr=True, strstarts=True,
                        exobjslist=None, usesafelistonly=False):
-        myvalidator.varmustbeboolean(strstarts, "strstarts");
-        myvalidator.varmustbeboolean(ignoreerr, "ignoreerr");
-        myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
+        myvalidator.varmustbeboolean(strstarts, varnm="strstarts");
+        myvalidator.varmustbeboolean(ignoreerr, varnm="ignoreerr");
+        myvalidator.varmustbeboolean(usesafelistonly, varnm="usesafelistonly");
         if (myvalidator.isvaremptyornull(myattrs)): return myvalidator.myjoin("", mystrs);
         else:
             #they alternate starting with one or other other
@@ -3208,7 +3208,7 @@ class mybase:
     #
     #this puts everything inside of <MyClass attributekey: attributevalue, ... /MyClass>
     def __myrepr__(self, exobjslist=None, usesafelistonly=False):
-        myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
+        myvalidator.varmustbeboolean(usesafelistonly, varnm="usesafelistonly");
         mstr = "<" + self.__class__.__name__ + " ";
         unsafelist = type(self).getForeignKeyObjectNamesFromCols();
         nmscls = self.getKnownAttributeNamesForRepresentation(useserial=False);
@@ -3285,7 +3285,7 @@ class mybase:
     #this helps avoid a circular reference error.
     #due to the way this method is called, it is best have it declared like this
     def __to_dict__(self, myattrs=None, exobjslist=None, usesafelistonly=False, prefix=""):
-        myvalidator.varmustbeboolean(usesafelistonly, "usesafelistonly");
+        myvalidator.varmustbeboolean(usesafelistonly, varnm="usesafelistonly");
 
         if (prefix == None):
             return self.__to_dict__(myattrs=myattrs, exobjslist=exobjslist,
@@ -3597,9 +3597,9 @@ class mybase:
     @classmethod
     def addOrDropAConstraintAfterTableExists(cls, mval, useadd, runbkbfr=False, runbkaftr=False,
                                              mcolobj=None):
-        myvalidator.varmustbeboolean(useadd, "useadd");
-        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
-        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
+        myvalidator.varmustbeboolean(useadd, varnm="useadd");
+        myvalidator.varmustbeboolean(runbkbfr, varnm="runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, varnm="runbkaftr");
         #at any rate, we need to:
         #1. back up the data (if that has not already been done so),
         #-but the backup files will have the OLD create table statement and all old data
@@ -3656,16 +3656,16 @@ class mybase:
 
     @classmethod
     def addOrRemoveMultiColumnConstraint(cls, mval, useadd, runbkbfr=False, runbkaftr=False):
-        myvalidator.varmustbeboolean(useadd, "useadd");
-        myvalidator.varmustbeboolean(runbkbfr, "runbkbfr");
-        myvalidator.varmustbeboolean(runbkaftr, "runbkaftr");
+        myvalidator.varmustbeboolean(useadd, varnm="useadd");
+        myvalidator.varmustbeboolean(runbkbfr, varnm="runbkbfr");
+        myvalidator.varmustbeboolean(runbkaftr, varnm="runbkaftr");
         if (myvalidator.isvaremptyornull(mval)): pass;
         else:
             #if the table already exists on the DB, then we have a problem...
             #as changing the constraints may cause serious needs
             #alter table command is not always supported and varies significantly...
             #if the constraint is already present on the list of constraints, then do not add it
-            myvalidator.varmustbethetypeonly(mval, str, "mval");
+            myvalidator.varmustbethetypeonly(mval, str, varnm="mval");
             mlist = cls.getAndSetMultiColumnConstraints();
             isonlist = (False if (myvalidator.isvaremptyornull(mlist)) else (mval in mlist));
             if (isonlist == useadd): pass;
@@ -3757,7 +3757,7 @@ class mybase:
     def getAllTableConstraints(cls, fetchnow=False):
         #will have all of the multi-column constraints args list on it
         #plus all of the individual col arguments or constraints on it
-        myvalidator.varmustbeboolean(fetchnow, "fetchnow");
+        myvalidator.varmustbeboolean(fetchnow, varnm="fetchnow");
         if (cls.isVarPresentOnTableMain("allconstraints_list")):
             valofall = cls.getValueOfVarIfPresentOnTableMain("allconstraints_list");
             if (myvalidator.isvaremptyornull(valofall)): pass;

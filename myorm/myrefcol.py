@@ -11,9 +11,10 @@ class myrefcol:
     def getRefClassColName(self): return self.getListOrRefClassColName(False);
 
     def setListOrRefClassColName(self, val, uselist):
-        myvalidator.varmustbeboolean(uselist, "uselist");
-        myvalidator.varmustnotbeempty(val, "val (" + ("list" if uselist else "refclass") + "colname)");
-        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(val, "val");
+        myvalidator.varmustbeboolean(uselist, varnm="uselist");
+        myvarnm = "val (" + ("list" if uselist else "refclass") + "colname)";
+        myvalidator.varmustnotbeempty(val, varnm=myvarnm);
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(val, varnm="val");
         if (uselist): self._listcolname = val;
         else: self._refclassname = val;
     def setListColName(self, val): self.setListOrRefClassColName(val, True);

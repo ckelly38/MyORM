@@ -45,6 +45,7 @@ class MyDB:
         if (val == None or len(val) < 1): self._CONFIGATTRNAMES = None;
         else:
             for nm in val:
+                myvalidator.stringMustHaveAtMinNumChars(nm, 1, varnm="config file attr name");
                 if (nm == None or len(nm) < 1): raise ValueError("the name must not be empty or null!");
                 else:
                     if (type(nm) == str and 0 < len(nm)): pass;
@@ -74,7 +75,7 @@ class MyDB:
         if (val == None or val == ""): self._SQLVARIANT = None;
         else:
             if (type(val) == str and 0 < len(val)): self._SQLVARIANT = "" + val;
-            else: raise ValueError("val must be a string and not be empty!");
+            else: raise ValueError("val (nwSQLType) must be a string and not be empty!");
     SQLVARIANT = property(getSQLType, setSQLType);
     
     def getConn(self): return self._CONN;

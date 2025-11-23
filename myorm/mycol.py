@@ -80,14 +80,14 @@ class mycol:
 
     @classmethod
     def getMyUniqueOrCheckConstraintCounter(cls, useuctr):
-        myvalidator.varmustbeboolean(useuctr, "useuctr");
+        myvalidator.varmustbeboolean(useuctr, varnm="useuctr");
         return (cls.__ucconscntr__ if (useuctr) else cls.__ccconscntr__);
 
     @classmethod
     def setMyUniqueOrCheckConstraintCounter(cls, nval, useuctr):
-        myvalidator.varmustbeboolean(useuctr, "useuctr");
-        myvalidator.varmustbethetypeonly(nval, int, "nval");
-        myvalidator.valueMustBeInRange(nval, 0, 0, True, False, "nval");
+        myvalidator.varmustbeboolean(useuctr, varnm="useuctr");
+        myvalidator.varmustbethetypeonly(nval, int, varnm="nval");
+        myvalidator.valueMustBeInRange(nval, 0, 0, True, False, varnm="nval");
         if (useuctr): cls.__ucconscntr__ = nval;
         else: cls.__ccconscntr__ = nval;
     @classmethod
@@ -99,7 +99,7 @@ class mycol:
     
     @classmethod
     def incrementAndGetUniqueOrCheckConstraintCounterBy(cls, useuctr, intval=1):
-        myvalidator.varmustbethetypeonly(intval, int, "intval");
+        myvalidator.varmustbethetypeonly(intval, int, varnm="intval");
         cls.setMyUniqueOrCheckConstraintCounter(cls.getMyUniqueOrCheckConstraintCounter(useuctr) +
                                                 intval, useuctr);
         return cls.getMyUniqueOrCheckConstraintCounter(useuctr);
@@ -112,7 +112,7 @@ class mycol:
 
     @classmethod
     def decrementAndGetUniqueOrCheckConstraintCounterBy(cls, useuctr, intval=1):
-        myvalidator.varmustbethetypeonly(intval, int, "intval");
+        myvalidator.varmustbethetypeonly(intval, int, varnm="intval");
         cls.setMyUniqueOrCheckConstraintCounter(cls.getMyUniqueOrCheckConstraintCounter(useuctr) -
                                                 intval, useuctr);
         return cls.getMyUniqueOrCheckConstraintCounter(useuctr);
@@ -142,7 +142,7 @@ class mycol:
 
     @classmethod
     def getMyIndividualOrMultiColumnValidators(cls, mcnm, useindiv):
-        myvalidator.varmustbeboolean(useindiv, "useindiv");
+        myvalidator.varmustbeboolean(useindiv, varnm="useindiv");
         return [item for item in cls.getMyValidators(mcnm)
                 if ((len(item["keys"]) < 2 and useindiv) or (1 < len(item["keys"]) and not useindiv))];
     @classmethod
@@ -207,9 +207,9 @@ class mycol:
         print(f"classname = {classname}");
         print(f"methodref = {methodref}");
         print(f"keys = {keys}");
-        myvalidator.varmustnotbeempty(keys, "keys");
-        myvalidator.stringHasAtMinNumChars(classname, 1);
-        myvalidator.stringContainsOnlyAlnumCharsIncludingUnderscores(classname);
+        myvalidator.varmustnotbeempty(keys, varnm="keys");
+        myvalidator.stringMustHaveAtMinNumChars(classname, 1, varnm="classname");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(classname, varnm="classname");
         mlist = cls.getAllValidators();
         clist = ([] if (myvalidator.isvaremptyornull(mlist)) else [item for item in mlist]);
         clist.append({"classname": classname, "methodref": methodref, "keys": keys});
@@ -217,8 +217,8 @@ class mycol:
     
     @classmethod
     def removeValidator(cls, classname, keys):
-        myvalidator.stringHasAtMinNumChars(classname, 1);
-        myvalidator.stringContainsOnlyAlnumCharsIncludingUnderscores(classname);
+        myvalidator.stringMustHavaAtMinNumChars(classname, 1, varnm="classname");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(classname, varnm="classname");
         if (myvalidator.isvaremptyornull(keys)): return None;
         nlist = [item for item in cls.getAllValidators()
                  if (item["classname"] == classname and myvalidator.doTwoListsContainTheSameData(
@@ -267,7 +267,7 @@ class mycol:
             micvs = [];
             mmcvs = [];
             for vobj in initmvs:
-                myvalidator.varmustnotbeempty(vobj["keys"], "vobj[keys]");
+                myvalidator.varmustnotbeempty(vobj["keys"], varnm="vobj[keys]");
                 if (len(vobj["keys"]) == 1): micvs.append(vobj);
                 else: mmcvs.append(vobj);
             finmvslist = myvalidator.combineTwoLists(micvs, mmcvs);
@@ -288,7 +288,7 @@ class mycol:
 
     @classmethod
     def setRanSetup(cls, val):
-        myvalidator.varmustbeboolean(val);
+        myvalidator.varmustbeboolean(val, varnm="nwransetupval");
         cls.__ransetup__ = val;
 
     
@@ -346,7 +346,7 @@ class mycol:
     #if it gets the new list, then the class refs list is updated.
     @classmethod
     def getMyClassRefsMain(cls, ftchnw=False):
-        myvalidator.varmustbeboolean(ftchnw, "ftchnw");
+        myvalidator.varmustbeboolean(ftchnw, varnm="ftchnw");
         mycrefs = cls.getMyClassRefs();
         if (ftchnw or myvalidator.isvaremptyornull(mycrefs)):
             print("INSIDE OF MYCOL:");
@@ -370,8 +370,8 @@ class mycol:
     @classmethod
     def getMyClassRefFromString(cls, nmstr):
         #print(f"nmstr = {nmstr}");
-        myvalidator.varmustnotbeempty(nmstr, "nmstr");
-        for mycls in cls.getMyClassRefsMain(False):
+        myvalidator.varmustnotbeempty(nmstr, varnm="nmstr");
+        for mycls in cls.getMyClassRefsMain(ftchnw=False):
             #print(f"mycls = {mycls}");
             #print(f"mycls.__name__ = {mycls.__name__}");
             if (mycls.__name__ == nmstr): return mycls;
@@ -379,12 +379,12 @@ class mycol:
 
     @classmethod
     def getClassFromTableName(cls, tablename):
-        myvalidator.varmustnotbeempty(tablename, "tablename");
+        myvalidator.varmustnotbeempty(tablename, varnm="tablename");
         from myorm.mybase import mybase;
-        msbclses = [mycls for mycls in cls.getMyClassRefsMain(False)
+        msbclses = [mycls for mycls in cls.getMyClassRefsMain(ftchnw=False)
                     if (issubclass(mycls, mybase) and not(mycls == mybase))];
         mtnms = [mycls.getTableName() for mycls in msbclses];
-        myvalidator.listMustContainUniqueValuesOnly(mtnms, "mtnms");
+        myvalidator.listMustContainUniqueValuesOnly(mtnms, varnm="mtnms");
         for n in range(len(mtnms)):
             if (mtnms[n] == tablename): return msbclses[n];
         #for mycls in cls.getMyClassRefsMain(False):
@@ -517,7 +517,7 @@ class mycol:
 
     def getIsInitialized(self): return self.__isinitialized;
     def setIsInitialized(self, mval):
-        myvalidator.varmustbeboolean(mval, "mval");
+        myvalidator.varmustbeboolean(mval, varnm="mval");
         self.__isinitialized = mval;
     
     _isinitialialized = property(getIsInitialized, setIsInitialized);
@@ -531,13 +531,13 @@ class mycol:
     context = property(getContext, setContext);
 
     def getValue(self, mobj):
-        myvalidator.varmustnotbenull(mobj, "mobj (aka the context object)");
+        myvalidator.varmustnotbenull(mobj, varnm="mobj (aka the context object)");
         from myorm.mybase import mybase;
         if (issubclass(type(mobj), mybase)): return mobj.getValueForColName(self.getColName());
         else: raise ValueError("mobj must be a subclass of mybase class!");
 
     def setValue(self, mobj, val):
-        myvalidator.varmustnotbenull(mobj, "mobj (aka the context object)");
+        myvalidator.varmustnotbenull(mobj, varnm="mobj (aka the context object)");
         from myorm.mybase import mybase;
         if (issubclass(type(mobj), mybase)): mobj.setValueForColName(self.getColName(), val, self);
         else: raise ValueError("mobj must be a subclass of mybase class!");
@@ -553,7 +553,7 @@ class mycol:
         cntxt = self.getContext();
         return (None if (cntxt == None) else cntxt.__class__.__name__);
     def getContainingClassName(self, usecntxt=False):
-        myvalidator.varmustbeboolean(usecntxt, "usecntxt");
+        myvalidator.varmustbeboolean(usecntxt, varnm="usecntxt");
         if (usecntxt): return self.getContainingClassNameFromContext();
         else: return self.getContainingClassNameFromSelf();
 
@@ -562,7 +562,7 @@ class mycol:
         if (myvalidator.isvaremptyornull(mval)): pass;
         else:
             mvnm = "the containing class name";
-            myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mval, mvnm);
+            myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mval, varnm=mvnm);
         self._containingclassname = mval;
 
     containingclassname = property(getContainingClassName, setContainingClassName);
@@ -573,7 +573,7 @@ class mycol:
         if (myvalidator.isvaremptyornull(mlist)): pass;
         else:
             for mval in mlist:
-                myvalidator.stringMustHaveAtMinNumChars(mval, 1, "mval");
+                myvalidator.stringMustHaveAtMinNumChars(mval, 1, varnm="mval");
                 if (myvalidator.isConstraintValid(mval)): pass;
                 else: raise ValueError("the constraint must be valid, but it was not!");
         self._constraints = mlist;
@@ -595,8 +595,8 @@ class mycol:
         print(f"useadd = {useadd}");
         print(f"isinctable = {isinctable}");
 
-        myvalidator.varmustbeboolean(isinctable, "isinctable");
-        myvalidator.varmustbeboolean(useadd, "useadd");
+        myvalidator.varmustbeboolean(isinctable, varnm="isinctable");
+        myvalidator.varmustbeboolean(useadd, varnm="useadd");
         if (myvalidator.isvaremptyornull(mval)): pass;
         else:
             if (myvalidator.isConstraintValid(mval)): pass;
@@ -773,7 +773,7 @@ class mycol:
         if (type(self.getDataType()) == list):
             if (val == None): self._issigned = False;
             else:
-                myvalidator.varmustbethetypeandornull(val, bool, True, "val"); 
+                myvalidator.varmustbethetypeandornull(val, bool, True, varnm="val"); 
                 if (val): raise ValueError(errmsg);
                 else: self._issigned = val;
         else:
@@ -784,7 +784,7 @@ class mycol:
                     if (val == (not(tpobj["useunsigneddefault"]))): self._issigned = val;
                     else: raise ValueError(errmsg);
             else:
-                myvalidator.varmustbethetypeandornull(val, bool, True, "val"); 
+                myvalidator.varmustbethetypeandornull(val, bool, True, varnm="val"); 
                 self._issigned = val;
 
     issigned = property(getIsSigned, setIsSigned);
@@ -800,14 +800,14 @@ class mycol:
         if (type(self.getDataType()) == list):
             if (val == None): self._isnonnull = True;
             else:
-                myvalidator.varmustbethetypeandornull(val, bool, True, "val"); 
+                myvalidator.varmustbethetypeandornull(val, bool, True, varnm="val"); 
                 if (val): self._isnonnull = val;
                 else: raise ValueError(errmsg);
         else:
             tpobj = myvalidator.getDataTypeObjectWithNameOnVariant(self.getDataType(), varstr);
             if (val == None): self._isnonnull = tpobj["isnonnulldefault"];
             else:
-                myvalidator.varmustbethetypeandornull(val, bool, True, "val");
+                myvalidator.varmustbethetypeandornull(val, bool, True, varnm="val");
                 if (tpobj["isnonnulldefault"]):
                     if (val): self._isnonnull = val;
                     else: raise ValueError(errmsg);
@@ -850,9 +850,9 @@ class mycol:
         #the colname must be unique on each table
         #(CANNOT BE ENFORCED HERE, BUT WHEN A NEW OBJECT IS CREATED AND SAVED, ETC)
         #the colname cannot be null or empty
-        #myvalidator.varmustnotbeempty(val, "val");
-        #myvalidator.varmustbethetypeonly(val, str, "val");
-        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(val, "val");
+        #myvalidator.varmustnotbeempty(val, varnm="val");
+        #myvalidator.varmustbethetypeonly(val, str, varnm="val");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(val, varnm="val");
         self._colname = val;
     
     def setColumnName(self, val): self.setColName(val);
@@ -873,7 +873,7 @@ class mycol:
     def autoIncrements(self): return self.getAutoIncrements();
 
     def setAutoIncrements(self, val):
-        myvalidator.varmustbethetypeonly(val, bool, "val");
+        myvalidator.varmustbethetypeonly(val, bool, varnm="val");
         self._autoincrements = val;
 
     autoincrements = property(getAutoIncrements, setAutoIncrements);
@@ -882,7 +882,7 @@ class mycol:
     def isUnique(self): return self.getIsUnique();
 
     def setIsUnique(self, val):
-        myvalidator.varmustbethetypeandornull(val, bool, True, "val");
+        myvalidator.varmustbethetypeandornull(val, bool, True, varnm="val");
         if (self.getIsForeignKey() and val):
             if (mycol.getWarnUniqueFKey() == "WARN"):
                 print(mycol.getUniqueForeignKeyWarningMessage());
@@ -911,7 +911,7 @@ class mycol:
         #then, we can check the isunique value for the column and the isnonnull values
         #if both are true, then valid; otherwise not valid.
         
-        myvalidator.varmustbeboolean(val, "val");
+        myvalidator.varmustbeboolean(val, varnm="val");
         #not null constraint is single-column only
         #but unique can be one or mulitple-column constraint
         if (val):
@@ -946,7 +946,7 @@ class mycol:
         #if the primary key is not composite:
         #make sure that the column is unique and not null
         pkycols = myclsref.getMyPrimaryKeyCols();
-        myvalidator.varmustnotbeempty(pkycols, "pkycols");
+        myvalidator.varmustnotbeempty(pkycols, varnm="pkycols");
 
         pkyerrmsg = "for it to be a primary key, for class(" + myclsref.__name__ ;
         pkyerrmsg += ") it must be non-null and unique!";
@@ -1037,9 +1037,9 @@ class mycol:
         else:
             #print(f"self.foreignClass = {self.foreignClass}");
             #print(f"fcobj = {fcobj}");
-            #myvalidator.varmustnotbenull(fcobj, "fcobj");
+            #myvalidator.varmustnotbenull(fcobj, varnm="fcobj");
             #myfccolnames = self.foreignClass.getMyColNames(fcobj);
-            #myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
+            #myvalidator.varmustnotbeempty(myfccolnames, varnm="myfccolnames");
             #print(f"val = {val}");
             #print(f"myfccolnames = {myfccolnames}");
             #if (val in myfccolnames): self._foreignColName = val;
@@ -1057,7 +1057,7 @@ class mycol:
     def isForeignKey(self): return self.getIsForeignKey();
 
     def setIsForeignKey(self, val):
-        myvalidator.varmustbethetypeonly(val, bool, "val");
+        myvalidator.varmustbethetypeonly(val, bool, varnm="val");
         if (val):
             if (self.foreignClass == None or myvalidator.isvaremptyornull(self.foreignColNames)):
                 raise ValueError("the foreign key needs a reference class and a column name!");
@@ -1086,12 +1086,12 @@ class mycol:
     #because the mycol object is a class attribute to many classes that extend mybase class.
 
     def genForeignKeyDataObjectInfo(self, fcobj=None, usenoclassobj=False):
-        myvalidator.varmustbeboolean(usenoclassobj, "usenoclassobj");
+        myvalidator.varmustbeboolean(usenoclassobj, varnm="usenoclassobj");
         if (fcobj == None):
             if (usenoclassobj): pass;
             else:
                 cntxt = self.getContext();
-                myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
+                myvalidator.varmustnotbenull(cntxt, varnm="cntxt or fcobj (aka the context object)");
                 return self.genForeignKeyDataObjectInfo(cntxt);
 
         #print("\nGET FOREIGN KEY DATA OBJECT METHOD NOW:");
@@ -1113,19 +1113,19 @@ class mycol:
                 #fcobj is the calling object that contains that column (so this is the real self).
                 #foreign class is the string name of the foreign class.
                 if (usenoclassobj): pass;
-                else: myvalidator.varmustnotbenull(fcobj, "fcobj");
+                else: myvalidator.varmustnotbenull(fcobj, varnm="fcobj");
                 myclsref = mycol.getMyClassRefFromString(self.foreignClass);
                 #print(f"myclsref = {myclsref}");
 
                 myfcols = myclsref.getMyCols();
                 myfccolnames = myclsref.getMyColNames(myfcols);
-                myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
+                myvalidator.varmustnotbeempty(myfccolnames, varnm="myfccolnames");
                 #names referenced by the foreign key
                 #print(f"self.foreignColNames = {self.foreignColNames}");
                 #print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
                 
                 myvalidator.listMustContainUniqueValuesOnly(self.foreignColNames,
-                                                            "self.foreignColNames");
+                                                            varnm="self.foreignColNames");
 
                 mycolis = [myfccolnames.index(mclnm) for mclnm in self.foreignColNames];
                 #print(f"mycolis = {mycolis}");
@@ -1158,11 +1158,11 @@ class mycol:
     #
     #this method is really sensitive as to when it is run.
     def doesOrGetObjectThatHasTheForeignKeyValues(self, useget, fcobj=None):
-        myvalidator.varmustbeboolean(useget, "useget");
+        myvalidator.varmustbeboolean(useget, varnm="useget");
 
         if (fcobj == None):
             cntxt = self.getContext();
-            myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
+            myvalidator.varmustnotbenull(cntxt, varnm="cntxt or fcobj (aka the context object)");
             return self.doesOrGetObjectThatHasTheForeignKeyValues(useget, cntxt);
 
         #print("BEGIN FOREIGN KEY DATA VALIDATION METHOD NOW:");
@@ -1193,14 +1193,14 @@ class mycol:
                 myfccolnames = myfcoldatainfoobj["myfccolnames"];
                 mycolis = myfcoldatainfoobj["mycolis"];
                 mcolobjs = myfcoldatainfoobj["mcolobjs"];
-                myvalidator.varmustnotbenull(fcobj, "fcobj");
-                myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
+                myvalidator.varmustnotbenull(fcobj, varnm="fcobj");
+                myvalidator.varmustnotbeempty(myfccolnames, varnm="myfccolnames");
                 #names referenced by the foreign key
                 #print(f"self.foreignColNames = {self.foreignColNames}");
                 #print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
                 
                 myvalidator.listMustContainUniqueValuesOnly(self.foreignColNames,
-                                                            "self.foreignColNames");
+                                                            varnm="self.foreignColNames");
 
                 #print(f"mycolis = {mycolis}");
 
@@ -1275,12 +1275,12 @@ class mycol:
         #actually exist in memory with the links more or less, AND the current method is actually
         #called before that had a chance to be true.
 
-        myvalidator.varmustbeboolean(usenoclassobj, "usenoclassobj");
+        myvalidator.varmustbeboolean(usenoclassobj, varnm="usenoclassobj");
         if (fcobj == None):
             if (usenoclassobj): pass;
             else:
                 cntxt = self.getContext();
-                myvalidator.varmustnotbenull(cntxt, "cntxt or fcobj (aka the context object)");
+                myvalidator.varmustnotbenull(cntxt, varnm="cntxt or fcobj (aka the context object)");
                 return self.foreignKeyInformationMustBeValid(fcobj=cntxt);
         
         #has is foreign key
@@ -1317,14 +1317,14 @@ class mycol:
                 mycolis = myfcoldatainfoobj["mycolis"];
                 mcolobjs = myfcoldatainfoobj["mcolobjs"];
                 if (usenoclassobj): pass;
-                else: myvalidator.varmustnotbenull(fcobj, "fcobj");
-                myvalidator.varmustnotbeempty(myfccolnames, "myfccolnames");
+                else: myvalidator.varmustnotbenull(fcobj, varnm="fcobj");
+                myvalidator.varmustnotbeempty(myfccolnames, varnm="myfccolnames");
                 #names referenced by the foreign key
                 #print(f"self.foreignColNames = {self.foreignColNames}");
                 #print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
                 
                 myvalidator.listMustContainUniqueValuesOnly(self.foreignColNames,
-                                                            "self.foreignColNames");
+                                                            varnm="self.foreignColNames");
 
                 #print(f"mycolis = {mycolis}");
 
@@ -1352,7 +1352,7 @@ class mycol:
                 #print(type(self.datatype));
 
                 if (1 < len(self.foreignColNames)):
-                    myvalidator.varmustbethetypeonly(self.datatype, list, "self.datatype");
+                    myvalidator.varmustbethetypeonly(self.datatype, list, varnm="self.datatype");
 
                     for mc in mcolobjs:
                         fndmatch = False;
