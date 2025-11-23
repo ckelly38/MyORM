@@ -459,15 +459,20 @@ class mybase:
 
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!\n");
+        return self;
     
 
     #uses alphabetic order for colnames
+    #this creates a new instance of the mybase class or its subclasses via
+    #the given values for the colnames (the values are for all of the colnames)
     @classmethod
     def newBase(cls, myvals):
         myvalidator.varmustnotbeempty(myvals, varnm="myvals");
         return cls(colnames=cls.getMyColNames(mycols=cls.getMyCols()), colvalues=myvals);
     
     #note can also pass in a list of tuples in here without a problem
+    #if using dicts each dict will be composed of one colname with one value pair
+    #if using lists each list will have a colname in the first index and the value for the second index
     @classmethod
     def newBaseFromObjsOrListOfLists(cls, mlistofobjsorlists, useobjs):
         myvalidator.varmustbeboolean(useobjs, varnm="useobjs");
@@ -487,6 +492,8 @@ class mybase:
     def newBaseFromListOfLists(cls, mytupslist):
         return cls.newBaseFromObjsOrListOfLists(mytupslist, False);
 
+    #the mydataobj is actually a dict
+    #the keys are the colnames, the values are the colvalues.
     @classmethod
     def newBaseFromDataObj(cls, mydataobj):
         myvalidator.varmustnotbenull(mydataobj, varnm="mydataobj");
@@ -531,6 +538,15 @@ class mybase:
         #    exists = False;
         return exists;
 
+    #this method will write the strings that are given in flines list to the file named in fnmandpth
+    #(which is the file name and path), but if the the file exists we have the following options:
+    #append, block, or overwrite, write. We must pick one of them: b, a, w.
+    #the baowiffexists accepts a few options that indicate what to do if this happens, but if you
+    #do not pick one of the options, then it errors out.
+    #if you pick block mode and the file exists, it also errors out.
+    #otherwise, if the file exists and you picked append mode, it will be appended to the bottom of
+    #the file, otherwise it will be opened in write or overwrite mode by default.
+    #if the file does not exist we will write the contents to it regardless of what you picked.
     @classmethod
     def myfilewritelinesmethod(cls, fnmandpth, flines, baowiffexists="b", dscptrmsg=""):
         #actually write the stuff here...
@@ -539,7 +555,7 @@ class mybase:
         #modes are read, write, append
         #if the file exists, do we block or append or overwrite?
         #if the file does not exist, then we write.
-        myvalidator.stringMustHaveAtMinNumChars(fnmandpth, 3, "fnmandpth");
+        myvalidator.stringMustHaveAtMinNumChars(fnmandpth, 3, "fnmandpth");#a.a
         boremds = ["b", "B", "e", "E", "block", "BLOCK", "error", "ERROR"];
         ovrwmds = ["o", "O", "w", "W", "ow", "OW", "OVER-WRITE", "over-write", "overwrite", "OVERWRITE"];
         apndmds = ["a", "A", "append", "APPEND"];
@@ -547,12 +563,12 @@ class mybase:
         allfmds = myvalidator.combineTwoLists(boremds, worapndmds, nodups=True);
         myvalidator.itemMustBeOneOf(baowiffexists, allfmds, varnm="on_file_exists_action_policy");
         if (myvalidator.isvarnull(dscptrmsg)):
-            return cls.myfilewritelinesmethod(fnmandpth, flines,
+            return mybase.myfilewritelinesmethod(fnmandpth, flines,
                 baowiffexists=baowiffexists, dscptrmsg="");
         if (myvalidator.isvarnull(flines)):
-            return cls.myfilewritelinesmethod(fnmandpth, [],
+            return mybase.myfilewritelinesmethod(fnmandpth, [],
                 baowiffexists=baowiffexists, dscptrmsg=dscptrmsg);
-        exists = cls.myFileExists(fnmandpth);
+        exists = mybase.myFileExists(fnmandpth);
         wfmd = "w";
         if (exists):
             if (myvalidator.isListAInListB([baowiffexists], boremds)):
@@ -569,13 +585,13 @@ class mybase:
         return True;
     @classmethod
     def blockifmyfileexistswritelines(cls, fnmandpth, flines, dscptrmsg=""):
-        return cls.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="b", dscptrmsg=dscptrmsg);
+        return mybase.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="b", dscptrmsg=dscptrmsg);
     @classmethod
     def appendifmyfileexistswritelines(cls, fnmandpth, flines, dscptrmsg=""):
-        return cls.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="a", dscptrmsg=dscptrmsg);
+        return mybase.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="a", dscptrmsg=dscptrmsg);
     @classmethod
     def overwriteifmyfileexistswritelines(cls, fnmandpth, flines, dscptrmsg=""):
-        return cls.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="o", dscptrmsg=dscptrmsg);
+        return mybase.myfilewritelinesmethod(fnmandpth, flines, baowiffexists="o", dscptrmsg=dscptrmsg);
 
 
     #possible names and values for tables, constraints, and serialization rules
@@ -583,7 +599,6 @@ class mybase:
     @classmethod
     def getPossibleTableNames(cls):
         return ["mytablename", "tablename", "table_name", "my_table_name"];
-
     @classmethod
     def getMultiColumnConstraintVariableNames(cls):
         return ["mymulticolumnconstraints", "mymulticolconstraints", "mcolconstraints",
@@ -593,7 +608,6 @@ class mybase:
                 "my_multicol_arguments", "my_multi_col_arguments", "multi_col_arguments",
                 "mcol_arguments", "my_multi_column_args", "my_multicol_args",
                 "mcol_args", "my_multi_col_args", "multi_col_args", "my_multi_col_constraints"];
-
     @classmethod
     def getAllConstraintVariableNames(cls):
         return ["allconstraints", "allcolumnconstraints", "allcolconstraints", "alltableconstraints",
@@ -606,7 +620,6 @@ class mybase:
                 "all_args", "all_column_args", "all_col_args", "all_table_args", "all_table_col_args",
                 "all_tablecol_args", "tableargs", "tablecolargs", "table_args", "table_col_args",
                 "tablecol_args"];
-
     @classmethod
     def getAllExclusiveSerializeRuleNames(cls):
         return ["ex_rules", "exclusive_rules", "exrules", "exclusiverules", "exclusionrules",
@@ -620,6 +633,13 @@ class mybase:
         return ["serialize_rules", "serializerules", "serialize_only", "only_rules", "onlyrules",
                 "serialize_only_rules", "serializeonly", "serializeonlyrules"];
 
+    #this gets a list of possible names for the variable given the type
+    #this defines that a certain type will correspond with one of the lists in the 5 above methods:
+    #the variable name must be one of the following options:
+    #tablename, multi_column_constraints_list, allconstraints_list, allexrules, allonlyrules,
+    #and allserializerules
+    #if it is anything else it will error out
+    #the allserializerules combines the allexrules and the allonlyrules lists.
     @classmethod
     def getListOfPossibleNamesForVariable(cls, varnm="varnm"):
         if (myvalidator.isvaremptyornull(varnm)): return cls.varMustBePresentOnTable("varnm");
@@ -636,6 +656,13 @@ class mybase:
             return mlist;
         else: raise ValueError(errmsg);
 
+    #this returns a dict with the value and the name of for the attribute on the class
+    #in this case, the class matters. It must be a subclass of mybase
+    #the ilist or mylist is a list of attribute names on the class.
+    #if you do not pass in a list, then
+    #the varnm is the for the getListOfPossibleNamesForVariable(cls, varnm) method will be used
+    #once we find the specific attribute in our class this will return the object
+    #if it is not found, None or null will be returned instead of erroring out.
     @classmethod
     def getValObjectIfPresent(cls, ilist=None, varnm="varnm"):
         mylist = (cls.getListOfPossibleNamesForVariable(varnm)
@@ -648,6 +675,12 @@ class mybase:
     def getValObjectIfPresentMain(cls, varnm="varnm"):
         return cls.getValObjectIfPresent(ilist=None, varnm=varnm);
 
+    #this checks to see if the value object was not None basically
+    #this calls cls.getValObjectIfPresent(ilist=ilist, varnm=varnm)
+    #where the class cls that you call this with matters
+    #it must be a subclass of mybase
+    #if the object is not None, then it returns True, else it returns False.
+    #this will never error out unless you violated the class condition. 
     @classmethod
     def isVarPresentOnTable(cls, ilist=None, varnm="varnm"):
         return (not myvalidator.isvaremptyornull(cls.getValObjectIfPresent(ilist=ilist, varnm=varnm)));
@@ -655,10 +688,15 @@ class mybase:
     def isVarPresentOnTableMain(cls, varnm="varnm"):
         return cls.isVarPresentOnTable(ilist=None, varnm=varnm);
 
+
+    #this method forces the variable to be present on the table
+    #this the cls must be a subclass of mybase
+    #this calls cls.isVarPresentOnTable(ilist=ilist, varnm=varnm);
+    #unlike the above methods this will error out if the var is not present!
     @classmethod
     def varMustBePresentOnTable(cls, ilist=None, varnm="varnm"):
-        if (cls.isVarPresentOnTable(ilist, varnm)): return True;
-        else: raise AttributeError("the table must have a(n) " + varnm + " in it!");
+        if (cls.isVarPresentOnTable(ilist=ilist, varnm=varnm)): return True;
+        else: raise AttributeError("the table (class) must have a(n) " + varnm + " in it!");
     @classmethod
     def varMustBePresentOnTableMain(cls, varnm="varnm"):
         return cls.varMustBePresentOnTable(ilist=None, varnm=varnm);
@@ -667,6 +705,12 @@ class mybase:
     #possible bug found 5-4-2025 12:29 AM maybe we can return null if the name is not found?
     #if the name is not present, what should we do? should we return null for the name or error out?
 
+    #this method combines the cls.varMustBePresentOnTable(ilist=ilist, varnm=varnm);
+    #and the cls.getValObjectIfPresent(ilist=ilist, varnm=varnm); methods.
+    #the class matters it must be a subclass of mybase.
+    #if it is present we return the value of the name (if usename is True) on the return object
+    #or we return the value of the value (if usename is False) on the return object.
+    #if it is not present, we error out.
     @classmethod
     def getNameOrValueOfVarIfPresentOnTable(cls, usename, ilist=None, varnm="varnm"):
         myvalidator.varmustbeboolean(usename, varnm="usename");
@@ -674,32 +718,48 @@ class mybase:
         if (myvalidator.isvaremptyornull(myresobj)):
             #if (usename): return None;
             #else:
-                raise AttributeError("the table must have a(n) " + varnm + " in it!");
+                raise AttributeError("the table (class) must have a(n) " + varnm + " in it!");
         else: return myresobj[("name" if usename else "value")];
     @classmethod
     def getNameOrValueOfVarIfPresentOnTableMain(cls, usename, varnm="varnm"):
         return cls.getNameOrValueOfVarIfPresentOnTable(usename, ilist=None, varnm=varnm);
     
+    #this calls the method above, but telling it we are using a name only.
+    #the class matters it must be a subclass of mybase.
     @classmethod
     def getNameOfVarIfPresentOnTable(cls, ilist=None, varnm="varnm"):
-        return cls.getNameOrValueOfVarIfPresentOnTable(cls, True, ilist=ilist, varnm=varnm);
+        return cls.getNameOrValueOfVarIfPresentOnTable(True, ilist=ilist, varnm=varnm);
     @classmethod
     def getNameOfVarIfPresentOnTableMain(cls, varnm="varnm"):
-        return cls.getNameOrValueOfVarIfPresentOnTableMain(True, varnm=varnm);
+        return cls.getNameOrValueOfVarIfPresentOnTableMain(True, ilist=None, varnm=varnm);
     
+    #this calls the method above, but telling it we are using a value only.
+    #the class matters it must be a subclass of mybase.
     @classmethod
     def getValueOfVarIfPresentOnTable(cls, ilist=None, varnm="varnm"):
-        return cls.getNameOrValueOfVarIfPresentOnTable(cls, False, ilist=ilist, varnm=varnm);
+        return cls.getNameOrValueOfVarIfPresentOnTable(False, ilist=ilist, varnm=varnm);
     @classmethod
     def getValueOfVarIfPresentOnTableMain(cls, varnm="varnm"):
-        return cls.getNameOrValueOfVarIfPresentOnTableMain(False, varnm=varnm);
+        return cls.getNameOrValueOfVarIfPresentOnTableMain(False, ilist=None, varnm=varnm);
     
+    #this gets the value of the attribute that stores the tablename on the given class
+    #the class cls must be a subclass of mybase and it must have a tablename attribute present.
+    #if not, then this errors out (during setup or object instance creation).
     @classmethod
     def getTableName(cls): return cls.getValueOfVarIfPresentOnTableMain("tablename");
+    
+    #this is similar to cls.getTableName() except it is for multi_column_constraints_list
+    #the class cls must be a subclass of mybase and it must have a multicolumnagrs attribute present.
+    #if not, then this errors out (during setup or object instance creation).
     @classmethod
     def getMultiColumnConstraints(cls):
         return cls.getValueOfVarIfPresentOnTableMain("multi_column_constraints_list");
     
+    #this is a convenience method that calls cls.getTableName()
+    #it returns a string that says "the table " <tname> " on class " <classname>;
+    #with the values replaced. For example "the table users on class User"...
+    #that means that cls must be subclass of mybase and have the tablename attribute on it.
+    #if not, then this errors out (during setup or object instance creation).
     @classmethod
     def getTableAndClassNameString(cls):
         return "the table " + cls.getTableName() + " on class " + cls.__name__;
@@ -707,6 +767,12 @@ class mybase:
 
     #column methods
 
+    #retobjs is a boolean variable and it means return objects.
+    #if retobjs is true this returns a list of the mycol or myrefcol objects on the class.
+    #if retobjs is false this returns a list of the attribute names
+    #for the mycol or myrefcol objects on the class.
+    #the usemycols (boolean variable also) if true uses mycols if false uses myrefcols.
+    #note being a subclass of mybase does not effect this method (though cls often is).
     @classmethod
     def getMyColsOrRefColsOrMyColAttributeNames(cls, retobjs, usemycols):
         #print(f"cls = {cls}");
@@ -715,14 +781,19 @@ class mybase:
         return [(getattr(cls, attr) if retobjs else attr)
                 for attr in dir(cls) if (type(getattr(cls, attr)) ==
                                          (mycol if (usemycols) else myrefcol))];
+    
+    #this gets a mycol or myref col objects list for the given class
     @classmethod
     def getMyColObjects(cls, usemycols):
         return cls.getMyColsOrRefColsOrMyColAttributeNames(True, usemycols);
+    #this gets the attribute names for mycol or myref cols list for the given class.
     @classmethod
     def getMyAttributeNamesForColsOrRefCols(cls, usemycols):
         return cls.getMyColsOrRefColsOrMyColAttributeNames(False, usemycols);
+    #this gets mycol objects
     @classmethod
     def getMyCols(cls): return cls.getMyColObjects(True);
+    #this gets myrefcol objects
     @classmethod
     def getMyRefCols(cls): return cls.getMyColObjects(False);
     @classmethod
@@ -730,6 +801,10 @@ class mybase:
     @classmethod
     def getMyRefColAttributeNames(cls): return cls.getMyAttributeNamesForColsOrRefCols(False);
 
+    #this gets mycols or refcols if no col objects are provided on the mycols list
+    #but if col objects are provided on the mycols list, then it uses that list.
+    #the boolean variable usemycols will only be taken into account when no col objects are provided.
+    #but it is required because it tells what is on that list (supposedly). 
     @classmethod
     def getMyOrRefColsFromClassOrParam(cls, usemycols, mycols=None):
         myvalidator.varmustbeboolean(usemycols, varnm="usemycols");
@@ -741,6 +816,9 @@ class mybase:
     def getMyRefColsFromClassOrParam(cls, mycols=None):
         return cls.getMyOrRefColsFromClassOrParam(False, mycols=mycols);
 
+    #this gets the colnames or refcolnames from the mycols object list
+    #depending on which coltype mycol or myrefcol depends on what is used to get the colname
+    #for mycol it is colname for refcol it is listcolname.
     @classmethod
     def getMyOrRefColNames(cls, usemycols, mycols=None):
         return [(mclobj.colname if (usemycols) else mclobj.listcolname) for mclobj in
@@ -754,10 +832,27 @@ class mybase:
     @classmethod
     def getMyRefColNames(cls, mycols=None): return cls.getMyOrRefColNames(False, mycols=mycols);
     
+    #each col has a colname and an attribute name for it
+    #but you cannot use the attribute name to get the actual value of the col
+    #secretly on setup the mybase class adds the values and stores them on initialization
+    #for each col attribute name you take that and add _value to it.
+    #you can get a specific set if you want to pass in a list of mycol objects to mycols
+    #otherwise it will return them all
+    #this method is only for mycols only as it really does not make sense for refcols since they
+    #store a class.all list and are not stored in the DB.
+    #if you pass in a list of refcols, it will error out.
     @classmethod
     def getValueColNames(cls, mycols=None):
         return [nm + "_value" for nm in cls.getMyColNames(mycols=mycols)];
 
+    #this gets a specific mycol object from the colname
+    #this uses mycol objects only
+    #the cls should be a class that has mycol objects on it
+    #the mycols is a list of mycol objects that you can search
+    #if this is none, it will use all on the class
+    #the colname is the name that we are searching for.
+    #if it is not found on the class or on the list, then it will error out.
+    #if it is found, then the mycol object is returned
     @classmethod
     def getMyColObjFromName(cls, mcnm, mycols=None):
         mclist = cls.getMyColsFromClassOrParam(mycols=mycols);
@@ -779,10 +874,18 @@ class mybase:
     def getMyColumnObjFromName(cls, mcnm, mycols=None):
         return cls.getMyColObjFromName(mcnm, mycols=mycols);
 
+    #this asks are given colnames in mlist on the list of mycols
+    #if mlist is empty it returns False.
+    #this is only for mycol objects (using refcols will error out on getting the names)
+    #if the name is not found, then it returns False.
+    #otherwise it returns True.
+    #an important note about this method although tempting to use inside of your model classes
+    #please do not use this. It will error out due to a timing problem with Python.
+    #it will error out due to the class not existing yet.
     @classmethod
     def areGivenColNamesOnTable(cls, mlist, mycols=None):
         if (myvalidator.isvaremptyornull(mlist)): return False;
-        fincolnms = cls.getMyColNames(cls.getMyColsFromClassOrParam(mycols=mycols));
+        fincolnms = cls.getMyColNames(mycols=cls.getMyColsFromClassOrParam(mycols=mycols));
         for mitem in mlist:
             if (mitem in fincolnms): pass;
             else: return False;
@@ -794,15 +897,23 @@ class mybase:
         return [mclobj for mclobj in cls.getMyColsFromClassOrParam(mycols=mycols)
                 if (mclobj.isprimarykey if (usepkys) else mclobj.isforeignkey)];
     @classmethod
-    def getMyPrimaryKeyCols(cls, mycols=None): return cls.getMyPrimaryOrForeignKeyCols(True, mycols);
+    def getMyPrimaryKeyCols(cls, mycols=None):
+        return cls.getMyPrimaryOrForeignKeyCols(True, mycols=mycols);
     @classmethod
-    def getMyForeignKeyCols(cls, mycols=None): return cls.getMyPrimaryOrForeignKeyCols(False, mycols);
+    def getMyForeignKeyCols(cls, mycols=None):
+        return cls.getMyPrimaryOrForeignKeyCols(False, mycols=mycols);
     
     @classmethod
     def getForeignKeyObjectNamesFromCols(cls, mycols=None):
         return [mc.getForeignObjectName() for mc in cls.getMyForeignKeyCols(mycols=mycols)
                 if (cls.needToCreateAnObjectForCol(mc))];
 
+    #useclist is a boolean variable that means use constraints list (if true)
+    #if false, it will use columns
+    #but this only returns those columns with contraints (false) or the constraints themselves (true)
+    #only for those with individual column constraints.
+    #the mycols list if None will use all of the mycol objects on the class, otherwise only these.
+    #you cannot use refcols on most of these.
     @classmethod
     def getIndividualColumnConstraintsOrColsWithConstraints(cls, useclist, mycols=None):
         myvalidator.varmustbeboolean(useclist, varnm="useclist");
@@ -816,6 +927,10 @@ class mybase:
     def getColumnsWithConstraints(cls, mycols=None):
         return cls.getIndividualColumnConstraintsOrColsWithConstraints(False, mycols=mycols);
 
+    #for a constraint to be valid it must start with CHECK( and have the colname on it at minimum
+    #this makes some assumptions about the methods used to generate the constraint.
+    #it also assumes that the user did not intentionally enter bad data.
+    #but if they did, the DB table will not get created.
     @classmethod
     def isColWithConstraintsValid(cls, mc):
         myvalidator.varmustnotbenull(mc, varnm="mc");
@@ -839,6 +954,9 @@ class mybase:
                     else: return False;
         return True;
 
+    #this method returns the mycols with the invalid individual constraints
+    #this method is used for error reporting only call this if you are trying to find problems
+    #if the constraints are not valid, this may cause the DB table not to be created... 
     @classmethod
     def getColumnsWithIndividualInvalidConstraints(cls, mycols=None):
         return [mc for mc in cls.getColumnsWithConstraints(mycols=mycols)
