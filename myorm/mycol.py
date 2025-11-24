@@ -131,8 +131,8 @@ class mycol:
 
     @classmethod
     def getMyValidators(cls, mcnm):
-        myvalidator.stringHasAtMinNumChars(mcnm, 1);
-        myvalidator.stringContainsOnlyAlnumCharsIncludingUnderscores(mcnm);
+        myvalidator.stringMustHaveAtMinNumChars(mcnm, 1, varnm="myclassnm");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mcnm, varnm="myclassnm");
         return [item for item in cls.getAllValidators() if (item["classname"] == mcnm)];
 
     @classmethod
@@ -733,9 +733,10 @@ class mycol:
             valhaspslist = [("(" in item and ")" in item) for item in val];
             mval = [(val[i][0: val[i].index("(")].upper() + val[i][val[i].index("("):]
                     if (valhaspslist[i]) else val[i].upper()) for i in range(len(val))
-                    if (myvalidator.stringMustHaveAtMinNumChars(val[i], 1, "val[" + str(i) + "]"))];
+                    if (myvalidator.stringMustHaveAtMinNumChars(val[i], 1,
+                                                                varnm="val[" + str(i) + "]"))];
         elif (type(val) == str):
-            myvalidator.stringMustHaveAtMinNumChars(val, 1, "val");
+            myvalidator.stringMustHaveAtMinNumChars(val, 1, varnm="val");
             valhasps = ("(" in val and ")" in val);
             mval = (val[0: val.index("(")].upper() + val[val.index("("):]
                     if (valhasps) else val.upper());
@@ -863,7 +864,7 @@ class mycol:
 
     def setForeignObjectName(self, val):
         if (myvalidator.isvaremptyornull(val)): pass;
-        else: myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(val, "val");
+        else: myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(val, varnm="val");
         self._foreignobjectname = val;
 
     foreignobjectname = property(getForeignObjectName, setForeignObjectName);
@@ -1044,7 +1045,7 @@ class mycol:
             #print(f"myfccolnames = {myfccolnames}");
             #if (val in myfccolnames): self._foreignColName = val;
             #else: raise ValueError(f"invalid column name ({val})!");
-            myvalidator.listMustContainUniqueValuesOnly(val);
+            myvalidator.listMustContainUniqueValuesOnly(val, ignorelist=None, varnm="val");
             self._foreignColNames = val;
         from myorm.mybase import mybase;
         mybase.updateAllForeignKeyObjectsForAllClasses(not self.getIsInitialized());
@@ -1407,7 +1408,7 @@ class mycol:
                     #print(f"pkycolnames = {pkycolnames}");
                     #print(f"self.foreignColNames = {self.foreignColNames}");
 
-                    myvalidator.listMustContainUniqueValuesOnly(pkycolnames, "pkycolnames");
+                    myvalidator.listMustContainUniqueValuesOnly(pkycolnames, varnm="pkycolnames");
                     isvalid = False;
                     merrmsgpta = "the foreign key column";
                     merrmsgptb = ("" if (fcobj == None) else " on class(" + type(fcobj).__name__ + ")");

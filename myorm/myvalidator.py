@@ -412,9 +412,9 @@ class myvalidator:
     def stringMustStartOrEndOrBothWith(cls, mstr, estr, usestart, useboth, varnm="varnm"):
         myvalidator.varmustbeboolean(usestart, varnm="usestart");
         myvalidator.stringMustHaveAtMinNumChars(mstr, 1, varnm="mstr");
-        if (estr == None): return cls.stringMustEndWith(mstr, "", varnm="varnm");
+        if (estr == None): return myvalidator.stringMustEndWith(mstr, "", varnm="varnm");
         if (myvalidator.isvaremptyornull(varnm)):
-            return cls.stringMustEndWith(mstr, estr, varnm="varnm");
+            return myvalidator.stringMustEndWith(mstr, estr, varnm="varnm");
         sorewstr = ("start and end" if (useboth) else ("start" if (usestart) else "end"));
         errmsg = "the string " + mstr + " called " + varnm + " does not " + sorewstr + " with " + estr;
         errmsg += ", but it must!";
@@ -455,7 +455,7 @@ class myvalidator:
 
     @classmethod
     def getLineIndexesWithStringOnIt(cls, mstr, mlines):
-        myvalidator.stringMustHaveAtMinNumChars(mstr, 1, "mstr");
+        myvalidator.stringMustHaveAtMinNumChars(mstr, 1, varnm="mstr");
         if (myvalidator.isvaremptyornull(mlines)): return [];
         #                                    if (cls.doesLineHaveStringOnItAtIndex(mstr, mlines[n], 0))
         return [n for n in range(len(mlines)) if (mstr in mlines[n] and mlines[n].index(mstr) == 0)];
@@ -1222,11 +1222,13 @@ class myvalidator:
                                      "if there is more than one tablename!");
             from mycol import mycol;#may need to change or get removed
             mystr = "";
+            clvarnm = "the colname";
+            tnmvarnm = "the tablename";
             for n in range(len(colnames)):
                 colnm = colnames[n];
                 tnm = (tablenames[n] if (1 < len(tablenames)) else tablenames[0]);
-                myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(colnm, "the colname");
-                myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tnm, "the tablename");
+                myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(colnm, varnm=clvarnm);
+                myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tnm, varnm=tnmvarnm);
                 myclstablenameref = mycol.getClassFromTableName(tnm);
                 myvalidator.varmustnotbenull(myclstablenameref, varnm="myclstablenameref");
                 if (myclstablenameref.areGivenColNamesOnTable([colnm], mycols=None)): pass;
@@ -1280,7 +1282,7 @@ class myvalidator:
         myvalidator.varmustbeboolean(onlyifnot, varnm="onlyifnot");
         myvalidator.varmustbeboolean(isinctable, varnm="isinctable");
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(name, varnm="name");
-        myvalidator.varmustnotbeempty(mycols, "mycols");
+        myvalidator.varmustnotbeempty(mycols, varnm="mycols");
         myvalidator.stringMustHaveAtMinNumChars(varstr, 1, varnm="varstr");
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(varstr, varnm="varstr");
         print("\nINSIDE OF GEN CREATE TABLE METHOD():");
@@ -1472,19 +1474,19 @@ class myvalidator:
     @classmethod
     def genSQLDropTable(cls, tname, onlyifnot=False):
         myvalidator.varmustbeboolean(onlyifnot, varnm="onlyifnot");
-        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, "tname");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, varnm="tname");
         return "DROP TABLE " + ("IF EXISTS " if (onlyifnot) else "") + tname + ";";
 
     #IF EXISTS IS NOT SUPPORTED ON THE TRUNCATE NOR IS IT SUPPORTED ON THE DELETE COMMANDS
     @classmethod
     def genSQLTruncateTable(cls, tname):
-        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, "tname");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, varnm="tname");
         return "TRUNCATE TABLE " + tname + ";";
 
     #does not end with a semi-colon.
     @classmethod
     def genSQLDeleteNoWhere(cls, mtname):
-        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, "mtname");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, varnm="mtname");
         return "DELETE FROM " + mtname;
     @classmethod
     def genSQLClearTable(cls, mtname): return cls.genSQLDeleteNoWhere(mtname);
@@ -1525,7 +1527,7 @@ class myvalidator:
         #but if the column is say an integer primary key that autoincrements,
         #then we do not need to provide the value here nor do we need to provide its name
         #however, the values must correspond with the colnames...
-        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, arranm="mtname");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, varnm="mtname");
         mstr = "";
         if (myvalidator.isvaremptyornull(vals)): mstr = cls.genQuestionString(colnames);
         else: mstr = myvalidator.myjoin(", ", vals);
@@ -1539,7 +1541,7 @@ class myvalidator:
         #UPDATE tablename SET colnamea = ?, colnameb = ?, ... WHERE pkycolname = ?;
         #UPDATE tablename SET colnamea = newvalue, colnameb = newvalue, ...
             # WHERE colnamea = oldvalue; (or just use the primary key to access it).
-        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, "mtname");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, varnm="mtname");
         myvalidator.stringMustHaveAtMinNumChars(wrval, 1, varnm="wrval");
         mstr = cls.genColNameEqualsValString(colnames, nvals=nvals);
         return "UPDATE " + mtname + " SET " + mstr + " WHERE " + wrval + ";";
@@ -1581,19 +1583,19 @@ class myvalidator:
         myvalidator.varmustbeboolean(inctnameonone, varnm="inctnameonone");
         myvalidator.varmustbeboolean(usedistinct, varnm="usedistinct");
         isonetable = False;
+        nomtnmerrmsg = "there must be at least one tablename if there is at least one colname, but ";
+        nomtnmerrmsg += "there was not!";
+        tnmsclnmserrmsg = "the number of the tablenames and columnnames must be the same!";
         if (myvalidator.isvaremptyornull(colnames)):
             if (myvalidator.isvaremptyornull(tablenames)):
                 return "COUNT(" + ("DISTINCT " if usedistinct else "") + "*)";
             else: return cls.genCount(None, None, usedistinct);
         else:
-            if (myvalidator.isvaremptyornull(tablenames)):
-                raise ValueError("there must be at least one tablename if there is at least " +
-                    "one colname, but there was not!");
+            if (myvalidator.isvaremptyornull(tablenames)): raise ValueError(nomtnmerrmsg);
             else:
                 isonetable = (len(tablenames) == 1);
                 if (len(colnames) == len(tablenames) or isonetable): pass;
-                else:
-                    raise ValueError("the number of the tablenames and columnnames must be the same!");
+                else: raise ValueError(tnmsclnmserrmsg);
         #if there is more than one table, we need to include the tablename
         #if there is one table, we may still need it, we may not
         #for validation purposes either way we do need it.
@@ -3185,7 +3187,7 @@ class myvalidator:
         else:
             #note the validator method returns True or errors out.
             pnames = [pobj["paramname"] for pobj in mobj["paramnameswithranges"]
-                      if (myvalidator.objvarmusthavethesekeysonit(pobj, ["paramname"], "pobj"))];
+                      if (myvalidator.objvarmusthavethesekeysonit(pobj, ["paramname"], varnm="pobj"))];
             return "(" + (", ".join(pnames)) + ")";
 
     #ptpstr is PSONLY means parameters only
@@ -4456,7 +4458,7 @@ class myvalidator:
 
                         #now for these types we need to strip the quotes off of each string first
                         nwfinpsontp = [mstr[1:len(mstr) - 1] for mstr in finpsonval
-                                       if myvalidator.stringMustStartAndEndWith(mstr, "'", "mstr")];
+                                       if myvalidator.stringMustStartAndEndWith(mstr, "'", varnm="mstr")];
                         nwval = val[1:len(val) - 1];
                         #print(f"nwfinpsontp = {nwfinpsontp}");
                         

@@ -82,10 +82,10 @@ class mybase:
         print(f"myrefcolattrnames = {myrefcolattrnames}");
         print(f"myrefcolnames = {myrefcolnames}");
 
-        myvalidator.listMustContainUniqueValuesOnly(mycolnames, "mycolnames");
-        myvalidator.listMustContainUniqueValuesOnly(mycolattrnames, "mycolattrnames");
-        myvalidator.listMustContainUniqueValuesOnly(myrefcolattrnames, "myrefcolattrnames");
-        myvalidator.listMustContainUniqueValuesOnly(myrefcolnames, "myrefcolnames");
+        myvalidator.listMustContainUniqueValuesOnly(mycolnames, varnm="mycolnames");
+        myvalidator.listMustContainUniqueValuesOnly(mycolattrnames, varnm="mycolattrnames");
+        myvalidator.listMustContainUniqueValuesOnly(myrefcolattrnames, varnm="myrefcolattrnames");
+        myvalidator.listMustContainUniqueValuesOnly(myrefcolnames, varnm="myrefcolnames");
         if (myvalidator.areTwoListsTheSame(mycolnames, mycolattrnames)): pass;
         else: raise ValueError("THE COLUMN ATTRIBUTE NAMES MUST MATCH THE SET COLNAME GIVEN!");
         if (myvalidator.areTwoListsTheSameSize(myrefcolnames, myrefcolattrnames)): pass;
@@ -188,7 +188,7 @@ class mybase:
                     mbclses.append(mclsref);
                     mtnms.append(mclsref.getTableName());
                     mclsref.setupPartA();
-            myvalidator.listMustContainUniqueValuesOnly(mtnms, "the list of table names");
+            myvalidator.listMustContainUniqueValuesOnly(mtnms, varnm="the list of table names");
             
             #due to a dependency on the all list existing and being set for all of the classes
             #(that are a subclass of mybase and not mybase),
@@ -299,7 +299,7 @@ class mybase:
         for mc in mytempcols:
             #mc.setContainingClassName(type(self).__name__);
             myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(
-                mc.getContainingClassName(), "containing class name");
+                mc.getContainingClassName(), varnm="containing class name");
             mc.primaryKeyInformationMustBeValid(type(self));
             mc.foreignKeyInformationMustBeValid(fcobj=self, usenoclassobj=False);
 
@@ -555,7 +555,7 @@ class mybase:
         #modes are read, write, append
         #if the file exists, do we block or append or overwrite?
         #if the file does not exist, then we write.
-        myvalidator.stringMustHaveAtMinNumChars(fnmandpth, 3, "fnmandpth");#a.a
+        myvalidator.stringMustHaveAtMinNumChars(fnmandpth, 3, varnm="fnmandpth");#a.a
         boremds = ["b", "B", "e", "E", "block", "BLOCK", "error", "ERROR"];
         ovrwmds = ["o", "O", "w", "W", "ow", "OW", "OVER-WRITE", "over-write", "overwrite", "OVERWRITE"];
         apndmds = ["a", "A", "append", "APPEND"];
@@ -973,7 +973,7 @@ class mybase:
     #get and set column and update object references
 
     def getValueForColName(self, clnm):
-        myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
+        myvalidator.stringMustHaveAtMinNumChars(clnm, 1, varnm="colnm");
         return getattr(self, clnm + "_value");
     def getValueForColumn(self, clnm): return self.getValueForColName(clnm);
     def getValueForCol(self, clnm): return self.getValueForColName(clnm);
@@ -982,7 +982,7 @@ class mybase:
 
     #DEPENDS ON THE SQL VARIANT
     def setValueForColName(self, clnm, valcl, mycolobj=None):
-        myvalidator.stringMustHaveAtMinNumChars(clnm, 1, "clnm");
+        myvalidator.stringMustHaveAtMinNumChars(clnm, 1, varnm="colnm");
         if (mycolobj == None):
             return self.setValueForColName(clnm, valcl, type(self).getMyColObjFromName(clnm));
         else: myvalidator.varmustnotbenull(mycolobj, varnm="mycolobj");
@@ -1020,7 +1020,7 @@ class mybase:
                     #print(f"myfccolnames = {myfccolnames}");#all of the col names in the foreign class
                     
                     myvalidator.listMustContainUniqueValuesOnly(mycolobj.foreignColNames,
-                                                                "mycolobj.foreignColNames");
+                                                                varnm="mycolobj.foreignColNames");
 
                     #print(f"mycolis = {mycolis}");
 
@@ -1903,10 +1903,12 @@ class mybase:
     @classmethod
     def genSQLFileLines(cls, mtexistsdata, ctblstmnts, mdataforalltbls):
         mtblclses = cls.getTableClasses(ftchnow=False);
-        myvalidator.twoListsMustBeTheSameSize(mtexistsdata, mtblclses, "mtexistsdata", "mtblclses");
-        myvalidator.twoListsMustBeTheSameSize(ctblstmnts, mtblclses, "ctblstmnts", "mtblclses");
+        myvalidator.twoListsMustBeTheSameSize(mtexistsdata, mtblclses,
+                                              arranm="mtexistsdata", arrbnm="mtblclses");
+        myvalidator.twoListsMustBeTheSameSize(ctblstmnts, mtblclses,
+                                              arranm="ctblstmnts", arrbnm="mtblclses");
         myvalidator.twoListsMustBeTheSameSize(mdataforalltbls, mtblclses,
-                                              "mdataforalltbls", "mtblclses");
+                                              arranm="mdataforalltbls", arrbnm="mtblclses");
         mysqlfilelines = [mclsref.genSQLDropTableFromClass(onlyifnot=True) for mclsref in mtblclses];
         for n in range(len(mtblclses)):
             #create table if exists else do nothing, then generate the statements to insert the data.
@@ -2147,8 +2149,8 @@ class mybase:
     #https://stackoverflow.com/questions/54289555/how-do-i-execute-an-sqlite-script-from-within-python
     @classmethod
     def restoreDBFromSQLFile(cls, filepathandnm):
-        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 4, "filepathandnm");
-        myvalidator.stringMustEndWith(filepathandnm, ".sql", "filepathandnm");
+        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 4, varnm="filepathandnm");
+        myvalidator.stringMustEndWith(filepathandnm, ".sql", varnm="filepathandnm");
         mscrpt = None;
         with open(filepathandnm, "r") as mfile:
             mscrpt = mfile.read();
@@ -2156,15 +2158,17 @@ class mybase:
         mybase.getMyCursor().executescript(mscrpt);
         mybase.getMyConn().commit();
         print("DB SUCCESSFULLY RESTORED!");
+        return True;
     
     @classmethod
     def restoreDBFromPyFile(cls, filepathandnm):
         #this method is a possible security problem.
-        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 3, "filepathandnm");
-        myvalidator.stringMustEndWith(filepathandnm, ".py", "filepathandnm");
+        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 3, varnm="filepathandnm");
+        myvalidator.stringMustEndWith(filepathandnm, ".py", varnm="filepathandnm");
         import os;
         os.system("python " + filepathandnm);
         print("DONE EXECUTING THE RESTORE FILE!");
+        return True;
     
     @classmethod
     def dataOnlyFileMustBeInTheCorrectFormat(cls, mlines):
@@ -2236,8 +2240,8 @@ class mybase:
         #...\n
         #]\n
         #this line will have the next class on it or will be blank
-        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 5, "filepathandnm");
-        myvalidator.stringMustEndWith(filepathandnm, ".txt", "filepathandnm");
+        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 5, varnm="filepathandnm");
+        myvalidator.stringMustEndWith(filepathandnm, ".txt", varnm="filepathandnm");
         mlines = None;
         with open(filepathandnm, "r") as mfile:
             mlines = mfile.readlines();
@@ -2505,8 +2509,8 @@ class mybase:
         #but we still need the new data in some cases
         #
         #we will use the data only file as it is the most complete...
-        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 5, "filepathandnm");
-        myvalidator.stringMustEndWith(filepathandnm, ".txt", "filepathandnm");
+        myvalidator.stringMustHaveAtMinNumChars(filepathandnm, 5, varnm="filepathandnm");
+        myvalidator.stringMustEndWith(filepathandnm, ".txt", varnm="filepathandnm");
         if (myvalidator.isvaremptyornull(cloglines)):
             return cls.restoreDBFromDatOnlyFile(filepathandnm);
         #if above only has 0s the other method will work fine.
@@ -2796,7 +2800,8 @@ class mybase:
             if (tnmiscurrentnm == tnmisprevnm):
                 if (tnmiscurrentnm):
                     myvalidator.twoBoolVarsMustBeDifferentOrEqual(tnmiscurrentnm, tnmisprevnm, True,
-                                                                "tnmiscurrentnm", "tnmisprevnm");
+                                                                  varnma="tnmiscurrentnm",
+                                                                  varnmb="tnmisprevnm");
             mtnmfref = ("" + tname if (tnmiscurrentnm or tnmisascrrnt) else "" + utnms[prvnmi]);
             #is the previous or current tname on the mydeltablenms list
             tnmdeltble = (isadeltble and ((tname in mydeltablenms) or
@@ -3118,7 +3123,7 @@ class mybase:
         myretlist = [item for item in mlist if item not in mxlist];
         #print(f"myretlist = {myretlist}");
         
-        myvalidator.listMustContainUniqueValuesOnly(myretlist, "myretlist");
+        myvalidator.listMustContainUniqueValuesOnly(myretlist, varnm="myretlist");
         return myretlist;
     @classmethod
     def getAllKnownAttributeNamesOnTheClass(cls):
@@ -3173,7 +3178,7 @@ class mybase:
             #if the attributes are on the unsafelist, copy how it is handled in myrepr
             #if the attribute does not exist, then either
             #-add None to the string and ignore the error OR kill it.
-            myvalidator.listMustContainUniqueValuesOnly(myattrs, "myattrs");
+            myvalidator.listMustContainUniqueValuesOnly(myattrs, varnm="myattrs");
             #print(f"my class name = {self.__class__.__name__}");
 
             fobjnames = type(self).getForeignKeyObjectNamesFromCols();

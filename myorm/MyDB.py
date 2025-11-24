@@ -11,10 +11,8 @@ class MyDB:
     
     @classmethod
     def newDBFromNameAndLib(cls, mydbname, libtp, sqltp):
-        if (mydbname == None or len(mydbname) < 1): raise ValueError("mydbname must not be empty!");
-        else:
-            if (type(mydbname) == str): pass;
-            else: raise ValueError("mydbname must be a non-empty defined string!");
+        myvalidator.varmustbethetypeonly(mydbname, str, varnm="mydbname");
+        myvalidator.stringMustHaveAtMinNumChars(mydbname, 1, varnm="mydbname");
         if (libtp == None): raise ValueError("libtp must not be null or None!");
         tmpconn = libtp.connect(mydbname + ".db");
         return MyDB(mydbname=mydbname, mylibref=libtp, mysqlvar=sqltp,
@@ -24,32 +22,52 @@ class MyDB:
     def setLibRef(self, val): self._libref = val;
     libref = property(getLibRef, setLibRef);
 
-    def getDBName(self): return self._DB_NAME;
-    def setDBName(self, val):
-        if (val == None or val == ""): self._DB_NAME = None;
+    def getMyStrType(self, tpstr):
+        myvalidator.varmustbethetypeonly(tpstr, str, varnm="tpstr");
+        if (tpstr == "DB_NAME"): return self._DB_NAME;
+        elif (tpstr == "CONFIGFNAME"): return self._CONFIGFNAME;
+        elif (tpstr == "SQLVARIANT"): return self._SQLVARIANT;
         else:
-            if (type(val) == str and 0 < len(val)): self._DB_NAME = "" + val;
-            else: raise ValueError("the DB NAME must be a string and not be empty!");
+            raise ValueError("the tpstr must be one of the following: " +
+                             "[DB_NAME, CONFIGFNAME, SQLVARIANT], but it was not!");
+    def getDBName(self): return self.getMyStrType("DB_NAME");
+    def getConfigFileName(self): return self.getMyStrType("CONFIGFNAME");
+    def getSQLType(self): return self.getMyStrType("SQLVARIANT");
+    
+    def setMyStrTypeVal(self, val, tpstr):
+        myvalidator.varmustbethetypeonly(tpstr, str, varnm="tpstr");
+        finvarnm = None;
+        if (tpstr == "DB_NAME"): finvarnm = "DB NAME";
+        elif (tpstr == "CONFIGFNAME"): finvarnm = "config file name";
+        elif (tpstr == "SQLVARIANT"): finvarnm = "val (nwSQLType)";
+        else:
+            raise ValueError("the tpstr must be one of the following: " +
+                             "[DB_NAME, CONFIGFNAME, SQLVARIANT], but it was not!");
+        if (myvalidator.isvaremptyornull(val)):
+            if (finvarnm == "DB NAME"): self._DB_NAME = None;
+            elif (finvarnm == "config file name"): self._CONFIGFNAME = None;
+            else: self._SQLVARIANT = None;
+        else:
+            myvalidator.varmustbethetypeonly(val, str, varnm=finvarnm);
+            myvalidator.stringMustHaveAtMinNumChars(val, 1, varnm=finvarnm);
+            if (finvarnm == "DB NAME"): self._DB_NAME = "" + val;
+            elif (finvarnm == "config file name"): self._CONFIGFNAME = "" + val;
+            else: self._SQLVARIANT = "" + val;
+    def setDBName(self, val): self.setMyStrTypeVal(val, "DB_NAME");
+    def setConfigFileName(self, val): self.setMyStrTypeVal(val, "CONFIGFNAME");
+    def setSQLType(self, val): self.setMyStrTypeVal(val, "SQLVARIANT");
+    
     DB_NAME = property(getDBName, setDBName);
-
-    def getConfigFileName(self): return self._CONFIGFNAME;
-    def setConfigFileName(self, val):
-        if (val == None or val == ""): self._CONFIGFNAME = None;
-        else:
-            if (type(val) == str and 0 < len(val)): self._CONFIGFNAME = "" + val;
-            else: raise ValueError("the config file name must be a string and not be empty!");
     CONFIGFNAME = property(getConfigFileName, setConfigFileName);
+    SQLVARIANT = property(getSQLType, setSQLType);
 
     def getConfigAttrNames(self): return self._CONFIGATTRNAMES;
     def setConfigAttrNames(self, val):
-        if (val == None or len(val) < 1): self._CONFIGATTRNAMES = None;
+        if (myvalidator.isvaremptyornull(val)): self._CONFIGATTRNAMES = None;
         else:
             for nm in val:
+                myvalidator.varmustbethetypeonly(nm, str, varnm="config file attr name");
                 myvalidator.stringMustHaveAtMinNumChars(nm, 1, varnm="config file attr name");
-                if (nm == None or len(nm) < 1): raise ValueError("the name must not be empty or null!");
-                else:
-                    if (type(nm) == str and 0 < len(nm)): pass;
-                    else: raise ValueError("the config file attr name must be a string and not empty!");
             self._CONFIGFNAME = ["" + nm for nm in val];
     CONFIGATTRNAMES = property(getConfigAttrNames, setConfigAttrNames);
 
@@ -57,27 +75,6 @@ class MyDB:
     def setConfigAttrValues(self, vals): self._CONFIGATTRVALS = vals;
     CONFIGATTRVALUES = property(getConfigAttrValues, setConfigAttrValues);
 
-    def getConfigValueForName(self, attrnm):
-        myvalidator.varmustnotbeempty(attrnm, varnm="attrnm");
-        myvalidator.twoListsMustBeTheSameSize(self.CONFIGATTRNAMES, self.CONFIGATTRVALUES,
-                                              "CONFIGATTRNAMES", "CONFIGATTRVALUES");
-        myattrnmi = self.CONFIGATTRNAMES.index(attrnm);
-        return self.CONFIGATTRVALUES[myattrnmi];
-
-    def getConfigNamesForValType(self, tpcls):
-        myvalidator.twoListsMustBeTheSameSize(self.CONFIGATTRNAMES, self.CONFIGATTRVALUES,
-                                              "CONFIGATTRNAMES", "CONFIGATTRVALUES");
-        return [self.CONFIGATTRNAMES[i] for i in range(len(self.CONFIGATTRVALUES))
-                if (type(self.CONFIGATTRVALUES[i]) == tpcls)];
-
-    def getSQLType(self): return self._SQLVARIANT;
-    def setSQLType(self, val):
-        if (val == None or val == ""): self._SQLVARIANT = None;
-        else:
-            if (type(val) == str and 0 < len(val)): self._SQLVARIANT = "" + val;
-            else: raise ValueError("val (nwSQLType) must be a string and not be empty!");
-    SQLVARIANT = property(getSQLType, setSQLType);
-    
     def getConn(self): return self._CONN;
     def setConn(self, val): self._CONN = val;
     CONN = property(getConn, setConn);
@@ -85,3 +82,16 @@ class MyDB:
     def getCursor(self): return self._CURSOR;
     def setCursor(self, val): self._CURSOR = val;
     CURSOR = property(getCursor, setCursor);
+
+    def getConfigValueForName(self, attrnm):
+        myvalidator.varmustnotbeempty(attrnm, varnm="attrnm");
+        myvalidator.twoListsMustBeTheSameSize(self.CONFIGATTRNAMES, self.CONFIGATTRVALUES,
+                                              arranm="CONFIGATTRNAMES", arrbnm="CONFIGATTRVALUES");
+        myattrnmi = self.CONFIGATTRNAMES.index(attrnm);
+        return self.CONFIGATTRVALUES[myattrnmi];
+
+    def getConfigNamesForValType(self, tpcls):
+        myvalidator.twoListsMustBeTheSameSize(self.CONFIGATTRNAMES, self.CONFIGATTRVALUES,
+                                              arranm="CONFIGATTRNAMES", arrbnm="CONFIGATTRVALUES");
+        return [self.CONFIGATTRNAMES[i] for i in range(len(self.CONFIGATTRVALUES))
+                if (type(self.CONFIGATTRVALUES[i]) == tpcls)];
