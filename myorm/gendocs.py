@@ -10,6 +10,7 @@
 #this will take in a file and do this for every file it is given...
 from myorm.myvalidator import myvalidator;
 import sys;
+import time;
 def removeNewLineFromEndOfLine(line):
     if (line == None): return None;
     elif (len(line) < 1): return "";
@@ -148,48 +149,10 @@ def genInfoLines(fnm, noext=True):
             if (getnext): pass;
             else: csi = -1;
             ismthorcls = False;
-
-        #if (n % 1000 == 0 and 0 < n):
-            #wait some time for the printer to catch up...
+    
+        #wait some time for the printer to catch up...
+        if (n % 1000 == 0 and 0 < n): time.sleep(1/8);
     return myfinlines;
-    #raise ValueError("NOT DONE YET 11-15-2025 4:36 AM MST!");
-
-    #     if (mylen < 1): csi = -1;
-    #     else:
-    #         for i in range(mylen):
-    #             mc = "" + mline[i];
-    #             keepcsi = False;
-    #             brknow = True;
-    #             iscmnt = False;
-    #             if (mc == ' ' or mc == '\t' or mc == '\n'): brknow = False;
-    #             elif (mc == '#'):
-    #                 keepcsi = True;
-    #                 iscmnt = True;
-    #             else:
-    #                 #this is executable
-    #                 if ((i + 3 < mylen and mline[i:i+4] == 'def ') or
-    #                     (i + 5 < mylen and mline[i:i+6] == 'class ')):
-    #                     #i think we want this part of it to the end of the line and the comments
-    #                     #on the lines immediately above it if possible.
-    #                     #print(f"csi = {csi}");
-    #                     if (csi == 0 or 0 < csi < len(mflines)):
-    #                         for myn in range(csi, n): myfinlines.append("" + mflines[myn]);
-    #                     #now we add our class or method definition line here, but we need the complete
-    #                     #definition. That means we need the ): for defs and the : or ): for classes
-    #                     #what if it does not end with that? This cannot be inside of a string...
-    #                     myfinlines.append("" + mline);
-    #                     lastmci = n;
-    #                 elif (mline[i] == '@'): keepcsi = True;
-    #                 iscmnt = False;
-    #             #print(f"iscmnt = {iscmnt}, keepcsi = {keepcsi}, lastmci = {lastmci}");
-    #             if (keepcsi):
-    #                 if (csi < 0 or len(mflines) - 1 < csi):
-    #                     #if previous line is a method then this gets ignored...
-    #                     if (iscmnt and (lastmci == n - 1)): pass;
-    #                     else: csi = n;
-    #             else: csi = -1;
-    #             if (brknow): break;
-    # return myfinlines;
 
 if __name__ == '__main__':
     if (len(sys.argv) < 2): raise ValueError("you need to enter a file name with no extension!");
@@ -199,7 +162,10 @@ if __name__ == '__main__':
     finlines = genInfoLines(fnm, noext=True);
     
     print("\nthe doc lines are: ");
-    for mline in finlines: print(mline);
+    for n in range(len(finlines)):
+        print(finlines[n]);
+        #wait some time for the printer to catch up...
+        if (n % 1000 == 0 and 0 < n): time.sleep(1/8);
     print("\nend of doc lines!");
     
     #need to safe the file or format the information in a way that it can be saved and displayed to

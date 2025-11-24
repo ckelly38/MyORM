@@ -972,6 +972,10 @@ class mybase:
 
     #get and set column and update object references
 
+    #gets the value stored for the given mycol
+    #by taking the given colname and then adding _value to it and then
+    #calling getatr on the self object for that
+    #the self object then of course must be a subclass of mybase then to call this method
     def getValueForColName(self, clnm):
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, varnm="colnm");
         return getattr(self, clnm + "_value");
@@ -981,6 +985,46 @@ class mybase:
     def getColumnValue(self, clnm): return self.getValueForColName(clnm);
 
     #DEPENDS ON THE SQL VARIANT
+    #1. the set method requires the mycol object (mycolobj), however, if you do not pass in the
+    #mycol object, it will take the class that you called this on (so self must be a subclass of mybase)
+    #then get its cols on it, and attempt to match the col to the name (clnm or colnm)
+    #if it finds the col, we are safe to proceed, else it will error out because
+    #type(self).getMyColObjFromName(colnm) errored out.
+    #if the lookup fails and that still returns null, then it will error out because we need a mycol
+    #object before we can proceed with setting its value.
+    #2. the colnm or clnm is actually provided by the user when you call the set method.
+    #3. the SQL VARIANT is needed to set the data type and make sure that value is the correct type
+    #it pulls the variant from the config.py (or whatever you called this) file
+    #where you created your MyDB instance (which actually stores the SQL VARIANT).
+    #4. the valcl is the new value for the column that you want to set it to.
+    #A: if the valcl is an array or list, that means that it is a foreign key
+    #(and will error out if the mycolobj is not)
+    #this will also verify the foreign key data as well again.
+    #it does all of that before it sets the value.
+    #B: if the valcl is a value not an array not a list, not a tuple a value like a number,
+    #then it just straight sets it.
+    #5. SET THE VALUE: it will set the value using clnm + _value using setattr on the self object.
+    #just before the value is set, it will make sure that the value is actually valid.
+    #the call is basically:
+    #myvalidator.isValueValidForDataType(mvaldtp, valcl, varstr, not(mycolobj.getIsSigned()),
+    #                                    mycolobj.getIsNonNull())
+    #this is actually where the SQL VARIANT is involved as varstr.
+    #the mvaldtp comes from the mycolobj valid data type.
+    #the other data that the method needs is pulled directly from the mycolobj.
+    #the valcl actually comes from the value that the user wants to assign.
+    #if it is foreign key and it requires a list, then each value will get pulled in a loop
+    #in that case each value must match the data type required by the foreign key.
+    #6. VALIDATORS: but after it is set, then the validators will run for that col.
+    #If there are individual validators for it, they run.
+    #If there are multi-col validators for it, they run also.
+    #if you are curious it calls self.runValidatorsByKeysForClass([clnm]);
+    #which then actually calls the method stored in mycol class.
+    #7. UPDATE FOREIGN KEYS: after running the validators, if the mycolobj was a foreign key,
+    #then the foreign keys are updated.
+    #WARNING: this method does not interact with the DB it is only for objects.
+    #if you want a method that interacts with the DB, you need to call
+    #self.save(runbkbfr=False, runbkaftr=False). Yourself.
+    #this method does not save the values for you to the DB. It only sets the object values.
     def setValueForColName(self, clnm, valcl, mycolobj=None):
         myvalidator.stringMustHaveAtMinNumChars(clnm, 1, varnm="colnm");
         if (mycolobj == None):
@@ -1075,16 +1119,18 @@ class mybase:
     def setColumnValue(self, clnm, valcl, mycolobj=None):
         self.setValueForColName(clnm, valcl, mycolobj=mycolobj);
     
+    #get a list of values for colnames
     def genValsListForColNames(self, colnames):
-        #get a list of values for colnames then return tuple of it
         myvalidator.varmustnotbeempty(colnames, varnm="colnames");
         return [self.getValueForColName(cnm) for cnm in colnames];
+    
+    #get a list of values for colnames then returns tuple of it
+    #it calls the self.genValsListForColNames(colnames) method and casts the result to a tuple.
+    def genValsTupleForColNames(self, colnames): return tuple(self.genValsListForColNames(colnames));
 
-    def genValsTupleForColNames(self, colnames):
-        #get a list of values for colnames then return tuple of it
-        myvalidator.varmustnotbeempty(colnames, varnm="colnames");
-        return tuple(self.genValsListForColNames(colnames));
-
+    #this makes a simple dict object from the cols
+    #it takes the cols and get the values from the colnames
+    #the colnames are the keys and the values are the values.
     def genSimpleValsDict(self, mycols=None):
         mdict = {};
         for ky in type(self).getValueColNames(mycols=mycols): mdict[ky] = getattr(self, ky);
@@ -1119,7 +1165,12 @@ class mybase:
 
     colnmswdbvalsused = property(getColNamesWithDBValsUsed, setColNamesWithDBValsUsed);
 
-    
+
+    #this checks to see if our object is on a list of objects and looks it up via keys and vlaues
+    #mlist is a list of objects (if this is empty it returns None)
+    #keys and values are both lists or tuples; keys stores strings that are colnames
+    #values stores the values of those keys.
+    #the object on the list of objects must have all of these keys and all of these values.
     #returns None if not found instead of throwing an error
     @classmethod
     def getObjectFromGivenKeysAndValues(cls, mlist, keys, values):
@@ -1165,6 +1216,20 @@ class mybase:
             #print("the object with those values for those columns was not found on the list!");
             return None;
 
+    #this gets the foreign key objects from the col and the containing class object
+    #self is an instance of the containing class that contains the col
+    #self is a subclass of mybase class as well.
+    #mc is a mycol object with the foreign key information
+    #if we need to create an object for the col, then we do a lot; if not, we return None.
+    #if we are, then we: get the foreign key class name and the ref instance
+    #if the ref does not exist in memory yet (due to a timing problem), return None and notify the issue.
+    #if it exists, now we get the value from the col,
+    #if not (due to name error) error out and return None;
+    #after getting the value from the col now we need to get the object and return it via:
+    #type(self).getObjectFromGivenKeysAndValues(mcref.all, mc.getForeignColNames(), mval);
+    #note the mcref.all is the list of all of the objects on the foreign class that have been created.
+    #the foreign col names are needed to get the object.
+    #the value is also what we are looking for.
     def getForeignKeyObjectFromCol(self, mc):
         #print(f"mc = {mc}");
         myvalidator.varmustnotbenull(mc, varnm="mc");
@@ -1189,7 +1254,7 @@ class mybase:
         #stringMustContainOnlyAlnumCharsIncludingUnderscores(cls, mstr, varnm="varnm");
         #stringContainsOnlyAlnumCharsIncludingUnderscores(cls, mstr)
         #fkyobjname from col
-        if (type(self).needToCreateAnObjectForCol(mc)):
+        if (mybase.needToCreateAnObjectForCol(mc)):
             #print("WE NEED TO CREATE AN OBJECT FOR THE COLUMN HERE!");
             #fkyobjnmfromcl = mc.getForeignObjectName();
             #we depend on it, but do not need it here if not calling setattr
@@ -1219,6 +1284,9 @@ class mybase:
             return mobj;
         else: return None;
 
+    #asks is the foreign key object name valid, not empty, and not null
+    #we get the foreign key object name from the given col which is a mycol
+    #note this method is actualy independent of the class.
     @classmethod
     def needToCreateAnObjectForCol(cls, mc):
         myvalidator.varmustbethetypeonly(mc, mycol, varnm="mc");
@@ -1228,11 +1296,15 @@ class mybase:
             myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(fobjnm, varnm="fobjnm");
             return True;
 
+    #this gets a list of all foreign key objects for the containing object self
+    #or for a given list of cols.
+    #get the foreign key cols
+    #then for each col gets the foreign key object from the containing object self
+    #self must be a subclass of mybase
     def getForeignKeyObjectsFromCols(self, mycols=None):
-        #get the foreign key cols
-        #then for each col
-        return [self.getForeignKeyObjectFromCol(mc) for mc in type(self).getMyForeignKeyCols(mycols)
-                if (type(self).needToCreateAnObjectForCol(mc))];
+        return [self.getForeignKeyObjectFromCol(mc)
+                for mc in type(self).getMyForeignKeyCols(mycols=mycols)
+                if (mybase.needToCreateAnObjectForCol(mc))];
 
     
     #dynamic properties for class objects from the foreign keys set here
@@ -1286,11 +1358,15 @@ class mybase:
             #print("DONE WITH SET!");
         return fset;
 
+    #this method creates dynamic properties for all of the foreign key objects for a list of cols
+    #if no cols are provided then it uses all of the cols for the containing class.
+    #self must be a subclass of mybase class and an object of course
+    #it returns the foreign key objects
     def getAndSetForeignKeyObjectsFromCols(self, mycols=None):
-        mobjnms = self.getForeignKeyObjectNamesFromCols(mycols);
+        mobjnms = self.getForeignKeyObjectNamesFromCols(mycols=mycols);
         #print(f"mobjnms = {mobjnms}");
 
-        mobjs = self.getForeignKeyObjectsFromCols(mycols);
+        mobjs = self.getForeignKeyObjectsFromCols(mycols=mycols);
         #print(f"mobjs = {mobjs}");
 
         myvalidator.listMustContainUniqueValuesOnly(mobjnms, varnm="mobjnms");
@@ -1334,6 +1410,12 @@ class mybase:
 
     #update all foreign key objects methods:
     
+    #this updates all of the foreign key objects for my class
+    #the class cls is a subclass of mybase if not this method does nothing.
+    #to update them it simply goes through the list of all objects for the class and then
+    #calls mobj.getAndSetForeignKeyObjectsFromCols(mycols=cls.getMyCols());
+    #this will set them to the current value which actually updates them.
+    #this method actually guarantees that the lists all shared are the same.
     @classmethod
     def updateAllForeignKeyObjectsForMyClass(cls):
         #from myorm.mybase import mybase;
@@ -1341,9 +1423,12 @@ class mybase:
             if (myvalidator.isvaremptyornull(cls.all)): pass;
             else:
                 #print(f"\nBEGIN WORKING ON THOSE FOR {cls.__name__}!");
-                for mobj in cls.all: mobj.getAndSetForeignKeyObjectsFromCols(cls.getMyCols());
+                for mobj in cls.all: mobj.getAndSetForeignKeyObjectsFromCols(mycols=cls.getMyCols());
                 #print(f"\nDONE WITH THOSE FOR {cls.__name__}!");
 
+    #this updates all foerign key objects for all classes
+    #IE it gets all of the classes from mycol, specifically the subclasses of mybase class
+    #then it loops through that list calling cls.updateAllForeignKeyObjectsForMyClass();
     @classmethod
     def updateAllForeignKeyObjectsForAllClasses(cls, ftchnw=False):
         print("\nUPDATING ALL OBJECT REFS FROM FOREIGN KEYS NOW:\n");
@@ -1357,6 +1442,9 @@ class mybase:
                     mclsref.updateAllForeignKeyObjectsForMyClass();   
         print("DONE UPDATING ALL OBJECT REFS FROM FOREIGN KEYS NOW!");
 
+    #this method updates all of the link refs for all classes
+    #IE it gets all of the classes from mycol, specifically the subclasses of mybase class
+    #then it loops through that list calling cls.updateAllLinkRefsForMyClass();#mclsref.setupPartB(True);
     @classmethod
     def updateAllLinkRefsForAllClasses(cls, ftchnw=False):
         print("\nUPDATING ALL LINK REFS FROM FOREIGN KEYS NOW:\n");
@@ -1371,12 +1459,21 @@ class mybase:
         print("DONE UPDATING ALL LINK REFS FROM FOREIGN KEYS NOW!");
 
     def printValuesForAllCols(self, mycols=None):
-        fincols = type(self).getMyColsFromClassOrParam(mycols);
-        for mc in self.getMyColNames(fincols):
-            print(f"val for colname {mc} is: {self.getValueForColName(mc)}");
+        fincols = type(self).getMyColsFromClassOrParam(mycols=mycols);
+        for mcnm in self.getMyColNames(mycols=fincols):
+            print(f"val for colname {mcnm} is: {self.getValueForColName(mcnm)}");
     
+    #if we have unique foreign keys (this is rare), print a warning message
+    #see having unique foreign keys may cause problems because they are often by nature not unique.
+    #note the user can disable this warning message but if you call this method it will print it
+    #regardless of the user preference.
+    #in the models.py file at the top where you first use the mycol class add the following line:
+    #mycol.setWarnUniqueFKeyMethod('WARN');#user warning of a problem WARN*, ERROR, or DISABLED.
+    #by default the user will be warned, you can change this to ERROR or DISABLED.
+    #but changing it to disabled is not recommended.
     @classmethod
     def printUniqueForeignKeyWarning(cls, pstack=True):
+        myvalidator.varmustbeboolean(pstack, varnm="pstack");
         myfkycols = cls.getMyForeignKeyCols();
         ufkycolnms = [fcol.getColName() for fcol in myfkycols if (fcol.getIsUnique())];
         if (myvalidator.isvaremptyornull(ufkycolnms)): pass;
@@ -1402,6 +1499,14 @@ class mybase:
     #convenience method that calls the method in the myvalidator for generating the
     #CREATE TABLE SQL query.
     #
+    #onlyifnot is a boolean parameter that allows us to add CREATE TABLE IF NOT EXISTS ?()...
+    #it adds the IF NOT EXISTS PART to the query if True. Otherwise it does not.
+    #isinctable is a boolean parameter that asks is it called inside of create table.
+    #that is needed for constraints.
+    #this also needs the SQL VARIANT as the varstr.
+    #if we choose to not provide it, then it will be pulled from the MyDB instance inside of the
+    #config.py file or whatever it is called the file that creates the MyDB instance.
+    #
     #DEPENDS ON THE SQL VARIANT or SQLVARIANT.
     @classmethod
     def genSQLCreateTableFromRef(cls, varstr=None, onlyifnot=True, isinctable=True):
@@ -1412,6 +1517,16 @@ class mybase:
                                              cls.getMultiColumnConstraints(),
                                              cls.getAllTableConstraints(), onlyifnot=onlyifnot,
                                              isinctable=isinctable);
+    
+    #in addition to calling genSQLCreateTableFromRef method (above),
+    #this also makes sure that the primary and foreign key information are valid first
+    #this tells that to not to use a class object though.
+    #after validating that key information, it then gets the query, then executes it.
+    #to execute it, it gets the cursor from the MyDB instance and then it calls the execute(qry)
+    #method on it.
+    #then it gets the connection from the MyDB instance and the commits it.
+    #after that it lets the user know that it created the table successfully and returns True.
+    # 
     #DEPENDS ON THE SQL VARIANT or SQLVARIANT.
     @classmethod
     def createTable(cls):
@@ -1435,6 +1550,8 @@ class mybase:
         print("created " + cls.getTableAndClassNameString() + " on the DB successfully!\n");
         return True;
 
+    #this checks to see if a table exists via the SQL SELECT command SELECT * FROM tablename;
+    #the pqry is a boolean variable that asks if we want to print the query.
     @classmethod
     def tableExists(cls, pqry=True):
         #some databases do not support the PRAGMA command.
@@ -1457,7 +1574,6 @@ class mybase:
         
         if (pqry):
             print(f"\nTHE TABLE " + ("EXISTS" if (exists) else "DOES NOT EXIST") + " ON THE DB!\n");
-
         return exists;
 
     @classmethod
