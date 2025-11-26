@@ -381,13 +381,12 @@ class mycol:
     def getClassFromTableName(cls, tablename):
         myvalidator.varmustnotbeempty(tablename, varnm="tablename");
         from myorm.mybase import mybase;
-        msbclses = [mycls for mycls in cls.getMyClassRefsMain(ftchnw=False)
-                    if (issubclass(mycls, mybase) and not(mycls == mybase))];
+        msbclses = mybase.getTableClasses(ftchnow=False);
         mtnms = [mycls.getTableName() for mycls in msbclses];
         myvalidator.listMustContainUniqueValuesOnly(mtnms, varnm="mtnms");
         for n in range(len(mtnms)):
             if (mtnms[n] == tablename): return msbclses[n];
-        #for mycls in cls.getMyClassRefsMain(False):
+        #for mycls in cls.getMyClassRefsMain(ftchnw=False):
         #    if (issubclass(mycls, mybase) and not(mycls == mybase)):
         #        if (mycls.getTableName() == tablename): return mycls;
             #if (hasattr(mycls, "getTableName") and (mycls.getTableName() == tablename)): return mycls;
@@ -531,16 +530,14 @@ class mycol:
     context = property(getContext, setContext);
 
     def getValue(self, mobj):
-        myvalidator.varmustnotbenull(mobj, varnm="mobj (aka the context object)");
         from myorm.mybase import mybase;
-        if (issubclass(type(mobj), mybase)): return mobj.getValueForColName(self.getColName());
-        else: raise ValueError("mobj must be a subclass of mybase class!");
+        myvalidator.varmustbethetypeonly(mobj, mybase, varnm="mobj (aka the context object)");
+        return mobj.getValueForColName(self.getColName());
 
     def setValue(self, mobj, val):
-        myvalidator.varmustnotbenull(mobj, varnm="mobj (aka the context object)");
         from myorm.mybase import mybase;
-        if (issubclass(type(mobj), mybase)): mobj.setValueForColName(self.getColName(), val, self);
-        else: raise ValueError("mobj must be a subclass of mybase class!");
+        myvalidator.varmustbethetypeonly(mobj, mybase, varnm="mobj (aka the context object)");
+        mobj.setValueForColName(self.getColName(), val, self);
 
     def getValueFromContext(self): return self.getValue(self.getContext());
 

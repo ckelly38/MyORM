@@ -1580,17 +1580,31 @@ class mybase:
     def genSQLInsertIntoFromRef(cls, vals=None):
         return myvalidator.genSQLInsertInto(cls.getTableName(), cls.getMyColNames(), vals);
     
+    #this method gets the classes that are our DB model classes
+    #this method gets a list of classes that are subclasses of mybase, but not the mybase class
+    #this method gets the full list of classes from the mycol class and
+    #the ftchnow (boolean parameter) is to refetch the all class list now
     @classmethod
     def getTableClasses(cls, ftchnow=False):
         myvalidator.varmustbeboolean(ftchnow, varnm="ftchnow");
         return [mclsref for mclsref in mycol.getMyClassRefsMain(ftchnw=ftchnow)
                      if (issubclass(mclsref, mybase) and not (mclsref == mybase))];
 
+    #this method gets exists, create table statement, and data for all tables info dict object
+    #this gets a data info dict object that houses
+    #all of the table exists, create table statement, and the data for the table data.
+    #the list of classes must not be empty!
+    #for all of the classes in mtblclses list that is given
+    #it stores if the DB table exists
+    #if it exists, all of the items on the DB table, and the create table statement
+    #DEPENDS ON THE SQL VARIANT or SQLVARIANT.
+    #the dict object that is returned contains all of the information
     @classmethod
     def getExistsCreateTableStatementsAndDataForAllTablesObject(cls, mtblclses):
         mtexistsdata = [];
         mdataforalltbls = [];
         ctblstmnts = [];
+        myvalidator.varmustnotbeempty(mtblclses, varnm="mtblclses");
         for mclsref in mtblclses:
             texists = mclsref.tableExists(pqry=False);
             #run the select all query here...
@@ -1611,25 +1625,31 @@ class mybase:
             mtexistsdata.append(texists);
             #else not sure what to do if the table does not exist on the DB
         return {"tsexists": mtexistsdata, "ctbls": ctblstmnts, "dataftbles": mdataforalltbls};
+    @classmethod
     def getExistsCreateTableStatementAndDataForAllTablesObjectAfterClasses(cls, ftchnow=False):
-        mtclses = cls.getTableClasses(ftchnow=ftchnow);
-        return cls.getExistsCreateTableStatementsAndDataForAllTablesObject(mtclses);
+        mtclses = mybase.getTableClasses(ftchnow=ftchnow);
+        return mybase.getExistsCreateTableStatementsAndDataForAllTablesObject(mtclses);
 
 
     #get all or the first or last items on the db table methods
 
+    #the tablename comes from the class cls that was used which must be a subclass of mybase
+    #the DB query that is generated will look something like this:
+    #SELECT * FROM tablename ORDER BY ? ASC/DESC ... LIMIT 1;
+    #the direction is determined by the boolean parameter usefirst (if true ASC, if false DESC)
     #despite implying that it would return it returns a list from the fetchall method on the DB.
     #if the list is empty, you still get an empty list, but no item.
     #otherwise the DB method throws an error.
     #however the list will have either 1 or no items on it.
     @classmethod
     def getFirstOrLastItemOnTable(cls, usefirst):
-        pkycolnms = cls.getMyColNames(cls.getMyPrimaryKeyCols());
-        myselqry = myvalidator.genSelectAllOnlyOnTables([cls.getTableName()], useseldistinct=False);
-        ordrbypt = myvalidator.genOrderByOneTableOneVal(pkycolnms, cls.getTableName(),
-                                                        False, usefirst);#singleinctname, boolval
+        pkycolnms = cls.getMyColNames(mycols=cls.getMyPrimaryKeyCols());
+        mytnm = cls.getTableName();
+        myselqry = myvalidator.genSelectAllOnlyOnTables([mytnm], useseldistinct=False);
+        ordrbypt = myvalidator.genOrderByOneTableOneVal(pkycolnms, mytnm, False, usefirst);
+        #singleinctname, boolval
         #srdrvals = myvalidator.genSortOrderByAscVal(len(pkycolnms), False);
-        #ordrbypt = myvalidator.genOrderBy(pkycolnms, [cls.getTableName()], False, sorder=srdrvals);
+        #ordrbypt = myvalidator.genOrderBy(pkycolnms, [mytnm], False, sorder=srdrvals);
         limpt = myvalidator.genSQLimit(1, offset=0);
         myfinselqry = myselqry + " " + ordrbypt + " " + limpt;
         #print(srdrvals);
@@ -1647,6 +1667,10 @@ class mybase:
     @classmethod
     def getLastItemOnTable(cls): return cls.getFirstOrLastItemOnTable(False);
 
+    #this gets all items on table from the DB and returns the result
+    #the DB query this method is using is SELECT * FROM tablename
+    #the tablename comes from the class cls where cls is a subclass of mybase
+    #if pqry is true, then it prints the query otherwise it does not
     @classmethod
     def getAllItemsOnTable(cls, pqry=True):
         myvalidator.varmustbeboolean(pqry, varnm="pqry");
@@ -1661,10 +1685,26 @@ class mybase:
     
     #BEGIN DROP TABLE AND CLEARING DATA METHODS SECTION HERE.
 
+    #this generates and returns the drop table sql query
+    #convenience method that generates DROP TABLE IF EXISTS tablename; SQL DB query.
+    #the cls is a class that must be a subclass of mybase and not mybase.
+    #the onlyifnot boolean variable by default is false; if false, query is only DROP TABLE tablename;
+    #if the onlyifnot boolean variable is true the IF EXISTS part is inserted in the query.
+    #it returns myvalidator.genSQLDropTable(cls.getTableName(), onlyifnot=onlyifnot);
+    #the validator method actually generates the query so this passes in the tablename easily
+    #this also passes in the onlyifexists or onlyifnotexists variable
     @classmethod
     def genSQLDropTableFromClass(cls, onlyifnot=False):
         return myvalidator.genSQLDropTable(cls.getTableName(), onlyifnot=onlyifnot);
 
+    #this method drops the DB table (the entire DB table is deleted from the DB).
+    #it calls qry = cls.genSQLDropTableFromClass(onlyifnot=onlyifnot);#SEE ABOVE
+    #the onlyifnot boolean variable by default is false; if false, query is only DROP TABLE tablename;
+    #if the onlyifnot boolean variable is true the IF EXISTS part is inserted in the query.
+    #because this needs the tablename it gets it from the class cls which must be a subclass of mybase
+    #the runbkbfr is a boolean variable that means run backup before this runs
+    #the runbkaftr is a boolean variable that means run backup after this runs
+    #this method only effects the DB not the objects in memory.
     @classmethod
     def dropTable(cls, onlyifnot=False, runbkbfr=False, runbkaftr=False):
         myvalidator.varmustbeboolean(runbkbfr, varnm="runbkbfr");
@@ -1716,6 +1756,17 @@ class mybase:
     @classmethod
     def genSQLClearTableFromRef(cls): return cls.genSQLDeleteNoWhereFromRef();
 
+    #this method removes all of the data from the table, and removes all of the rows, but the table
+    #itself in the DB still exists.
+    #because this needs the tablename it gets it from the class cls which must be a subclass of mybase
+    #the runbkbfr is a boolean variable that means run backup before this runs
+    #the runbkaftr is a boolean variable that means run backup after this runs
+    #this method only effects the DB not the objects in memory.
+    #truncate the table only if it exists.
+    #if the table does not exist and onlyifnot is True (by default, and it is like saying
+    # TRUNCATE TABLE IF EXISTS tablename; (but TRUNCATE DOES NOT SUPPORT IF EXISTS NATIVELY IN SQL)),
+    #then it will not error out, but does nothing.
+    #HOWEVER, if the table does not exist and onlyifnot is false, then it will error out.
     #SQLite does support the DELETE command and if no where is provided, then it acts as a truncate.
     #THE DELETE command is implemented on most DBs.
     @classmethod
@@ -1746,6 +1797,9 @@ class mybase:
     def clearTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
         return cls.truncateTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
 
+    #truncates the DB table, and then gets rid of it from the DB
+    #this method only effects the DB not the objects in memory.
+    #this method is a convenience method so see above for truncateTable and dropTable methods.
     @classmethod
     def clearThenDropTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
         cls.truncateTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=False);
@@ -1754,6 +1808,16 @@ class mybase:
     def clearAndDropTable(cls, onlyifnot=True, runbkbfr=False, runbkaftr=False):
         return cls.clearThenDropTable(onlyifnot=onlyifnot, runbkbfr=runbkbfr, runbkaftr=runbkaftr);
 
+    #this method deletes the self object from the DB table only
+    #because this needs the tablename it gets it from the class cls which must be a subclass of mybase
+    #this is not a class method so the type of the object self must be a subclass of mybase
+    #the runbkbfr is a boolean variable that means run backup before this runs
+    #the runbkaftr is a boolean variable that means run backup after this runs
+    #if the table exists, then it will attempt to delete the row from the DB
+    #if the table does not exist, and it tries, then if onlyifnot is true, this will not error out.
+    #if the table does not exist, and it tries, then if onlyifnot is false, this will error out.
+    #this is like saying DELETE IF EXISTS FROM tablename WHERE colnamea = ?, colnameb = ?, ...;
+    #the thing is the DELETE command in SQL does not support the IF EXISTS so this is actually simulated
     def deleteMyRowFromTable(self, onlyifnot=True, runbkbfr=False, runbkaftr=False):
         myvalidator.varmustbeboolean(onlyifnot, varnm="onlyifnot");
         myvalidator.varmustbeboolean(runbkbfr, varnm="runbkbfr");
@@ -1784,6 +1848,12 @@ class mybase:
             else: raise ValueError(errmsg);
         return True;
     
+    #this calls the deleteMyRowFromTable method see above
+    #the DB colnms (column names) and colvals (column vaues) are required in order to look up the row
+    #to get the object via
+    #myobj = cls.getObjectFromGivenKeysAndValues(cls.all, colnms, colvals);
+    #the cls is a subclass of mybase therefore and does matter.
+    #if the object does not exist or is null, this will error out
     @classmethod
     def deleteARowFromTable(cls, colnms, colvals, onlyifnot=True, runbkbfr=False, runbkaftr=False):
         myobj = cls.getObjectFromGivenKeysAndValues(cls.all, colnms, colvals);
@@ -1814,7 +1884,7 @@ class mybase:
     #but there is an issue of this not being accurate on start up...
     #due to syncing not set to automatically run yet.
 
-    #this either saves or updates the DB
+    #this either saves or updates the item to or on the DB
     #this method determines which of two SQL commands to execute here
     #INSERT INTO tname (colnamea, colnameb, ...) VALUES (?, ...);
     #OR
@@ -1826,7 +1896,27 @@ class mybase:
     #in order to decide what to do, the program needs the last synced values for each object to
     #be stored in each object (results in duplicate data, but updates are faster and more convenient)
     #
-    #DEPENDS ON THE SQL VARIANT.
+    #because this needs the tablename it gets it from the class cls which must be a subclass of mybase
+    #this is not a class method so the type of the object self must be a subclass of mybase
+    #the runbkbfr is a boolean variable that means run backup before this runs
+    #the runbkaftr is a boolean variable that means run backup after this runs
+    #
+    #1. this method gets the cols and then makes sure that the primary and foreign key information
+    #is all valid.
+    #2. runs the backup before if wanted,
+    #3. it checks to see if the table already exists,
+    #if it does not exist, then it creates the table before doing anything
+    #4. determines if we are updating or saving the values for the first time
+    #if the table did not exist obviously saving, the last synced values dict will help determine this
+    #5. A: if updating, figure out which values changed for the col names and generate the correct
+    #simplified query then execute it. NOW set the last synced values dict to the simple values dict.
+    #B: if saving, we may create an ID from the DB, this value will also need to get saved to the object
+    #so after generating the save query we will get the col values
+    #that have changed and set those values.
+    #NOW set the last synced values dict to the simple values dict.
+    #6. now finally if running a backup after, run it now.
+    #
+    #setting the values DEPENDS ON THE SQL VARIANT.
     def save(self, runbkbfr=False, runbkaftr=False):
         #if the table does not exist, create it first.
         #if the table exists do nothing.
