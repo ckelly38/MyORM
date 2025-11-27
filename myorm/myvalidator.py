@@ -4,7 +4,7 @@ class myvalidator:
     @classmethod
     def varmustbethetypeandornull(clsnm, val, tpcls, canbenull, varnm="varname"):
         if (varnm == None or (type(varnm) == str and len(varnm) < 1)):
-            return myvalidator.varmustbethetypeornull(val, tpcls, "varname");
+            return myvalidator.varmustbethetypeornull(val, tpcls, varnm="varname");
         elif (type(varnm) == str): pass;
         else: raise TypeError("varname must be a string!");
         if (val == None):
@@ -15,15 +15,15 @@ class myvalidator:
             else: raise TypeError(varnm + " was not the correct type!");
     @classmethod
     def varmustbethetypeonly(clsnm, val, tpcls, varnm="varname"):
-        return myvalidator.varmustbethetypeandornull(val, tpcls, False, varnm);
+        return myvalidator.varmustbethetypeandornull(val, tpcls, False, varnm=varnm);
     @classmethod
     def varmustbeboolean(clsnm, val, varnm="varname"):
-        return myvalidator.varmustbethetypeonly(val, bool, varnm);
+        return myvalidator.varmustbethetypeonly(val, bool, varnm=varnm);
     
     @classmethod
     def varmustnotbenull(clsnm, val, varnm="varname"):
         if (varnm == None or type(varnm) == str and len(varnm) < 1):
-            return myvalidator.varmustnotbenull(val, "varname");
+            return myvalidator.varmustnotbenull(val, varnm="varname");
         elif (type(varnm) == str): pass;
         else: raise TypeError("varname must be a string!");
         if (val == None): raise ValueError(varnm + " must not be null!");
@@ -35,7 +35,7 @@ class myvalidator:
     @classmethod
     def isvarnull(cls, val): return (val == None);
     @classmethod
-    def varisnull(cls, val): return cls.isvarnull(val);
+    def varisnull(cls, val): return myvalidator.isvarnull(val);
 
     @classmethod
     def varmustnotbeempty(clsnm, val, varnm="varname"):
@@ -60,11 +60,11 @@ class myvalidator:
         myvalidator.varmustbeboolean(valb, varnm=varnmb);
         myvalidator.varmustbeboolean(usediff, varnm="usediff");
         if (myvalidator.isvaremptyornull(varnma)):
-            return cls.twoBoolVarsMustBeDifferentOrEqual(vala, valb, usediff,
-                                                         varnma="boolvara", varnmb=varnmb);
+            return myvalidator.twoBoolVarsMustBeDifferentOrEqual(vala, valb, usediff,
+                                                                 varnma="boolvara", varnmb=varnmb);
         if (myvalidator.isvaremptyornull(varnmb)):
-            return cls.twoBoolVarsMustBeDifferentOrEqual(vala, valb, usediff,
-                                                         varnma=varnma, varnmb="boolvarb");
+            return myvalidator.twoBoolVarsMustBeDifferentOrEqual(vala, valb, usediff,
+                                                                 varnma=varnma, varnmb="boolvarb");
         if (usediff):
             if (vala == valb):
                 raise ValueError(varnma + " and " + varnmb + " both cannot be the same!");
@@ -74,10 +74,12 @@ class myvalidator:
         return True;
     @classmethod
     def twoBoolVarsMustBeDifferent(cls, vala, valb, varnma="boolvara", varnmb="boolvarb"):
-        return cls.twoBoolVarsMustBeDifferentOrEqual(vala, valb, True, varnma=varnma, varnmb=varnmb);
+        return myvalidator.twoBoolVarsMustBeDifferentOrEqual(vala, valb, True,
+                                                             varnma=varnma, varnmb=varnmb);
     @classmethod
     def twoBoolVarsMustBeEqual(cls, vala, valb, varnma="boolvara", varnmb="boolvarb"):
-        return cls.twoBoolVarsMustBeDifferentOrEqual(vala, valb, False, varnma=varnma, varnmb=varnmb);
+        return myvalidator.twoBoolVarsMustBeDifferentOrEqual(vala, valb, False,
+                                                             varnma=varnma, varnmb=varnmb);
 
 
     @classmethod
@@ -107,7 +109,8 @@ class myvalidator:
 
     @classmethod
     def varmustbeanumber(cls, val, varnm="varnm"):
-        if (myvalidator.isvaremptyornull(varnm)): return cls.varmustbeanumber(val, "varnm");
+        if (myvalidator.isvaremptyornull(varnm)):
+            return myvalidator.varmustbeanumber(val, varnm="varnm");
         if (myvalidator.isvaranumber(val)): return True;
         else: raise ValueError("" + varnm + " must be a number, but it was not!");
 
@@ -127,7 +130,7 @@ class myvalidator:
     @classmethod
     def varMustBeAListOfColNameStringsOrEmpty(cls, mval, varnm="varnm"):
         if (myvalidator.isvaremptyornull(varnm)):
-            return cls.varMustBeAListOfColNameStringsOrEmpty(mval, varnm="varnm");
+            return myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, varnm="varnm");
         if (myvalidator.isvaremptyornull(mval)): pass;
         else:
             myvalidator.varmustbethetypeonly(mval, list, varnm=varnm);
@@ -141,7 +144,7 @@ class myvalidator:
     @classmethod
     def isModule(cls, val): return (type(val) == types.ModuleType);
     @classmethod
-    def isClassOrModule(cls, val): return (cls.isClass(val) or cls.isModule(val));
+    def isClassOrModule(cls, val): return (myvalidator.isClass(val) or myvalidator.isModule(val));
 
     #note: mdl is for module, but it can be a module, a class, or an object
     @classmethod
@@ -166,20 +169,20 @@ class myvalidator:
         return tmpdbobj;
     @classmethod
     def getDBAttrFromConfigModule(cls, mdl, myvars):
-        return cls.getDBAttrOrValFromConfigModuleMain(mdl, myvars, False);
+        return myvalidator.getDBAttrOrValFromConfigModuleMain(mdl, myvars, False);
     @classmethod
     def getDBValFromConfigModule(cls, mdl, myvars):
-        return cls.getDBAttrOrValFromConfigModuleMain(mdl, myvars, True);
+        return myvalidator.getDBAttrOrValFromConfigModuleMain(mdl, myvars, True);
     @classmethod
     def getDBAttrOrValFromConfigModuleNoVars(cls, mdl, useval):
         myvars = myvalidator.getAttrsFromModule(mdl);
-        return cls.getDBAttrOrValFromConfigModuleMain(mdl, myvars, useval);
+        return myvalidator.getDBAttrOrValFromConfigModuleMain(mdl, myvars, useval);
     @classmethod
     def getDBAttrFromConfigModuleNoVars(cls, mdl):
-        return cls.getDBAttrOrValFromConfigModuleNoVars(mdl, False);
+        return myvalidator.getDBAttrOrValFromConfigModuleNoVars(mdl, False);
     @classmethod
     def getDBValFromConfigModuleNoVars(cls, mdl):
-        return cls.getDBAttrOrValFromConfigModuleNoVars(mdl, True);
+        return myvalidator.getDBAttrOrValFromConfigModuleNoVars(mdl, True);
 
     #this takes the module reference and it gets the attribute names, values, and the file name
     #then it takes the db object reference and programatically sets these values for the user
@@ -255,9 +258,9 @@ class myvalidator:
     @classmethod
     def twoArraysMustBeTheSameSize(cls, arra, arrb, arranm="arranm", arrbnm="arrbnm"):
         if (myvalidator.isvaremptyornull(arranm)):
-            return cls.twoArraysMustBeTheSameSize(arra, arrb, "arranm", arrbnm);
+            return myvalidator.twoArraysMustBeTheSameSize(arra, arrb, arranm="arranm", arrbnm=arrbnm);
         if (myvalidator.isvaremptyornull(arrbnm)):
-            return cls.twoArraysMustBeTheSameSize(arra, arrb, arranm, "arrbnm");
+            return myvalidator.twoArraysMustBeTheSameSize(arra, arrb, arranm=arranm, arrbnm="arrbnm");
         errmsg = "the two arrays " + arranm + " and " + arrbnm + " must be the same size!";
         if (myvalidator.areTwoArraysTheSameSize(arra, arrb)): return True;
         else: raise ValueError(errmsg);
@@ -267,7 +270,7 @@ class myvalidator:
 
     @classmethod
     def combineTwoLists(cls, lista, listb, nodups=False):
-        myvalidator.varmustbeboolean(nodups, "nodups");
+        myvalidator.varmustbeboolean(nodups, varnm="nodups");
         if (myvalidator.isvaremptyornull(lista)):
             return (None if myvalidator.isvaremptyornull(listb) else listb);
         else:
@@ -303,8 +306,9 @@ class myvalidator:
 
     @classmethod
     def itemMustBeOneOf(cls, item, mvals, varnm="varnm"):
-        myvalidator.varmustnotbeempty(mvals, "mvals");
-        if (myvalidator.isvaremptyornull(varnm)): return cls.itemMustBeOneOf(item, mvals, "varnm");
+        myvalidator.varmustnotbeempty(mvals, varnm="mvals");
+        if (myvalidator.isvaremptyornull(varnm)):
+            return myvalidator.itemMustBeOneOf(item, mvals, varnm="varnm");
         errmsg = "the item " + varnm + " must be one of the following ";
         errmsg += myvalidator.myjoin(", ", mvals) + ", but it was not!";
         if (type(item) in [list, tuple]):
@@ -318,8 +322,8 @@ class myvalidator:
     def objvarmusthavethesekeysonit(cls, mobj, rkys, varnm="mobj"):
         if (myvalidator.isvaremptyornull(rkys)): return True;
         if (myvalidator.isvaremptyornull(varnm)):
-            return cls.objvarmusthavethesekeysonit(mobj, rkys, varnm="mobj");
-        myvalidator.varmustnotbenull(mobj, varnm);
+            return myvalidator.objvarmusthavethesekeysonit(mobj, rkys, varnm="mobj");
+        myvalidator.varmustnotbenull(mobj, varnm=varnm);
         errmsg = "the object " + varnm + " must have " + (", ".join(rkys));
         errmsg += " as keys on it, but it did not!";
         if (myvalidator.isListAInListB(rkys, mobj.keys())): return True;
@@ -327,8 +331,8 @@ class myvalidator:
 
     @classmethod
     def doesCaseMatch(cls, stra, strb):
-        myvalidator.varmustbethetypeandornull(stra, str, True, "stra");
-        myvalidator.varmustbethetypeandornull(strb, str, True, "strb");
+        myvalidator.varmustbethetypeandornull(stra, str, True, varnm="stra");
+        myvalidator.varmustbethetypeandornull(strb, str, True, varnm="strb");
         if (myvalidator.isvaremptyornull(stra)): return myvalidator.isvaremptyornull(strb);
         else: return (stra.isupper() == strb.isupper() and stra.islower() == strb.islower());
 
@@ -470,18 +474,18 @@ class myvalidator:
         return (not((hasmin and (val < minval)) or (hasmax and (maxval < val))));
     @classmethod
     def isValueInRangeWithMaxAndMin(cls, val, minval, maxval):
-        return cls.isValueInRange(val, minval, maxval, True, True);
+        return myvalidator.isValueInRange(val, minval, maxval, True, True);
     @classmethod
     def isValueMoreThanOrAtTheMinOnly(cls, val, minval):
-        return cls.isValueInRange(val, minval, 0, True, False);
+        return myvalidator.isValueInRange(val, minval, 0, True, False);
     @classmethod
     def isValueLessThanOrAtTheMaxOnly(cls, val, maxval):
-        return cls.isValueInRange(val, 0, maxval, False, True);
+        return myvalidator.isValueInRange(val, 0, maxval, False, True);
 
     @classmethod
     def valueMustBeInRange(cls, val, minval, maxval, hasmin, hasmax, varnm="varnm"):
         if (myvalidator.isvaremptyornull(varnm)):
-            return cls.valueMustBeInRange(val, minval, maxval, hasmin, hasmax, varnm="varnm");
+            return myvalidator.valueMustBeInRange(val, minval, maxval, hasmin, hasmax, varnm="varnm");
         if (myvalidator.isValueInRange(val, minval, maxval, hasmin, hasmax)): return True;
         else:
             if (hasmin or hasmax): pass;
@@ -529,17 +533,19 @@ class myvalidator:
                 myvalidator.varmustbeanumber(delimlens[n], varnm="delimlens[" + str(n) + "]");
         else:
             isonedelimlen = (len(delimlens) == 1);
+            merrmsg = "delimis len(" + str(len(delimis)) + ") and delimilens len(" + str(len(delimlens));
+            merrmsg += ") must both be the same size, but they were not!";
             if (isonedelimlen and 0 < len(delimis)):
                 myvalidator.varmustbeanumber(delimlens[0], varnm="delimlen");
                 for n in range(len(delimis)):
                     myvalidator.varmustbeanumber(delimis[n], varnm="delimis[" + str(n) + "]");
-            else:
-                raise ValueError("delimis len(" + str(len(delimis)) +") and delimilens len(" +
-                                 str(len(delimlens)) +
-                                 ") must both be the same size, but they were not!");
+            else: raise ValueError(merrmsg);
+        
         #the resultant array must have num delimis + 1 so if 2 indexes 3 parts
         #the last part is allowed to be empty
         #the resultant string rejoined should have at most the same number of characters in mystr
+        merrmsgb = "the delimeter indexes were not in the correct order (often caused by an invalid ";
+        merrmsgb += "value)!";
         myresarr = None;
         prevdelimi = 0;
         prevdelimlen = 0;
@@ -551,12 +557,10 @@ class myvalidator:
             #print(f"prevdelimi = {prevdelimi}");
             #print(f"prevdelimlen = {prevdelimlen}");
             
-            myvalidator.valueMustBeInRange(cdelimi, 0, len(mystr), True, True, "cdelimi");
+            myvalidator.valueMustBeInRange(cdelimi, 0, len(mystr), True, True, varnm="cdelimi");
             if (n == 0): myresarr = [mystr[0: cdelimi]];
             else:
-                if (cdelimi < prevdelimi + prevdelimlen):
-                    raise ValueError("the delimeter indexes were not in the correct order " +
-                                     "(often cause by an invalid value)!");
+                if (cdelimi < prevdelimi + prevdelimlen): raise ValueError(merrmsgb);
                 myresarr.append(mystr[prevdelimi + prevdelimlen: cdelimi]);
             if (n + 1 == len(delimis)): myresarr.append(mystr[cdelimi + cdelimlen:]);
             prevdelimlen = cdelimlen;
@@ -579,7 +583,7 @@ class myvalidator:
         return myvalidator.mysplit(mystr, delimis, [delimlen], offset);
     @classmethod
     def mysplitWithDelimeter(cls, mystr, delimstr, offset=0):
-        if (delimstr == None): return cls.mysplitWithDelimeter(mystr, "", offset=offset);
+        if (delimstr == None): return myvalidator.mysplitWithDelimeter(mystr, "", offset=offset);
         else: myvalidator.varmustbethetypeonly(delimstr, str, varnm="delimstr");
         delimis = [i for i in range(len(mystr)) if mystr.startswith(delimstr, i)];
         return myvalidator.mysplitWithLen(mystr, delimis, len(delimstr), offset);
@@ -600,7 +604,7 @@ class myvalidator:
     @classmethod
     def genListOfBoolVals(cls, numbools, boolval):
         myvalidator.varmustbeboolean(boolval, varnm="boolval");
-        return cls.genListOfSameVals(numbools, boolval);
+        return myvalidator.genListOfSameVals(numbools, boolval);
     
     @classmethod
     def listOfBoolsMustHaveXNumTrueYNumFalse(cls, blsarr, rqnumt, rqnumf, tpnumt=None, tpnumf=None,
@@ -614,11 +618,11 @@ class myvalidator:
         mytpopts = myvalidator.combineTwoLists(mytpopts, mintpopts, nodups=True);
         mytpopts = myvalidator.combineTwoLists(mytpopts, maxtpopts, nodups=True);
         mytpopts = myvalidator.combineTwoLists(mytpopts, exacttpopts, nodups=True);
-        myvalidator.itemMustBeOneOf(tpnumt, mytpopts, "tpnumt");
-        myvalidator.itemMustBeOneOf(tpnumf, mytpopts, "tpnumf");
+        myvalidator.itemMustBeOneOf(tpnumt, mytpopts, varnm="tpnumt");
+        myvalidator.itemMustBeOneOf(tpnumf, mytpopts, varnm="tpnumf");
         if (myvalidator.isvaremptyornull(varnm)):
-            return cls.listOfBoolsMustHaveXNumTrueYNumFalse(blsarr, rqnumt, rqnumf, tpnumt, tpnumf,
-                                             varnm="blsarrnm");
+            return myvalidator.listOfBoolsMustHaveXNumTrueYNumFalse(blsarr, rqnumt, rqnumf, tpnumt,
+                                                                    tpnumf, varnm="blsarrnm");
         cnumt = 0;
         cnumf = 0;
         if (myvalidator.isvaremptyornull(blsarr)): pass;
@@ -814,14 +818,14 @@ class myvalidator:
     @classmethod
     def compareTwoArraysItemByItemResArr(cls, arra, arrb):
         return myvalidator.compareTwoArraysItemByItemResArrFromDatObj(
-            cls.compareTwoArraysItemByItemInfoObj(arra, arrb));
+            myvalidator.compareTwoArraysItemByItemInfoObj(arra, arrb));
     @classmethod
     def compareTwoArraysItemByItemSortedArrFromDatObj(cls, datobj):
         return myvalidator.getValueFromCompareArraysDataObject("sortedarr", datobj);
     @classmethod
     def compareTwoArraysItemByItemSortedArr(cls, arra, arrb):
         return myvalidator.compareTwoArraysItemByItemSortedArrFromDatObj(
-            cls.compareTwoArraysItemByItemInfoObj(arra, arrb));
+            myvalidator.compareTwoArraysItemByItemInfoObj(arra, arrb));
 
 
     #convenience methods since the validators list (and all of these methods) reside in the mycol class
@@ -847,10 +851,10 @@ class myvalidator:
         return mycol.getMyIndividualOrMultiColumnValidators(mcnm, useindiv);
     @classmethod
     def getMyIndividualColumnValidators(cls, mcnm):
-        return cls.getMyIndividualOrMultiColumnValidators(mcnm, True);
+        return myvalidator.getMyIndividualOrMultiColumnValidators(mcnm, True);
     @classmethod
     def getMyMultiColumnValidators(cls, mcnm):
-        return cls.getMyIndividualOrMultiColumnValidators(mcnm, False);
+        return myvalidator.getMyIndividualOrMultiColumnValidators(mcnm, False);
 
     @classmethod
     def setAllValidators(cls, vlist):
@@ -969,7 +973,7 @@ class myvalidator:
         constplist = ["CONS", "CONSTRAINT"];
         inittpslist = ["TABLE", "COL", "CONS", "CONSTRAINT"];
         tpslist = myvalidator.combineTwoLists(inittpslist, icolconstpslist);
-        myvalidator.itemMustBeOneOf(tp.upper(), tpslist, "tpstr");
+        myvalidator.itemMustBeOneOf(tp.upper(), tpslist, varnm="tpstr");
         myrettpstr = ("icolcons" if (tp.upper() in icolconstpslist) else
                       ("cons" if (tp.upper() in constplist) else tp.upper().lower()));
         basestr = addstr + " " + myrettpstr + " ";
@@ -990,10 +994,10 @@ class myvalidator:
             return basestr + midptstr + fpart;
     @classmethod
     def addItemString(cls, tp, tnm, itnm="", icltp=""):
-        return cls.addOrDeleteItemString(True, tp, tnm, itnm=itnm, icltp=icltp);
+        return myvalidator.addOrDeleteItemString(True, tp, tnm, itnm=itnm, icltp=icltp);
     @classmethod
     def delItemString(cls, tp, tnm, itnm="", icltp=""):
-        return cls.addOrDeleteItemString(False, tp, tnm, itnm=itnm, icltp=icltp);
+        return myvalidator.addOrDeleteItemString(False, tp, tnm, itnm=itnm, icltp=icltp);
 
 
     #SQL methods might get removed from the validator class
@@ -1056,30 +1060,30 @@ class myvalidator:
         if (myvalidator.isConstraintValid(cnst)): pass;
         else: raise ValueError("constraint (" + cnst + ") was not valid!");
         nmstr = cnst[11:];
-        finnmstr = nmstr[0: nmstr.index(" ")];
-        return finnmstr;
+        return nmstr[0: nmstr.index(" ")];
 
 
     @classmethod
     def genSQLConstraint(cls, consnm, constpnm, val):
         if (myvalidator.isvaremptyornull(constpnm)):
-            return cls.genSQLConstraint(cls, consnm, "CHECK", val);
+            return myvalidator.genSQLConstraint(cls, consnm, "CHECK", val);
         if (constpnm.isupper()): pass;
-        else: return cls.genSQLConstraint(consnm, constpnm.upper(), val);
+        else: return myvalidator.genSQLConstraint(consnm, constpnm.upper(), val);
         if (constpnm in ["CHECK", "UNIQUE", "PRIMARY KEY"]): pass;
         else: raise ValueError("invalid constraint type found and used here!");
         usechck = (constpnm == "CHECK");
 
         #myvalidator.varmustbeboolean(useunc, varnm="useunc");
+        myvrnm = "constraint name";
         if (myvalidator.isvaremptyornull(consnm)):
             if (constpnm in ["CHECK", "UNIQUE"]):
                 useunc = (not usechck);
                 from mycol import mycol;#may need to change or get removed
                 pnm = ("un" if (useunc) else "ch") + "mulcols_";
                 fnm = pnm + str(mycol.incrementAndGetUniqueOrCheckConstraintCounterBy(useunc, 1));
-                return cls.genSQLConstraint(fnm, constpnm, val);
-            else: myvalidator.varmustnotbeempty(consnm, varnm="consnm");
-        else: cls.stringMustContainOnlyAlnumCharsIncludingUnderscores(consnm, varnm="constraint name");
+                return myvalidator.genSQLConstraint(fnm, constpnm, val);
+            else: myvalidator.varmustnotbeempty(consnm, varnm=myvrnm);
+        else: myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(consnm, varnm=myvrnm);
         finval = "";
         if (usechck): finval = "" + val;#usecheck
         else:#use anything other than check
@@ -1097,17 +1101,17 @@ class myvalidator:
         return "CONSTRAINT " + consnm + " " + constpnm + "(" + finval + ")";
     @classmethod
     def genUniqueConstraint(cls, consnm, colnames):
-        return cls.genSQLConstraint(consnm, "UNIQUE", colnames);
+        return myvalidator.genSQLConstraint(consnm, "UNIQUE", colnames);
     @classmethod
-    def genSQLUnique(cls, consnm, colnames): return cls.genUniqueConstraint(consnm, colnames);
+    def genSQLUnique(cls, consnm, colnames): return myvalidator.genUniqueConstraint(consnm, colnames);
     @classmethod
     def genCheckConstraint(cls, consnm, val):
-        return cls.genSQLConstraint(consnm, "CHECK", val);
+        return myvalidator.genSQLConstraint(consnm, "CHECK", val);
     @classmethod
-    def genSQLCheck(cls, consnm, val): return cls.genCheckConstraint(consnm, val);
+    def genSQLCheck(cls, consnm, val): return myvalidator.genCheckConstraint(consnm, val);
     @classmethod
     def genSQLPrimaryKeyConstraint(cls, consnm, colnames):
-        return cls.genSQLConstraint(consnm, "PRIMARY KEY", colnames);
+        return myvalidator.genSQLConstraint(consnm, "PRIMARY KEY", colnames);
     
     #this method does not assume that the foreign class has already been initialized
     #however, it is assumed that when CREATE TABLE is run that at least one object already exists
@@ -1125,7 +1129,6 @@ class myvalidator:
                                                                                 varnm="the ref colname");
         myretstr = "CONSTRAINT " + consnm + " FOREIGN KEY(" + colnm + ") REFERENCES " + ftblnm + "(";
         return myretstr + (", ".join(refcolnames)) + ")";
-        #raise ValueError("NOT DONE YET WITH THE FKEY CONSTRAINTS HERE NOW 5-3-2025 3:30 AM MST!");
     #this convenience method assumes that the foreign class has already been initialized here.
     #that assumption is only made if the foreign table name is not provided.
     @classmethod
@@ -1133,19 +1136,18 @@ class myvalidator:
         myvalidator.varmustnotbenull(mcolobj, varnm="mcolobj");
         finftblnm = None;
         fcolnms = mcolobj.getForeignColNames();
+        merrmsgpta = "at least one of the foreign column names (" + str(fcolnms);
         if (myvalidator.isvaremptyornull(ftblnm)):
             fclsref = type(mcolobj).getMyClassRefFromString(mcolobj.getForeignClass());
+            merrmsgpta += ") was not on the foreign table with class name (" + fclsref.__name__;
             finftblnm = fclsref.getTableName();
             allfcols = fclsref.getMyCols();
             if (fclsref.areGivenColNamesOnTable(fcolnms, mycols=allfcols)): pass;
             else:
                 allfcolnames = fclsref.getMyColNames(mycols=allfcols);
-                raise ValueError("at least one of the foreign column names (" + str(fcolnms) +
-                                 ") was not on the foreign table with class name (" +
-                                 fclsref.__name__ + ")! Its column names are (" +
-                                 str(allfcolnames) + ")!");
+                raise ValueError(merrmsgpta + ")! Its column names are (" + str(allfcolnames) + ")!");
         else: finftblnm = ftblnm;
-        return cls.genSQLForeignKeyConstraint(consnm, mcolobj.getColName(), finftblnm, fcolnms);
+        return myvalidator.genSQLForeignKeyConstraint(consnm, mcolobj.getColName(), finftblnm, fcolnms);
 
     #DOES NOT VALIDATE THE TABLE NAME, DOES NOT DEPEND ON IT, BUT THE OTHER LENGTH METHODS DO.
     @classmethod
@@ -1161,7 +1163,7 @@ class myvalidator:
         myclstablenameref = mycol.getClassFromTableName(mtablename);
         myvalidator.varmustnotbenull(myclstablenameref, varnm="myclstablenameref");
         if (myclstablenameref.areGivenColNamesOnTable([colname], mycols=None)):
-            return cls.genSQLLength(colname);
+            return myvalidator.genSQLLength(colname);
         else: raise ValueError("the colname must be on the table!");
 
 
@@ -1192,13 +1194,14 @@ class myvalidator:
         myvalidator.varmustnotbenull(myclstablenameref, varnm="myclstablenameref");
         if (myclstablenameref.areGivenColNamesOnTable([colname], mycols=None)): pass;
         else: raise ValueError("the colname must be on the table!");
-        return cls.genSQLMinOrMax(usemin, "" + (tablename + "." if singleinctname else "") + colname);
+        finstr = "" + (tablename + "." if singleinctname else "") + colname;
+        return myvalidator.genSQLMinOrMax(usemin, finstr);
     @classmethod
     def genSQLMinFromTable(cls, colname, tablename, singleinctname):
-        return cls.genSQLMinOrMaxFromTable(colname, tablename, singleinctname, True);
+        return myvalidator.genSQLMinOrMaxFromTable(colname, tablename, singleinctname, True);
     @classmethod
     def genSQLMaxFromTable(cls, colname, tablename, singleinctname):
-        return cls.genSQLMinOrMaxFromTable(colname, tablename, singleinctname, False);
+        return myvalidator.genSQLMinOrMaxFromTable(colname, tablename, singleinctname, False);
     
     @classmethod
     def genOrderBy(cls, colnames, tablenames, singleinctname, sorder=None):
@@ -1210,7 +1213,8 @@ class myvalidator:
         myvalidator.varmustbeboolean(singleinctname, varnm="singleinctname");
         basestr = "ORDER BY ";
         if (myvalidator.isvaremptyornull(sorder)):
-            return basestr + cls.combineTableNamesWithColNames(colnames, tablenames, singleinctname);
+            return basestr + myvalidator.combineTableNamesWithColNames(colnames, tablenames,
+                                                                       singleinctname);
         else:
             if (len(colnames) < len(sorder)):
                 raise ValueError("sorder must be at most as long as the number of columns!");
@@ -1246,7 +1250,8 @@ class myvalidator:
     
     #ascending or descending all bool vals list of the same bool val
     @classmethod
-    def genSortOrderByAscVal(cls, numcols, boolval): return cls.genListOfBoolVals(numcols, boolval);
+    def genSortOrderByAscVal(cls, numcols, boolval):
+        return myvalidator.genListOfBoolVals(numcols, boolval);
     
     #this convenience method combines the two methods needed for order by more or less.
     #
@@ -1257,8 +1262,8 @@ class myvalidator:
     @classmethod
     def genOrderByOneTableOneVal(cls, colnames, tname, sinctname, boolval):
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, varnm="tname");
-        sorder = cls.genSortOrderByAscVal(len(colnames), boolval);
-        return cls.genOrderBy(colnames, [tname], sinctname, sorder=sorder);
+        sorder = myvalidator.genSortOrderByAscVal(len(colnames), boolval);
+        return myvalidator.genOrderBy(colnames, [tname], sinctname, sorder=sorder);
     
 
     #create table methods here
@@ -1489,7 +1494,7 @@ class myvalidator:
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, varnm="mtname");
         return "DELETE FROM " + mtname;
     @classmethod
-    def genSQLClearTable(cls, mtname): return cls.genSQLDeleteNoWhere(mtname);
+    def genSQLClearTable(cls, mtname): return myvalidator.genSQLDeleteNoWhere(mtname);
     
     @classmethod
     def genSQLDelete(cls, mtname, colnms):
@@ -1516,10 +1521,10 @@ class myvalidator:
         return mstr;
     @classmethod
     def genColNameEqualsValString(cls, colnames, nvals=None):
-        return cls.genColNameEqualsValOrQuestionString(colnames, True, nvals=nvals);
+        return myvalidator.genColNameEqualsValOrQuestionString(colnames, True, nvals=nvals);
     @classmethod
     def genQuestionString(cls, colnames):
-        return cls.genColNameEqualsValOrQuestionString(colnames, False, nvals=None);
+        return myvalidator.genColNameEqualsValOrQuestionString(colnames, False, nvals=None);
 
     @classmethod
     def genSQLInsertInto(cls, mtname, colnames, vals=None):
@@ -1529,12 +1534,12 @@ class myvalidator:
         #however, the values must correspond with the colnames...
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, varnm="mtname");
         mstr = "";
-        if (myvalidator.isvaremptyornull(vals)): mstr = cls.genQuestionString(colnames);
+        if (myvalidator.isvaremptyornull(vals)): mstr = myvalidator.genQuestionString(colnames);
         else: mstr = myvalidator.myjoin(", ", vals);
         return "INSERT INTO " + mtname + "(" + (", ".join(colnames)) + ") VALUES (" + mstr + ");";
     @classmethod
-    def genSQLInsertIntoFromClsRef(cls, myclsref, vals=None):
-        return cls.genSQLInsertInto(myclsref.getTableName(), myclsref.getMyColNames(), vals);
+    def genSQLInsertIntoFromClsRef(cls, myclsrf, vals=None):
+        return myvalidator.genSQLInsertInto(myclsrf.getTableName(), myclsrf.getMyColNames(), vals=vals);
 
     @classmethod
     def genSQLUpdate(cls, mtname, colnames, wrval, nvals=None):
@@ -1543,7 +1548,7 @@ class myvalidator:
             # WHERE colnamea = oldvalue; (or just use the primary key to access it).
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, varnm="mtname");
         myvalidator.stringMustHaveAtMinNumChars(wrval, 1, varnm="wrval");
-        mstr = cls.genColNameEqualsValString(colnames, nvals=nvals);
+        mstr = myvalidator.genColNameEqualsValString(colnames, nvals=nvals);
         return "UPDATE " + mtname + " SET " + mstr + " WHERE " + wrval + ";";
 
 
@@ -1589,7 +1594,9 @@ class myvalidator:
         if (myvalidator.isvaremptyornull(colnames)):
             if (myvalidator.isvaremptyornull(tablenames)):
                 return "COUNT(" + ("DISTINCT " if usedistinct else "") + "*)";
-            else: return cls.genCount(None, None, usedistinct);
+            else:
+                return myvalidator.genCount(None, None,
+                                            inctnameonone=inctnameonone, usedistinct=usedistinct);
         else:
             if (myvalidator.isvaremptyornull(tablenames)): raise ValueError(nomtnmerrmsg);
             else:
@@ -1617,7 +1624,8 @@ class myvalidator:
             else: raise ValueError(errmsgpta + mcnm + errmsgptb + myclstablenameref.__name__ + ")!");
         return "COUNT(" + ("DISTINCT " if usedistinct else "") + mystr + ")";
     @classmethod
-    def genCountAll(cls, usedistinct=False): return cls.genCount(None, None, False, usedistinct);
+    def genCountAll(cls, usedistinct=False):
+        return myvalidator.genCount(None, None, inctnameonone=False, usedistinct=usedistinct);
 
     @classmethod
     def genSelectAllAndOrCountOnTables(cls, seltbles, cntcols, cnttables, useselonly=False,
@@ -1637,20 +1645,24 @@ class myvalidator:
             myvalidator.varmustnotbeempty(myutnames, varnm="myutnames");
             mywtstr = "*";
             if (useselonly): pass;
-            else: mywtstr += ", " + cls.genCount(cntcols, cnttables, inctname, usecntdistinct);
+            else:
+                mywtstr += ", " + myvalidator.genCount(cntcols, cnttables, inctnameonone=inctname,
+                                                       usedistinct=usecntdistinct);
             wrval = ", ".join(myutnames);
-            return cls.genCustomSelect(mywtstr, wrval, useseldistinct);
+            return myvalidator.genCustomSelect(mywtstr, wrval, usedistinct=useseldistinct);
     @classmethod
     def genSelectAllAndCountOnTables(cls, seltbles, cntcols, cnttables, useseldistinct=False,
                                      usecntdistinct=False):
-            return cls.genSelectAllAndOrCountOnTables(seltbles, cntcols, cnttables, False,
-                                                      useseldistinct, usecntdistinct);
+            return myvalidator.genSelectAllAndOrCountOnTables(seltbles, cntcols, cnttables,
+                        useselonly=False, useseldistinct=useseldistinct, usecntdistinct=usecntdistinct);
     @classmethod
     def genSelectAllAndCountAllOnTables(cls, seltbles, useseldistinct=False, usecntdistinct=False):
-        return cls.genSelectAllAndCountOnTables(seltbles, None, None, useseldistinct, usecntdistinct);
+        return myvalidator.genSelectAllAndCountOnTables(seltbles, None, None,
+                                        useseldistinct=useseldistinct, usecntdistinct=usecntdistinct);
     @classmethod
     def genSelectAllOnlyOnTables(cls, seltbles, useseldistinct=False):
-        return cls.genSelectAllAndOrCountOnTables(seltbles, None, None, True, useseldistinct, False);
+        return myvalidator.genSelectAllAndOrCountOnTables(seltbles, None, None, useselonly=True,
+                                                    useseldistinct=useseldistinct, usecntdistinct=False);
     
     @classmethod
     def genSelectSomeAndOrCountOnTables(cls, selcols, seltbles, cntcols, cnttables,
@@ -1680,28 +1692,30 @@ class myvalidator:
         wtval = "";
         wrval = "";
         if (useselonly):
-            wtval = cls.combineTableNamesWithColNames(selcols, seltbles, inctname);
+            wtval = myvalidator.combineTableNamesWithColNames(selcols, seltbles, inctname);
             wrval = ", ".join(seltbles);
         else:
             #either way we need the count here now...
             #either way the where is the combined list of unique table names...
-            cntvalstr = cls.genCount(cntcols, cnttables, inctname, usecntdistinct);
+            cntvalstr = myvalidator.genCount(cntcols, cnttables,
+                                             inctnameonone=inctname, usedistinct=usecntdistinct);
             wrval = ", ".join(myutnames);
             if (usecntonly): wtval = cntvalstr;
             else:
-                wtval = cls.combineTableNamesWithColNames(selcols, seltbles, inctname);
+                wtval = myvalidator.combineTableNamesWithColNames(selcols, seltbles, inctname);
                 wtval += ", " + cntvalstr;
-        return cls.genCustomSelect(wtval, wrval, useseldistinct);
+        return myvalidator.genCustomSelect(wtval, wrval, usedistinct=useseldistinct);
 
     @classmethod
     def genSelectCountOnlyOnTables(cls, seltbles, cntcols, cnttables, useseldistinct=False,
                                    usecntdistinct=False):
-        return cls.genSelectSomeAndOrCountOnTables(None, seltbles, cntcols, cnttables,
-                                        False, True, useseldistinct, usecntdistinct);
+        return myvalidator.genSelectSomeAndOrCountOnTables(None, seltbles, cntcols, cnttables,
+                                useselonly=False, usecntonly=True, useseldistinct=useseldistinct,
+                                usecntdistinct=usecntdistinct);
     @classmethod
     def genSelectSomeOnlyOnTables(cls, selcols, seltbles, useseldistinct=False):
-        return cls.genSelectSomeAndOrCountOnTables(selcols, seltbles,
-                                                   None, None, True, False, useseldistinct, False);
+        return myvalidator.genSelectSomeAndOrCountOnTables(selcols, seltbles, None, None,
+                useselonly=True, usecntonly=False, useseldistinct=useseldistinct, usecntdistinct=False);
 
     #THESE SQL METHODS DO NOT DEPEND ON THE TABLE NAME AT ALL:
     #
@@ -1720,11 +1734,11 @@ class myvalidator:
         return ("SUM" if usesum else "AVG") + "(" + ("DISTINCT " if usedistinct else "") + val + ")";
     @classmethod
     def genSQLSumOrAverage(cls, val, usedistinct, usesum):
-        return cls.genSQLSumOrAvg(val, usedistinct, usesum);
+        return myvalidator.genSQLSumOrAvg(val, usedistinct, usesum);
     @classmethod
-    def genSQLSum(cls, val, usedistinct): return cls.genSQLSumOrAvg(val, usedistinct, True);
+    def genSQLSum(cls, val, usedistinct): return myvalidator.genSQLSumOrAvg(val, usedistinct, True);
     @classmethod
-    def genSQLAvg(cls, val, usedistinct): return cls.genSQLSumOrAvg(val, usedistinct, False);
+    def genSQLAvg(cls, val, usedistinct): return myvalidator.genSQLSumOrAvg(val, usedistinct, False);
 
     @classmethod
     def genSQLimit(cls, num, offset=0):
@@ -1750,7 +1764,9 @@ class myvalidator:
     def genSQLIn(cls, mvals, incnull=False):
         myvalidator.varmustbeboolean(incnull, varnm="incnull");
         for val in mvals:
-            if (val == None): return cls.genSQLIn([oval for oval in mvals if not (oval == None)], True);
+            if (val == None):
+                return myvalidator.genSQLIn([oval for oval in mvals if not (oval == None)],
+                                            incnull=True);
         return ("IN(NULL)" if (myvalidator.isvaremptyornull(mvals)) else "IN(" +
                 ("NULL" + (", " if (0 < len(mvals)) else "")  if incnull else "") +
                 myvalidator.myjoin(", ", mvals) + ")");
@@ -1765,9 +1781,9 @@ class myvalidator:
         #so no validation other than type will be preformed and the error will propogate down to the DB.
         return ("WHERE " if usewhere else "HAVING ") + mval;
     @classmethod
-    def genWhere(cls, mval): return cls.genWhereOrHaving(mval, True);
+    def genWhere(cls, mval): return myvalidator.genWhereOrHaving(mval, True);
     @classmethod
-    def genHaving(cls, mval): return cls.genWhereOrHaving(mval, False);
+    def genHaving(cls, mval): return myvalidator.genWhereOrHaving(mval, False);
 
     #SQL-SWITCH-CASE statement looks like:
     #CASE
@@ -1795,10 +1811,10 @@ class myvalidator:
         return mystr;
     @classmethod
     def genSQLSwitchCaseWithName(cls, condsarr, resarr, csnm, defres=None):
-        return cls.genSQLSwitchCase(condsarr, resarr, defres, csnm);
+        return myvalidator.genSQLSwitchCase(condsarr, resarr, defres, csnm);
     @classmethod
     def genSQLSwitchCaseNoName(cls, condsarr, resarr, defres=None):
-        return cls.genSQLSwitchCase(condsarr, resarr, defres, None);
+        return myvalidator.genSQLSwitchCase(condsarr, resarr, defres, None);
 
     @classmethod
     def getCompleteSetListFromList(cls, mlist):
@@ -1822,8 +1838,8 @@ class myvalidator:
             #a,b,c, a,b,d, a,b,e, a,b,f, a,c,d, a,c,e, a,c,f, 
             retlist = [mitem for mitem in mlist];
             for mitem in mlist:
-                tmplist = cls.getCompleteSetListFromList([item for item in mlist
-                                                          if not(item == mitem)]);
+                tmplist = myvalidator.getCompleteSetListFromList([item for item in mlist
+                                                                  if not(item == mitem)]);
                 #print(f"tmplist = {tmplist}");
                 for item in tmplist: retlist.append(mitem + "," + item);
             return retlist;
@@ -2125,13 +2141,13 @@ class myvalidator:
                 "min": minval, "max": maxval, "defaultval": mdefval};
     @classmethod
     def genRangeDataDictNoRange(cls, name, hasadefault, mdefval):
-        return cls.genRangeDataDict(name, False, hasadefault, None, None, mdefval);
+        return myvalidator.genRangeDataDict(name, False, hasadefault, None, None, mdefval);
     @classmethod
     def genRangeDataDictNoRangeNoDefault(cls, name):
-        return cls.genRangeDataDictNoRange(name, False, None);
+        return myvalidator.genRangeDataDictNoRange(name, False, None);
     @classmethod
     def genRangeDataDictNoDefault(cls, name, canspecifyrange, minval, maxval):
-        return cls.genRangeDataDict(name, canspecifyrange, False, minval, maxval, None);
+        return myvalidator.genRangeDataDict(name, canspecifyrange, False, minval, maxval, None);
 
     #if type can be signed or unsigned
     #if type is some kind of value
@@ -2253,16 +2269,16 @@ class myvalidator:
                 "signedhasadefault": signedhasadefault, "paramnameswithranges": pnmsranges,
                 "valuesranges": valsranges};
     @classmethod
-    def genValueTypeInfoDict(cls, names): return cls.genTypeInfoDict(names, True, False, [], []);
+    def genValueTypeInfoDict(cls, names): return myvalidator.genTypeInfoDict(names, True, False, [], []);
     @classmethod
     def genNonValueTypeInfoDict(cls, names, canbesignedornot, pnmsranges, valsranges):
-        return cls.genTypeInfoDict(names, False, canbesignedornot, pnmsranges, valsranges);
+        return myvalidator.genTypeInfoDict(names, False, canbesignedornot, pnmsranges, valsranges);
     @classmethod
     def genNonNumNonValTypeInfoDict(cls, names, pnmsranges, valsranges):
-        return cls.genNonValueTypeInfoDict(names, False, pnmsranges, valsranges);
+        return myvalidator.genNonValueTypeInfoDict(names, False, pnmsranges, valsranges);
     @classmethod
     def genNonNumNonValNoParamsTypeInfoDict(cls, names, valsranges):
-        return cls.genNonValueTypeInfoDict(names, False, [], valsranges);
+        return myvalidator.genNonValueTypeInfoDict(names, False, [], valsranges);
 
     #note: range or values is used as the default range name
     #note: length is used for the length allowed for either the values or of the values
@@ -2660,13 +2676,13 @@ class myvalidator:
         else: return [];
     @classmethod
     def getTypesThatHaveAByteRelatedLengthAsTheParam(cls, varstr):
-        return cls.getTypesThatHaveAByteRelatedLength(varstr, "PSONLY");
+        return myvalidator.getTypesThatHaveAByteRelatedLength(varstr, "PSONLY");
     @classmethod
     def getTypesThatHaveAByteRelatedLengthNoParams(cls, varstr):
-        return cls.getTypesThatHaveAByteRelatedLength(varstr, "NOPSONLY");
+        return myvalidator.getTypesThatHaveAByteRelatedLength(varstr, "NOPSONLY");
     @classmethod
     def getAllTypesThatHaveAByteRelatedLength(cls, varstr):
-        return cls.getTypesThatHaveAByteRelatedLength(varstr, "ALL");
+        return myvalidator.getTypesThatHaveAByteRelatedLength(varstr, "ALL");
 
     #we need to know if something has a parameter that dictates the length and maybe which it is
     #we need to know when size as a parameter is length, and when it is not relevant
@@ -2721,10 +2737,10 @@ class myvalidator:
         else: raise ValueError("illegal month name used (" + mnthnm + ")");
     @classmethod
     def getThreeLetterAbbreviationForMonthName(cls, mnthnm):
-        return cls.getThreeOrFourLetterAbbreviationForMonthName(mnthnm, False);
+        return myvalidator.getThreeOrFourLetterAbbreviationForMonthName(mnthnm, False);
     @classmethod
     def getFourLetterAbbreviationForMonthName(cls, mnthnm):
-        return cls.getThreeOrFourLetterAbbreviationForMonthName(mnthnm, True);
+        return myvalidator.getThreeOrFourLetterAbbreviationForMonthName(mnthnm, True);
 
     @classmethod
     def getFullMonthNameFromAbreviation(cls, abbr):
@@ -2765,7 +2781,7 @@ class myvalidator:
     def addLeadingZeros(cls, val, numdgts):
         myvalidator.varmustbeanumber(val, varnm="val");
         myvalidator.valueMustBeInRange(numdgts, 1, 0, True, False, varnm="numdgts");
-        if (val < 0): return "-" + cls.addLeadingZeros(-val, numdgts - 1);
+        if (val < 0): return "-" + myvalidator.addLeadingZeros(-val, numdgts - 1);
         valstr = str(val);
         valstrlen = len(valstr);
         if (valstrlen < numdgts):
@@ -2783,7 +2799,7 @@ class myvalidator:
     @classmethod
     def isLeapYear(cls, yrnum):
         myvalidator.varmustbethetypeonly(yrnum, int, varnm="yrnum");
-        myvalidator.valueMustBeInRange(yrnum, 1, 0, True, False);
+        myvalidator.valueMustBeInRange(yrnum, 1, 0, True, False, varnm="yrnum");
         #every 4 years except (if divisible by 400 it is otherwise not on the 100s)
         return (((yrnum % 400 == 0) if (yrnum % 100 == 0) else True) if (yrnum % 4 == 0) else False);
 
@@ -2838,16 +2854,16 @@ class myvalidator:
                                          (list(mdyrobj.keys())[0] == "monthnum"), usedshs);
     @classmethod
     def genDateStringUseMonthDayYear(cls, mnthnum, daynum, yrnum, usedshs):
-        return cls.genDateString(mnthnum, daynum, yrnum, True, usedshs);
+        return myvalidator.genDateString(mnthnum, daynum, yrnum, True, usedshs);
     @classmethod
     def genDateStringUseYearMonthDay(cls, mnthnum, daynum, yrnum, usedshs):
-        return cls.genDateString(mnthnum, daynum, yrnum, False, usedshs);
+        return myvalidator.genDateString(mnthnum, daynum, yrnum, False, usedshs);
     @classmethod
     def genDateStringUseSlashes(cls, mnthnum, daynum, yrnum, usemthdyyr):
-        return cls.genDateString(mnthnum, daynum, yrnum, usemthdyyr, False);
+        return myvalidator.genDateString(mnthnum, daynum, yrnum, usemthdyyr, False);
     @classmethod
     def genDateStringUseDashes(cls, mnthnum, daynum, yrnum, usemthdyyr):
-        return cls.genDateString(mnthnum, daynum, yrnum, usemthdyyr, True);
+        return myvalidator.genDateString(mnthnum, daynum, yrnum, usemthdyyr, True);
     
     @classmethod
     def getDelimeterIndexesForDateStrings(cls, usemthdyyr):
@@ -2899,7 +2915,8 @@ class myvalidator:
         return mystr;
     @classmethod
     def genTimeStringFromObj(cls, mhrsobj):
-        if (mhrsobj == None): return cls.genTimeString(0, 0, 0, False, False, False);
+        if (mhrsobj == None):
+            return myvalidator.genTimeString(0, 0, 0, inchrnum=False, incminnum=False, incsecs=False);
         mkys = mhrsobj.keys();
         #if not on the keys list then not included in the resulting string that gets generated
         inchrnum = (mhrsobj["hoursnuminstr"] if "hoursnum" in mkys else False);
@@ -2912,7 +2929,8 @@ class myvalidator:
         minnum = (mhrsobj["minutesnum"] if incminnum else 0);
         secs = (float(str(mhrsobj["secondsnum"]) + "." + str(mhrsobj["fractionalsecondsnum"]))
                 if incsecs else 0);
-        return cls.genTimeString(hrnum, minnum, secs, inchrnum, incminnum, incsecs);
+        return myvalidator.genTimeString(hrnum, minnum, secs,
+                                         inchrnum=inchrnum, incminnum=incminnum, incsecs=incsecs);
 
     #inchrs tells us if we include hours or not when we just have one colon on the string
     #this tells us to use hours:minutes for the format if true,
@@ -3036,10 +3054,10 @@ class myvalidator:
         return 0;
     @classmethod
     def compareTwoDateObjsOnly(cls, dateaobj, datebobj):
-        return cls.compareTwoDateTimeObjs(dateaobj, None, datebobj, None);
+        return myvalidator.compareTwoDateTimeObjs(dateaobj, None, datebobj, None);
     @classmethod
     def compareTwoTimeObjsOnly(cls, timeaobj, timebobj):
-        return cls.compareTwoDateTimeObjs(None, timeaobj, None, timebobj);
+        return myvalidator.compareTwoDateTimeObjs(None, timeaobj, None, timebobj);
 
     @classmethod
     def getDateTimeStringType(cls, mstr):
@@ -3166,8 +3184,8 @@ class myvalidator:
         #print(f"dtobja = {dtobja}");
         #print(f"dtobjb = {dtobjb}");
 
-        return cls.compareTwoDateTimeObjs(dtobja["dateobj"], dtobja["timeobj"],
-                                          dtobjb["dateobj"], dtobjb["timeobj"]);
+        return myvalidator.compareTwoDateTimeObjs(dtobja["dateobj"], dtobja["timeobj"],
+                                                  dtobjb["dateobj"], dtobjb["timeobj"]);
 
     #end of date time methods section
 
@@ -3201,7 +3219,7 @@ class myvalidator:
         if (ptpstr == None): return True;
         else:
             if (ptpstr.isupper()): pass;
-            else: return cls.getUseParamsOrNotOrAll(mpobjlist, ptpstr.upper());
+            else: return myvalidator.getUseParamsOrNotOrAll(mpobjlist, ptpstr.upper());
         if (ptpstr == "PSONLY"): return not(myvalidator.isvaremptyornull(mpobjlist));
         elif (ptpstr == "NOPSONLY"): return (myvalidator.isvaremptyornull(mpobjlist));
         else: return True;#use all
@@ -3210,18 +3228,18 @@ class myvalidator:
     def getValidSQLDataTypesFromInfoList(cls, mlist, ptype="ALL"):
         if (mlist == None): return None;
         else:
-            return [nm + cls.getParamNamesFromInfoListObj(mobj)
+            return [nm + myvalidator.getParamNamesFromInfoListObj(mobj)
                     for mobj in mlist for nm in mobj["names"]
                     if (myvalidator.getUseParamsOrNotOrAll(mobj["paramnameswithranges"], ptype))];
     @classmethod
     def getValidSQLDataTypesWithParametersOnlyFromInfoList(cls, mlist):
-        return cls.getValidSQLDataTypesFromInfoList(mlist, ptype="PSONLY");
+        return myvalidator.getValidSQLDataTypesFromInfoList(mlist, ptype="PSONLY");
     @classmethod
     def getValidSQLDataTypesWithNoParametersOnlyFromInfoList(cls, mlist):
-        return cls.getValidSQLDataTypesFromInfoList(mlist, ptype="NOPSONLY");
+        return myvalidator.getValidSQLDataTypesFromInfoList(mlist, ptype="NOPSONLY");
     @classmethod
     def getAllValidSQLDataTypesFromInfoList(cls, mlist):
-        return cls.getValidSQLDataTypesFromInfoList(mlist, ptype="ALL");
+        return myvalidator.getValidSQLDataTypesFromInfoList(mlist, ptype="ALL");
 
     #this is meant more for the test file and not meant for production
     #this helps me know what data types have been classified and what are remaining
@@ -3460,7 +3478,7 @@ class myvalidator:
         #if value is not valid, then return empty or null
         #params can be inside ' or ", but ignore it if it is escaped
         #commas inside ' or " can be ignored, but others outside of that cannot be ignored.
-        lvsobj = cls.getLevelsForValStr(val);
+        lvsobj = myvalidator.getLevelsForValStr(val);
         #print(f"lvsobj = {lvsobj}");
 
         if (len(lvsobj["errmsg"]) < 1):
@@ -3622,10 +3640,11 @@ class myvalidator:
                                 #-if the range does not match, move on there might be another.
                                 
                                 mynm = ("" + val if ("(max)" in val) else bgnm);
-                                psonval = ([] if ("(max)" in val) else cls.getParamsFromValType(val));
+                                psonval = ([] if ("(max)" in val) else
+                                           myvalidator.getParamsFromValType(val));
                                 numpsonval = (0 if ("(max)" in val) else len(psonval));
-                                tpobjslist = cls.getDataTypesObjsWithNameFromList(datatypesinfolist,
-                                                                                  mynm);
+                                tpobjslist = myvalidator.getDataTypesObjsWithNameFromList(
+                                    datatypesinfolist, mynm);
                                 #print(f"mynm = {mynm}");
                                 #print(f"psonval = {psonval}");
                                 #print(f"numpsonval = {numpsonval}");
@@ -3803,10 +3822,10 @@ class myvalidator:
         nmhaspsonit = ("(" in fulltpnm and ")" in fulltpnm);
         bgnm = (fulltpnm[0: fulltpnm.index("(")] if (nmhaspsonit) else "" + fulltpnm);
         mynm = ("" + fulltpnm if ("(max)" in fulltpnm) else bgnm);
-        psonval = ([] if ("(max)" in fulltpnm) else cls.getParamsFromValType(fulltpnm));
+        psonval = ([] if ("(max)" in fulltpnm) else myvalidator.getParamsFromValType(fulltpnm));
         numpsonval = (0 if ("(max)" in fulltpnm) else len(psonval));
-        datatypesinfolist = cls.getSQLDataTypesInfo(varnm);
-        return cls.getDataTypesObjsWithNameFromList(datatypesinfolist, mynm);
+        datatypesinfolist = myvalidator.getSQLDataTypesInfo(varnm);
+        return myvalidator.getDataTypesObjsWithNameFromList(datatypesinfolist, mynm);
 
     #results for this method cannot always be assumed to be correct.
     #if the type has multiple parameters and multiple options for these and there are multiple types
@@ -3832,10 +3851,10 @@ class myvalidator:
         nmhaspsonit = ("(" in fulltpnm and ")" in fulltpnm);
         bgnm = (fulltpnm[0: fulltpnm.index("(")] if (nmhaspsonit) else "" + fulltpnm);
         mynm = ("" + fulltpnm if ("(max)" in fulltpnm) else bgnm);
-        psonval = ([] if ("(max)" in fulltpnm) else cls.getParamsFromValType(fulltpnm));
+        psonval = ([] if ("(max)" in fulltpnm) else myvalidator.getParamsFromValType(fulltpnm));
         numpsonval = (0 if ("(max)" in fulltpnm) else len(psonval));
-        datatypesinfolist = cls.getSQLDataTypesInfo(varnm);
-        tpobjslist = cls.getDataTypesObjsWithNameFromList(datatypesinfolist, mynm);
+        datatypesinfolist = myvalidator.getSQLDataTypesInfo(varnm);
+        tpobjslist = myvalidator.getDataTypesObjsWithNameFromList(datatypesinfolist, mynm);
         #print(f"mynm = {mynm}");
         #print(f"psonval = {psonval}");
         #print(f"numpsonval = {numpsonval}");
@@ -3867,7 +3886,7 @@ class myvalidator:
     def isValueValidForDataType(cls, tpnm, val, varstr, useunsigned=True, isnonnull=False):
         myvalidator.varmustbeboolean(isnonnull, varnm="isnonnull");
         myvalidator.varmustbeboolean(useunsigned, varnm="useunsigned");
-        if (cls.isValidDataType(tpnm, varstr)): pass;
+        if (myvalidator.isValidDataType(tpnm, varstr)): pass;
         else: return False;
         
         #if the type object is not specified then the value is assumed to be valid
@@ -3895,12 +3914,12 @@ class myvalidator:
         
         
         # or not(nmhasps)
-        psonval = ([] if ("(max)" in tpnm) else cls.getParamsFromValType(tpnm));
+        psonval = ([] if ("(max)" in tpnm) else myvalidator.getParamsFromValType(tpnm));
         numpsonval = (0 if ("(max)" in tpnm or not(nmhasps)) else len(psonval));
         #print(f"psonval = {psonval}");
         #print(f"numpsonval = {numpsonval}");
         
-        tpobjslist = cls.getDataTypesObjsWithNameFromList(datatypesinfolist, mynm);
+        tpobjslist = myvalidator.getDataTypesObjsWithNameFromList(datatypesinfolist, mynm);
         #print(f"tpobjslist = {tpobjslist}");
         #print();
 
