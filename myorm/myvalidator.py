@@ -832,22 +832,22 @@ class myvalidator:
 
     @classmethod
     def getAllValidators(cls):
-        from mycol import mycol;
+        from myorm.mycol import mycol;
         return mycol.getAllValidators();
 
     @classmethod
     def getMyValidators(cls, mcnm):
-        from mycol import mycol;
+        from myorm.mycol import mycol;
         return mycol.getMyValidators(mcnm);
 
     @classmethod
     def getMyValidatorsThatContainKeys(cls, mcnm, mkys):
-        from mycol import mycol;
+        from myorm.mycol import mycol;
         return mycol.getMyValidatorsThatContainKeys(mcnm, mkys);
 
     @classmethod
     def getMyIndividualOrMultiColumnValidators(cls, mcnm, useindiv):
-        from mycol import mycol;
+        from myorm.mycol import mycol;
         return mycol.getMyIndividualOrMultiColumnValidators(mcnm, useindiv);
     @classmethod
     def getMyIndividualColumnValidators(cls, mcnm):
@@ -858,39 +858,39 @@ class myvalidator:
 
     @classmethod
     def setAllValidators(cls, vlist):
-        from mycol import mycol;
+        from myorm.mycol import mycol;
         return mycol.setAllValidators(vlist);
 
     #This is a decorator. This actually calls a decorator.
     #https://www.datacamp.com/tutorial/decorators-python
     #@classmethod
     def validates(*args):#cls, 
-        from mycol import mycol;
+        from myorm.mycol import mycol;
         return mycol.validates(args);
 
     @classmethod
     def addValidator(cls, classname, methodref, keys):
-        from mycol import mycol;
+        from myorm.mycol import mycol;
         return mycol.addValidator(classname, methodref, keys);
 
     @classmethod
     def removeValidator(cls, classname, keys):
-        from mycol import mycol;
+        from myorm.mycol import mycol;
         return mycol.removeValidator(classname, keys);
 
     @classmethod
     def runGivenValidatorsForClass(cls, mcnm, mobj, mvs):
-        from mycol import mycol;
+        from myorm.mycol import mycol;
         return mycol.runGivenValidatorsForClass(mcnm, mobj, mvs);
 
     @classmethod
     def runValidatorsByKeysForClass(cls, mcnm, mobj, mkys):
-        from mycol import mycol;
+        from myorm.mycol import mycol;
         return mycol.runValidatorsByKeysForClass(mcnm, mobj, mkys);
 
     @classmethod
     def runAllValidatorsForClass(cls, mcnm, mobj):
-        from mycol import mycol;
+        from myorm.mycol import mycol;
         return mycol.runAllValidatorsForClass(mcnm, mobj);
 
     
@@ -901,33 +901,66 @@ class myvalidator:
     #given one or the other... I already have a way to get the tablename from the classes of course.
     #what I do not have is a way to get the classname string or the class ref given the tablename.
 
+    #make sure all of the column names (fcolnms) are on the table (ctablename)... both are strings.
+    #this method takes the ctablename string and it looks up the class ref from the mycol class
+    #then it checks to see if the given colnames fcolnms is on the the table via
+    #the method in mybase class. It also errors out if not found. If all are found, it returns True.
+    @classmethod
+    def colNamesMustBeOnTheTable(cls, ctablename, fcolnms):
+        myvalidator.varmustbethetypeonly(ctablename, str, varnm="ctablename");
+        myvalidator.varmustnotbeempty(fcolnms, varnm="fcolnms");
+        for n in range(len(fcolnms)):
+            myvalidator.varmustbethetypeonly(fcolnms[n], str, varnm="fcolnms[" + str(n) + "]");
+        from myorm.mycol import mycol;
+        fclsref = mycol.getClassFromTableName(ctablename);
+        myvalidator.varmustnotbenull(fclsref, varnm="fclsref");
+        allfcolnames = fclsref.getMyColNames(mycols=fclsref.getMyCols());
+        merrmsg = "at least one of the foreign colnames " + str(fcolnms) + " were not found on the ";
+        merrmsg += "table(" + ctablename + ") on class(" + fclsref.__name__ + ")!";
+        merrmsg += " The colnames on that class are: " + str(allfcolnames) + "!";
+        #is col name on table...
+        if (fclsref.areGivenColNamesOnTable(fcolnms, mycols=None)): return True;
+        else: raise ValueError(merrmsg);
+    #this is a convenience method that makes sure that
+    #the foreign colnames from the mycol object are on the foreign table
+    #this takes a mycol object and gets:
+    #the foreign colnames (folnms), the foreign tablename (ftnm), and the foreign classname
+    #it then calls the method above as follows:
+    #return myvalidator.colNamesMustBeOnTheTable(ftnm, fcolnms);
+    @classmethod
+    def colNamesMustBeOnTheTableFromMyColObj(cls, mcolobj):
+        from myorm.mycol import mycol;
+        myvalidator.varmustbethetypeonly(mcolobj, mycol, varnm="mcolobj");
+        fclsref = mycol.getMyClassRefFromString(mcolobj.getForeignClass());
+        fcolnms = mcolobj.getForeignColNames();
+        ftnm = fclsref.getTableName();
+        return myvalidator.colNamesMustBeOnTheTable(ftnm, fcolnms);
+    #this makes sure that the colname is on the table
+    #there is only one colname it is a convenience function that calls the method above:
+    #return myvalidator.colNamesMustBeOnTheTable(ctablename, [mcolnm]);
+    @classmethod
+    def colNameMustBeOnTheTable(cls, ctablename, mcolnm):
+        myvalidator.varmustnotbeempty(mcolnm, varnm="mcolnm");
+        return myvalidator.colNamesMustBeOnTheTable(ctablename, [mcolnm]);
+
     @classmethod
     def combineTableNamesWithColNames(cls, mcolnames, mtablenames, singleinctname):
         #if there is only one tablename, do we still do tablename.mcolname, ... or just mcolname...
-        from mycol import mycol;#may need to change or get removed
         isonetable = (len(mtablenames) == 1);
         if (isonetable or len(mcolnames) == len(mtablenames)):
             if (isonetable):
                 #still need to make sure all of the column names are on the table...
-                mclsref = mycol.getClassFromTableName(mtablenames[0]);
-                if (mclsref.areGivenColNamesOnTable(mcolnames, mycols=None)): pass;
-                else:
-                    raise ValueError("the col names were not found on the table class(" +
-                                     mclsref.__name__ + ")");
+                myvalidator.colNamesMustBeOnTheTable(mtablenames[0], mcolnames);
+                
                 if (singleinctname): pass;
                 else: return ", ".join(mcolnames);
             mystr = "";
             for n in range(len(mcolnames)):
                 mcolnm = mcolnames[n];
                 ctablename = (mtablenames[0] if (isonetable and singleinctname) else mtablenames[n]);
-                myvalidator.varmustnotbeempty(mcolnm, varnm="mcolnm");
-                mytempcls = mycol.getClassFromTableName(ctablename);
-                myvalidator.varmustnotbenull(mytempcls, varnm="mytempcls");
-                #is col name on table...
-                if (mytempcls.areGivenColNamesOnTable([mcolnm], mycols=None)): pass;
-                else:
-                    raise ValueError("the col names were not found on the table class(" +
-                                     mytempcls.__name__ + ")");
+                
+                myvalidator.colNameMustBeOnTheTable(ctablename, mcolnm);
+                
                 mystr += "" + ctablename + "." + mcolnm;
                 if (n + 1 < len(mcolnames)): mystr += ", ";
             return mystr;
@@ -1078,7 +1111,7 @@ class myvalidator:
         if (myvalidator.isvaremptyornull(consnm)):
             if (constpnm in ["CHECK", "UNIQUE"]):
                 useunc = (not usechck);
-                from mycol import mycol;#may need to change or get removed
+                from myorm.mycol import mycol;#may need to change or get removed
                 pnm = ("un" if (useunc) else "ch") + "mulcols_";
                 fnm = pnm + str(mycol.incrementAndGetUniqueOrCheckConstraintCounterBy(useunc, 1));
                 return myvalidator.genSQLConstraint(fnm, constpnm, val);
@@ -1136,16 +1169,12 @@ class myvalidator:
         myvalidator.varmustnotbenull(mcolobj, varnm="mcolobj");
         finftblnm = None;
         fcolnms = mcolobj.getForeignColNames();
-        merrmsgpta = "at least one of the foreign column names (" + str(fcolnms);
         if (myvalidator.isvaremptyornull(ftblnm)):
             fclsref = type(mcolobj).getMyClassRefFromString(mcolobj.getForeignClass());
-            merrmsgpta += ") was not on the foreign table with class name (" + fclsref.__name__;
             finftblnm = fclsref.getTableName();
-            allfcols = fclsref.getMyCols();
-            if (fclsref.areGivenColNamesOnTable(fcolnms, mycols=allfcols)): pass;
-            else:
-                allfcolnames = fclsref.getMyColNames(mycols=allfcols);
-                raise ValueError(merrmsgpta + ")! Its column names are (" + str(allfcolnames) + ")!");
+            
+            myvalidator.colNamesMustBeOnTheTableFromMyColObj(mcolobj);
+        
         else: finftblnm = ftblnm;
         return myvalidator.genSQLForeignKeyConstraint(consnm, mcolobj.getColName(), finftblnm, fcolnms);
 
@@ -1158,13 +1187,8 @@ class myvalidator:
 
     @classmethod
     def genLengthCol(cls, colname, mtablename):
-        myvalidator.varmustnotbeempty(colname, varnm="colname");
-        from mycol import mycol;#may need to change or get removed
-        myclstablenameref = mycol.getClassFromTableName(mtablename);
-        myvalidator.varmustnotbenull(myclstablenameref, varnm="myclstablenameref");
-        if (myclstablenameref.areGivenColNamesOnTable([colname], mycols=None)):
-            return myvalidator.genSQLLength(colname);
-        else: raise ValueError("the colname must be on the table!");
+        myvalidator.colNameMustBeOnTheTable(mtablename, colname);
+        return myvalidator.genSQLLength(colname);
 
 
     #it is expected that ORDER BY and MIN or MAX appear after a SELECT statement in SQL
@@ -1189,11 +1213,8 @@ class myvalidator:
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(colname, varnm="colname");
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tablename, varnm="tablename");
         
-        from mycol import mycol;#may need to change or get removed
-        myclstablenameref = mycol.getClassFromTableName(tablename);
-        myvalidator.varmustnotbenull(myclstablenameref, varnm="myclstablenameref");
-        if (myclstablenameref.areGivenColNamesOnTable([colname], mycols=None)): pass;
-        else: raise ValueError("the colname must be on the table!");
+        myvalidator.colNameMustBeOnTheTable(tablename, colname);
+        
         finstr = "" + (tablename + "." if singleinctname else "") + colname;
         return myvalidator.genSQLMinOrMax(usemin, finstr);
     @classmethod
@@ -1224,7 +1245,6 @@ class myvalidator:
                 else:
                     raise ValueError("there must be the same number of columns as tablenames " +
                                      "if there is more than one tablename!");
-            from mycol import mycol;#may need to change or get removed
             mystr = "";
             clvarnm = "the colname";
             tnmvarnm = "the tablename";
@@ -1233,10 +1253,8 @@ class myvalidator:
                 tnm = (tablenames[n] if (1 < len(tablenames)) else tablenames[0]);
                 myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(colnm, varnm=clvarnm);
                 myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tnm, varnm=tnmvarnm);
-                myclstablenameref = mycol.getClassFromTableName(tnm);
-                myvalidator.varmustnotbenull(myclstablenameref, varnm="myclstablenameref");
-                if (myclstablenameref.areGivenColNamesOnTable([colnm], mycols=None)): pass;
-                else: raise ValueError("the colname must be on the table!");
+
+                myvalidator.colNameMustBeOnTheTable(tnm, colnm);
                 
                 #include the table name if not single,
                 #include the table name if single and include is set to true
@@ -1379,8 +1397,8 @@ class myvalidator:
         #now need to get all of the primary key columns and then make the pky constraint.
         if (haveonepkycol): pass;
         else:
-            from mybase import mybase;
-            pkycols = mybase.getMyPrimaryKeyCols(mycols);
+            from myorm.mybase import mybase;
+            pkycols = mybase.getMyPrimaryKeyCols(mycols=mycols);
             #mstr += ", ";
             nwpkyconst = myvalidator.genSQLPrimaryKeyConstraint("pkyfor" + name,
                                                                 mybase.getMyColNames(pkycols));
@@ -1393,7 +1411,7 @@ class myvalidator:
             #but there can only be one primary key constraint on the table.
             if (1 < numpkycols):
                 #this is a multi-column primary key constraint
-                from mycol import mycol;
+                from myorm.mycol import mycol;
                 myclsref = mycol.getClassFromTableName(name);
                 myclsref.addMultiColumnConstraint(nwpkyconst);
             else:
@@ -1443,12 +1461,12 @@ class myvalidator:
     def genSQLCreateTableFromRef(cls, myclsref, varstr, onlyifnot=True):
         myvalidator.varmustnotbenull(myclsref, varnm="myclsref");
         errmsg = "myclsref must be a subclass of mybase class and not mybase, but it was not!";
-        from mybase import mybase;#may need to change or get removed
+        from myorm.mybase import mybase;#may need to change or get removed
         if (issubclass(myclsref, mybase) and not myclsref == mybase): pass;
         else: raise TypeError(errmsg);
-        return cls.genSQLCreateTable(myclsref.getTableName(), varstr, myclsref.getMyCols(),
-                                     myclsref.getMultiColumnConstraints(),
-                                     myclsref.getAllTableConstraints(), onlyifnot=onlyifnot);
+        return myvalidator.genSQLCreateTable(myclsref.getTableName(), varstr, myclsref.getMyCols(),
+                                             myclsref.getMultiColumnConstraints(),
+                                             myclsref.getAllTableConstraints(), onlyifnot=onlyifnot);
     
     #depends on the table name
     #
@@ -1466,15 +1484,17 @@ class myvalidator:
         myvalidator.varmustbeboolean(onlyifnot, varnm="onlyifnot");
         myvalidator.varmustbeboolean(isclsnm, varnm="isclsnm");
         
-        from mycol import mycol;#may need to change or get removed
+        from myorm.mycol import mycol;#may need to change or get removed
         myfuncref = (mycol.getMyClassRefFromString if (isclsnm) else mycol.getClassFromTableName);
-        return cls.genSQLCreateTableFromRef(myfuncref(name), varstr, onlyifnot=onlyifnot);
+        return myvalidator.genSQLCreateTableFromRef(myfuncref(name), varstr, onlyifnot=onlyifnot);
     @classmethod
     def genSQLCreateTableFromTableName(cls, name, varstr, onlyifnot=True):
-        return cls.genSQLCreateTableFromTableOrClassName(name, varstr, False, onlyifnot=onlyifnot);
+        return myvalidator.genSQLCreateTableFromTableOrClassName(name, varstr, False,
+                                                                 onlyifnot=onlyifnot);
     @classmethod
     def genSQLCreateTableFromClassName(cls, name, varstr, onlyifnot=True):
-        return cls.genSQLCreateTableFromTableOrClassName(name, varstr, True, onlyifnot=onlyifnot);
+        return myvalidator.genSQLCreateTableFromTableOrClassName(name, varstr, True,
+                                                                 onlyifnot=onlyifnot);
     
     @classmethod
     def genSQLDropTable(cls, tname, onlyifnot=False):
@@ -1607,21 +1627,16 @@ class myvalidator:
         #if there is one table, we may still need it, we may not
         #for validation purposes either way we do need it.
         inctnm = (inctnameonone if isonetable else True);
-        from mycol import mycol;#may need to change or get removed
         mystr = "";
-        errmsgpta = "the colname (";
-        errmsgptb = ") must be found on the table class(";
         for n in range(len(colnames)):
             #need to verify that the col name is on the corresponding table
             mcnm = colnames[n];
             tnm = (tablenames[0] if isonetable else tablenames[n]);
-            myvalidator.varmustnotbeempty(mcnm, varnm="mcnm");
-            myclstablenameref = mycol.getClassFromTableName(tnm);
-            myvalidator.varmustnotbenull(myclstablenameref, varnm="myclstablenameref");
-            if (myclstablenameref.areGivenColNamesOnTable([mcnm], mycols=None)):
-                mystr += "" + (tnm + "." if inctnm else "") + mcnm;
-                if (n + 1 < len(colnames)): mystr += ", ";
-            else: raise ValueError(errmsgpta + mcnm + errmsgptb + myclstablenameref.__name__ + ")!");
+
+            myvalidator.colNameMustBeOnTheTable(tnm, mcnm);
+
+            mystr += "" + (tnm + "." if inctnm else "") + mcnm;
+            if (n + 1 < len(colnames)): mystr += ", ";
         return "COUNT(" + ("DISTINCT " if usedistinct else "") + mystr + ")";
     @classmethod
     def genCountAll(cls, usedistinct=False):
