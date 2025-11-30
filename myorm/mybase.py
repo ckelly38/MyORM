@@ -3245,6 +3245,7 @@ class mybase:
     #this gets the rules that the user has defined in their class which extends mybase class
     #in the event that the user did not define it, it throws an attribute error
     #this does not get all attributes that will be serialized
+    #where the class ref cls is a subclass of mybase class
     @classmethod
     def getSerializeOnlyORExclusiveSerializeRules(cls, useexrules):
         myvalidator.varmustbeboolean(useexrules, varnm="useexrules");
@@ -3255,15 +3256,18 @@ class mybase:
     @classmethod
     def getExclusiveSerializeRules(cls): return cls.getSerializeOnlyORExclusiveSerializeRules(True);
 
-
+    #returns the attribute names if their values are of types: int, float, str, list, tuple
+    #this does not include anything in __module__ or all
+    #mycol could be on the list of stuff to serialize,
+    #but there is already a method specifically for that
+    #cls.getMyColAttributeNames() or cls.getMyColNames();
+    #where the class ref cls is a subclass of mybase class
     @classmethod
     def getOtherKnownSafeAttributesOnTheClass(cls):
         return [attr for attr in dir(cls)
                 if (type(getattr(cls, attr)) in [int, float, str, list, tuple] and
                     attr not in ["__module__", "all"])];
-        #mycol could be on the list of stuff to serialize,
-        #but there is already a method specifically for that
-
+    
     @classmethod
     def getKnownAttributeNamesOnTheClass(cls, useserial=False):
         myvalidator.varmustbeboolean(useserial, varnm="useserial");

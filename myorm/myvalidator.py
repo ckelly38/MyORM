@@ -2,7 +2,7 @@ import traceback;
 import types;
 class myvalidator:
     @classmethod
-    def varmustbethetypeandornull(clsnm, val, tpcls, canbenull, varnm="varname"):
+    def varmustbethetypeandornull(cls, val, tpcls, canbenull, varnm="varname"):
         if (varnm == None or (type(varnm) == str and len(varnm) < 1)):
             return myvalidator.varmustbethetypeornull(val, tpcls, varnm="varname");
         elif (type(varnm) == str): pass;
@@ -14,14 +14,14 @@ class myvalidator:
             if (type(val) == tpcls): return True;
             else: raise TypeError(varnm + " was not the correct type!");
     @classmethod
-    def varmustbethetypeonly(clsnm, val, tpcls, varnm="varname"):
+    def varmustbethetypeonly(cls, val, tpcls, varnm="varname"):
         return myvalidator.varmustbethetypeandornull(val, tpcls, False, varnm=varnm);
     @classmethod
-    def varmustbeboolean(clsnm, val, varnm="varname"):
+    def varmustbeboolean(cls, val, varnm="varname"):
         return myvalidator.varmustbethetypeonly(val, bool, varnm=varnm);
     
     @classmethod
-    def varmustnotbenull(clsnm, val, varnm="varname"):
+    def varmustnotbenull(cls, val, varnm="varname"):
         if (varnm == None or type(varnm) == str and len(varnm) < 1):
             return myvalidator.varmustnotbenull(val, varnm="varname");
         elif (type(varnm) == str): pass;
@@ -30,7 +30,7 @@ class myvalidator:
         else: return True;
 
     @classmethod
-    def isvaremptyornull(clsnm, val): return (val == None or len(val) < 1);
+    def isvaremptyornull(cls, val): return (val == None or len(val) < 1);
 
     @classmethod
     def isvarnull(cls, val): return (val == None);
@@ -38,7 +38,7 @@ class myvalidator:
     def varisnull(cls, val): return myvalidator.isvarnull(val);
 
     @classmethod
-    def varmustnotbeempty(clsnm, val, varnm="varname"):
+    def varmustnotbeempty(cls, val, varnm="varname"):
         if (varnm == None or type(varnm) == str and len(varnm) < 1):
             return myvalidator.varmustnotbeempty(val, varnm="varname");
         elif (type(varnm) == str): pass;
@@ -47,7 +47,7 @@ class myvalidator:
         else: return True;
 
     @classmethod
-    def varmustbeemptyornull(clsnm, val, varnm="varname"):
+    def varmustbeemptyornull(cls, val, varnm="varname"):
         if (myvalidator.isvaremptyornull(varnm)):
             return myvalidator.varmustbeemptyornull(val, varnm="varname");
         if (myvalidator.isvaremptyornull(val)): return True;
@@ -140,7 +140,7 @@ class myvalidator:
         return True;
 
     @classmethod
-    def isClass(clsnm, val): return (type(val) == type);
+    def isClass(cls, val): return (type(val) == type);
     @classmethod
     def isModule(cls, val): return (type(val) == types.ModuleType);
     @classmethod
@@ -209,7 +209,7 @@ class myvalidator:
         return True;
 
     @classmethod
-    def listMustContainUniqueValuesOnly(clsnm, mlist, ignorelist=None, varnm="varnm"):
+    def listMustContainUniqueValuesOnly(cls, mlist, ignorelist=None, varnm="varnm"):
         if (myvalidator.isvaremptyornull(varnm)):
             return myvalidator.listMustContainUniqueValuesOnly(mlist, ignorelist=ignorelist,
                                                                varnm="varnm");
@@ -230,7 +230,7 @@ class myvalidator:
         else: raise ValueError(f"the list {varnm} must contain unique values, but it did not!");
 
     @classmethod
-    def areTwoListsTheSame(clsnm, lista, listb):
+    def areTwoListsTheSame(cls, lista, listb):
         if (myvalidator.isvaremptyornull(lista)): return (myvalidator.isvaremptyornull(listb));
         else:
             if (myvalidator.isvaremptyornull(listb)): return False;
