@@ -204,15 +204,36 @@ class mybase:
 
 
     #DEPENDS ON THE SQL VARIANT
+    #takes in the colnames and the colvalues, or you can pass them in as keyword arguments
+    #the type of self is the class cls, this must be a subclass of mybase class
+    #0. if it has not run setup yet, it calls setupMain() for the class.
+    #1. this attempts to get the tablename and makes sure that it is valid.
+    #2. it handles the keyword arguments and sets the colnames and values lists if needed
+    #it makes sure that the colnames are all unique as well.
+    #if needed, it will recall the constructor...
+    #3. it sets the lastSyncedValsDict to be None.
+    #4. it sets the userProvidedColNames to be the colnames that came in.
+    #5. it sets the list of all objects for that type all to be self if empty, or adds self to the list
+    #6. it verifies that the SQL VARIANT is valid before it proceeds.
+    #7. for all of the cols for the self object, it sets the context object as self.
+    #8. it verifies the foreign and primary key and containing class information.
+    #9. now it sets the given colvalues for the given colnames (THIS IS DEPENDENT ON THE SQL VARIANT).
+    #10. if there are colnames that are not given values, then it sets the default values for them
+    #also it tells which cols were given default and which were given user provided values
+    #11. this gets and sets the foreign key objects for the cols for this object.
+    #12. this updates all foreign key objects and all link refs for all classes.
+    #all classes that are subclasses of mybase class.
+    #13. finally it returns itself the self object.
     def __init__(self, colnames=None, colvalues=None, **kwargs):
         print("INSIDE BASE CLASS CONSTRUCTOR CALLING SETUP IF NEEDED FIRST!");
         #print(f"mycol.hasRunSetupYet() = {mycol.hasRunSetupYet()}");
-        if (not mycol.hasRunSetupYet()): type(self).setupMain();
-        mytempcols = type(self).getMyCols();
-        mycolnames = type(self).getMyColNames(mytempcols);
+        cls = type(self);
+        if (not mycol.hasRunSetupYet()): cls.setupMain();
+        mytempcols = cls.getMyCols();
+        mycolnames = cls.getMyColNames(mytempcols);
         print("INSIDE BASE CLASS CONSTRUCTOR AFTER SETUP CALL!");
-        print(f"type(self) = {type(self)}");
-        print(f"mytablename = {type(self).getTableName()}");
+        print(f"cls = type(self) = {cls}");
+        print(f"mytablename = {cls.getTableName()}");
         print(f"mycolnames = {mycolnames}");
         print(f"colnames = {colnames}");#user provided
         print(f"colvalues = {colvalues}");#user provided
@@ -284,10 +305,10 @@ class mybase:
         #USING GLOBALS DOES NOT WORK IN THIS CASE SO CANNOT DO STRING TO REF CONVERSION.
 
         varstr = "" + mybase.getMySQLType();#SQLVARIANT
-        if (hasattr(type(self), "all")):
-            if (type(self).all == None): type(self).all = [self];
-            else: type(self).all.append(self);
-        else: setattr(type(self), "all", [self]);
+        if (hasattr(cls, "all")):
+            if (cls.all == None): cls.all = [self];
+            else: cls.all.append(self);
+        else: setattr(cls, "all", [self]);
 
         #provide the context to the cols for the object here...
         #get my cols, then for each col, call setContext with the current object.
@@ -297,10 +318,10 @@ class mybase:
         print("\nNOW VERIFYING THE FOREIGN AND PRIMARY KEY INFORMATION IN BASE CLASS CONSTRUCTOR:\n");
         
         for mc in mytempcols:
-            #mc.setContainingClassName(type(self).__name__);
+            #mc.setContainingClassName(cls.__name__);
             myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(
                 mc.getContainingClassName(), varnm="containing class name");
-            mc.primaryKeyInformationMustBeValid(type(self));
+            mc.primaryKeyInformationMustBeValid(cls);
             mc.foreignKeyInformationMustBeValid(fcobj=self, usenoclassobj=False);
 
         print("\nDONE VERIFYING THE FOREIGN AND PRIMARY KEY INFORMATION IN BASE CLASS CONSTRUCTOR!");
@@ -396,7 +417,7 @@ class mybase:
             #but if it is some other type, then cannot get from DB
             #unless it is some sort of default like the current date or the current time.
             #NOT SURE ON THE OTHER STUFF 4-12-2025 2:48 AM MST???
-            mypkycols = type(self).getMyPrimaryKeyCols(mytempcols);
+            mypkycols = cls.getMyPrimaryKeyCols(mytempcols);
             getfromdb = ((mycolobj.getIsPrimaryKey() and len(mypkycols) == 1) and (tpisintnum));
             print(f"getfromdb = {getfromdb}");
             
@@ -405,7 +426,7 @@ class mybase:
                 if (tpisintnum):
                     mynum = 0;
                     fnditemotherthanself = False;
-                    for mobj in type(self).all:
+                    for mobj in cls.all:
                         if (mobj == self): pass;
                         else:
                             if (not fnditemotherthanself): fnditemotherthanself = True;
@@ -454,8 +475,8 @@ class mybase:
 
         #update them all here...
         print();
-        type(self).updateAllForeignKeyObjectsForAllClasses(not mycol.hasRunSetupYet());
-        type(self).updateAllLinkRefsForAllClasses(not mycol.hasRunSetupYet());
+        cls.updateAllForeignKeyObjectsForAllClasses(ftchnw=not mycol.hasRunSetupYet());
+        cls.updateAllLinkRefsForAllClasses(ftchnw=not mycol.hasRunSetupYet());
 
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!\n");

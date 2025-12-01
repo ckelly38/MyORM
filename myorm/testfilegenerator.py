@@ -2,7 +2,7 @@
 #from myorm.myvalidator import myvalidator;#setup line required
 #import ?;
 #from myorm.mycol import mycol;
-#mycol.setUpMyColDBRefAndConfigModule(?);#covers a b and c
+#mycol.setupMyColDBRefAndConfigModule(?);#covers a b and c
 #myvalidator.setupConfigModule(?);#setup line required part a
 #tmpdbobj = myvalidator.getDBAttrOrValFromConfigModuleNoVars(?, True);#setup line required part b
 #mycol.setMyDBRef(tmpdbobj);#setup line required part c
@@ -42,7 +42,7 @@ def genFileLines(confgnm="" + mydfconfigmnm, dbrefnm="" + mydfdbobjrefnm, imprtl
     ilinea = "import " + confgnm + ";";
     ilineb = "from myorm.myvalidator import myvalidator;";
     ilinec = "from myorm.mycol import mycol;";
-    ilined = "mycol.setUpMyColDBRefAndConfigModule(" + confgnm + ");#covers parts a, b, and c";
+    ilined = "mycol.setupMyColDBRefAndConfigModule(" + confgnm + ");#covers parts a, b, and c";
     ilinee = "myvalidator.setupConfigModule(" + confgnm + ");#setup part a";
     ilinef = "" + dbrefnm + " = myvalidator.getDBAttrOrValFromConfigModuleNoVars(" + confgnm;
     ilinef += ", True);#setup part b";

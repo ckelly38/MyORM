@@ -77,6 +77,17 @@ def genInfoLines(fnm, noext=True):
                 #on the lines immediately above it if possible.
                 print(f"def csi = {csi} and n = {n}");
                 if (csi == 0 or 0 < csi < len(mflines)):
+                    #adds a line before comments start for a method
+                    #if the previous line is empty or null, do not add another one
+                    #we only want to add it for comments not the ats...
+                    #with diff is 1, it will be for all one liner methods
+                    #diff more than 1, implies it must have comments
+                    #1 < n - csi and 
+                    fstlinefecobj = getFirstExecutableCharacterObjOnALine(mflines[csi]);
+                    #print(fstlinefecobj);
+                    if (fstlinefecobj["fec"] == '#' and 0 < len(myfinlines) and
+                        not myvalidator.isvaremptyornull(myfinlines[len(myfinlines) - 1])):
+                        myfinlines.append("");
                     for myn in range(csi, n): myfinlines.append("" + mflines[myn]);
                 #now we add our class or method definition line here, but we need the complete
                 #definition. That means we need the ): for defs and the : or ): for classes
@@ -96,6 +107,7 @@ def genInfoLines(fnm, noext=True):
                 #on the lines immediately above it if possible.
                 print(f"class csi = {csi} and n = {n}");
                 if (csi == 0 or 0 < csi < len(mflines)):
+                    #myfinlines.append("");#adds a line before comments start for a class
                     for omyn in range(csi, n): myfinlines.append("" + mflines[omyn]);
                 #now we add our class or method definition line here, but we need the complete
                 #definition. That means we need the ): for defs and the : or ): for classes
@@ -119,6 +131,8 @@ def genInfoLines(fnm, noext=True):
                 if (epclni < cmnti and hasepclnonit): getnext = False;
                 #else: pass;
             elif (hasepclnonit): getnext = False;
+            #if (getnext): pass;
+            #else: myfinlines.append("");#adds a new line after multiline method or class names
         
         if (ismthorcls):
             hasasponit = ("(" in mline);
@@ -147,7 +161,9 @@ def genInfoLines(fnm, noext=True):
             elif (hasclnonit): getnext = False;
             else: raise ValueError(pclnerrmsg);
             if (getnext): pass;
-            else: csi = -1;
+            else: 
+                #myfinlines.append("");#adds a new line after oneliner methods
+                csi = -1;
             ismthorcls = False;
     
         #wait some time for the printer to catch up...

@@ -16,7 +16,7 @@ mycol.setMyDBRef(tmpdbobj);#setup line required part c
 print("testfile line 9 here!");
 
 #note for part a, b, and c calls alternatively call:
-#mycol.setUpMyColDBRefAndConfigModule(mdl);
+#mycol.setupMyColDBRefAndConfigModule(mdl);
 #only split it out above if you need access to DB methods almost instantly or
 #later on in the test or seed file
 
