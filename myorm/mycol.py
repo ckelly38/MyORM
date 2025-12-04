@@ -26,7 +26,7 @@ class mycol:
     #the mycol class holds a single copy of the MyDB object for all instances of the mycol class
     #this returns that for access by other classes like the mybase, myvalidator classes
     @classmethod
-    def getMyDB(cls): return cls.__mydbref__;
+    def getMyDB(cls): return mycol.__mydbref__;
 
     #this sets the mydbref for the mycol class
     #it must either be None or a MyDB object or it will error
@@ -34,18 +34,18 @@ class mycol:
     @classmethod
     def setMyDB(cls, val):
         if ((val == None) or isinstance(val, MyDB)):
-            cls.__mydbref__ = val;
+            mycol.__mydbref__ = val;
             print("mycol: mydbref is set successfully!");
             if (val == None): print("mycol: mydbref is None!");
             else: print("mycol: mydbref is not null!");
         else: raise ValueError("val must be an instance of MyDB!");
     @classmethod
-    def setMyDBRef(cls, val): cls.setMyDB(val);
+    def setMyDBRef(cls, val): mycol.setMyDB(val);
     
     #this method also gets the mydb object and makes sure that it is defined.
     @classmethod
     def getMyDBMustBeDefined(cls):
-        tmpdb = cls.getMyDB();
+        tmpdb = mycol.getMyDB();
         myvalidator.varmustbethetypeonly(tmpdb, MyDB, varnm="THE DATABASE OBJECT tmpdb");
         return tmpdb;
     
@@ -56,31 +56,31 @@ class mycol:
     #so it will return None if the DB is not defined, otherwise it returns what is stored.
     @classmethod
     def getMySQLType(cls):
-        tmpdb = cls.getMyDB();
+        tmpdb = mycol.getMyDB();
         myvalidator.varmustbethetypeandornull(tmpdb, MyDB, True, varnm="THE DATABASE OBJECT tmpdb");
         return (None if (tmpdb == None) else tmpdb.getSQLType());
     @classmethod
-    def getMyDBName(cls): return cls.getMyDBMustBeDefined().getDBName();
+    def getMyDBName(cls): return mycol.getMyDBMustBeDefined().getDBName();
     @classmethod
-    def getMyLibRefClass(cls): return cls.getMyDBMustBeDefined().getLibRef();
+    def getMyLibRefClass(cls): return mycol.getMyDBMustBeDefined().getLibRef();
     @classmethod
-    def setMyLibRefClass(cls, val): cls.getMyDBMustBeDefined().setLibRef(val);
+    def setMyLibRefClass(cls, val): mycol.getMyDBMustBeDefined().setLibRef(val);
     @classmethod
-    def getMyCursor(cls): return cls.getMyDBMustBeDefined().getCursor();
+    def getMyCursor(cls): return mycol.getMyDBMustBeDefined().getCursor();
     @classmethod
-    def getMyConn(cls): return cls.getMyDBMustBeDefined().getConn();
+    def getMyConn(cls): return mycol.getMyDBMustBeDefined().getConn();
     @classmethod
-    def setMyDBName(cls, val): cls.getMyDBMustBeDefined().setDBName(val);
+    def setMyDBName(cls, val): mycol.getMyDBMustBeDefined().setDBName(val);
     @classmethod
-    def setMySQLType(cls, val): cls.getMyDBMustBeDefined().setSQLType(val);
+    def setMySQLType(cls, val): mycol.getMyDBMustBeDefined().setSQLType(val);
     @classmethod
-    def setMyCursor(cls, val): cls.getMyDBMustBeDefined().setCursor(val);
+    def setMyCursor(cls, val): mycol.getMyDBMustBeDefined().setCursor(val);
     @classmethod
-    def setMyConn(cls, val): cls.getMyDBMustBeDefined().setConn(val);
+    def setMyConn(cls, val): mycol.getMyDBMustBeDefined().setConn(val);
     @classmethod
-    def getMyDBConfigFileName(cls): return cls.getMyDBMustBeDefined().getConfigFileName();
+    def getMyDBConfigFileName(cls): return mycol.getMyDBMustBeDefined().getConfigFileName();
     @classmethod
-    def setMyDBConfigFileName(cls, val): cls.getMyDBMustBeDefined().setConfigFileName(val);
+    def setMyDBConfigFileName(cls, val): mycol.getMyDBMustBeDefined().setConfigFileName(val);
 
     #this is a setup method that combines setup parts a, b, and c
     #this setup method sets up the configModule mdl reference
@@ -104,7 +104,7 @@ class mycol:
     @classmethod
     def getMyUniqueOrCheckConstraintCounter(cls, useuctr):
         myvalidator.varmustbeboolean(useuctr, varnm="useuctr");
-        return (cls.__ucconscntr__ if (useuctr) else cls.__ccconscntr__);
+        return (mycol.__ucconscntr__ if (useuctr) else mycol.__ccconscntr__);
 
     #this sets the unique constraint counter variable (if useucntr is true) or
     #the check constraint counter variable (if false) to the integer value given by nval
@@ -113,63 +113,63 @@ class mycol:
         myvalidator.varmustbeboolean(useuctr, varnm="useuctr");
         myvalidator.varmustbethetypeonly(nval, int, varnm="nval");
         myvalidator.valueMustBeInRange(nval, 0, 0, True, False, varnm="nval");
-        if (useuctr): cls.__ucconscntr__ = nval;
-        else: cls.__ccconscntr__ = nval;
+        if (useuctr): mycol.__ucconscntr__ = nval;
+        else: mycol.__ccconscntr__ = nval;
     @classmethod
     def setMyUniqueConstraintCounter(cls, nval):
-        cls.setMyUniqueOrCheckConstraintCounter(nval, True);
+        mycol.setMyUniqueOrCheckConstraintCounter(nval, True);
     @classmethod
     def setMyCheckConstraintCounter(cls, nval):
-        cls.setMyUniqueOrCheckConstraintCounter(nval, False);
+        mycol.setMyUniqueOrCheckConstraintCounter(nval, False);
     
     #this increments the unique (if useuctr is true) or check constraint counter variable by the intval
     #intval is an integer and its default value is 1.
     @classmethod
     def incrementAndGetUniqueOrCheckConstraintCounterBy(cls, useuctr, intval=1):
         myvalidator.varmustbethetypeonly(intval, int, varnm="intval");
-        cls.setMyUniqueOrCheckConstraintCounter(cls.getMyUniqueOrCheckConstraintCounter(useuctr) +
+        mycol.setMyUniqueOrCheckConstraintCounter(mycol.getMyUniqueOrCheckConstraintCounter(useuctr) +
                                                 intval, useuctr);
-        return cls.getMyUniqueOrCheckConstraintCounter(useuctr);
+        return mycol.getMyUniqueOrCheckConstraintCounter(useuctr);
     @classmethod
     def incrementAndGetUniqueConstraintCounterBy(cls, intval=1):
-        return cls.incrementAndGetUniqueOrCheckConstraintCounterBy(True, intval=intval);
+        return mycol.incrementAndGetUniqueOrCheckConstraintCounterBy(True, intval=intval);
     @classmethod
     def incrementAndGetCheckConstraintCounterBy(cls, intval=1):
-        return cls.incrementAndGetUniqueOrCheckConstraintCounterBy(False, intval=intval);
+        return mycol.incrementAndGetUniqueOrCheckConstraintCounterBy(False, intval=intval);
 
     #this decrements the unique (if useuctr is true) or check constraint counter variable by the intval
     #intval is an integer and its default value is 1.
     @classmethod
     def decrementAndGetUniqueOrCheckConstraintCounterBy(cls, useuctr, intval=1):
         myvalidator.varmustbethetypeonly(intval, int, varnm="intval");
-        cls.setMyUniqueOrCheckConstraintCounter(cls.getMyUniqueOrCheckConstraintCounter(useuctr) -
+        mycol.setMyUniqueOrCheckConstraintCounter(mycol.getMyUniqueOrCheckConstraintCounter(useuctr) -
                                                 intval, useuctr);
-        return cls.getMyUniqueOrCheckConstraintCounter(useuctr);
+        return mycol.getMyUniqueOrCheckConstraintCounter(useuctr);
     @classmethod
     def decrementAndGetUniqueConstraintCounterBy(cls, intval=1):
-        return cls.decrementAndGetUniqueOrCheckConstraintCounterBy(True, intval=intval);
+        return mycol.decrementAndGetUniqueOrCheckConstraintCounterBy(True, intval=intval);
     @classmethod
     def decrementAndGetCheckConstraintCounterBy(cls, intval=1):
-        return cls.decrementAndGetUniqueOrCheckConstraintCounterBy(False, intval=intval);
+        return mycol.decrementAndGetUniqueOrCheckConstraintCounterBy(False, intval=intval);
 
     
     #validator methods
 
     #gets a list of all of the validator dicts
     @classmethod
-    def getAllValidators(cls): return cls.__all_validators__;
+    def getAllValidators(cls): return mycol.__all_validators__;
 
     #gets a list of the validator dicts that match the class name mcnm 
     @classmethod
     def getMyValidators(cls, mcnm):
         myvalidator.stringMustHaveAtMinNumChars(mcnm, 1, varnm="myclassnm");
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mcnm, varnm="myclassnm");
-        return [item for item in cls.getAllValidators() if (item["classname"] == mcnm)];
+        return [item for item in mycol.getAllValidators() if (item["classname"] == mcnm)];
 
     #gets a list of validator dicts that match the class name mcnm and have all of the keys on mkys list
     @classmethod
     def getMyValidatorsThatContainKeys(cls, mcnm, mkys):
-        return [item for item in cls.getMyValidators(mcnm)
+        return [item for item in mycol.getMyValidators(mcnm)
                 if (myvalidator.isListAInListB(mkys, item["keys"]))];
 
     #gets a list of validator dicts for the give class name mcnm that are individual or multi-columns
@@ -180,27 +180,48 @@ class mycol:
     @classmethod
     def getMyIndividualOrMultiColumnValidators(cls, mcnm, useindiv):
         myvalidator.varmustbeboolean(useindiv, varnm="useindiv");
-        return [item for item in cls.getMyValidators(mcnm)
+        return [item for item in mycol.getMyValidators(mcnm)
                 if ((len(item["keys"]) < 2 and useindiv) or (1 < len(item["keys"]) and not useindiv))];
     @classmethod
     def getMyIndividualColumnValidators(cls, mcnm):
-        return cls.getMyIndividualOrMultiColumnValidators(mcnm, True);
+        return mycol.getMyIndividualOrMultiColumnValidators(mcnm, True);
     @classmethod
     def getMyMultiColumnValidators(cls, mcnm):
-        return cls.getMyIndividualOrMultiColumnValidators(mcnm, False);
+        return mycol.getMyIndividualOrMultiColumnValidators(mcnm, False);
 
     #this sets all of the validators to the vlist
     @classmethod
     def setAllValidators(cls, vlist):
         #myvalidator.addValidator("Camper", isvalidage, ["age"]);
         #[{classname: "Camper", methodnameorref: isvalidage, colnames: ["age"]}, ...];
-        cls.__all_validators__ = vlist;#might be a memory leak here
+        mycol.__all_validators__ = vlist;#might be a memory leak here
+
+    #this adds a validator method to the list of all validators.
+    #the validator dict needs a classname, a methodref, and the keys or colnames
+    #that are being validated
+    #the methodref is actually just the method name it is a string.
+    #the dict that it creates has classname, methodref, and keys for its keys
+    #it returns True, but the return value only means that the method completed.
+    @classmethod
+    def addValidator(cls, classname, methodref, keys):
+        #mycol.addValidator("Camper", isvalidage, ["age"]);
+        print(f"classname = {classname}");
+        print(f"methodref = {methodref}");
+        print(f"keys = {keys}");
+        myvalidator.varmustnotbeempty(keys, varnm="keys");
+        myvalidator.stringMustHaveAtMinNumChars(classname, 1, varnm="classname");
+        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(classname, varnm="classname");
+        mlist = mycol.getAllValidators();
+        clist = ([] if (myvalidator.isvaremptyornull(mlist)) else [item for item in mlist]);
+        clist.append({"classname": classname, "methodref": methodref, "keys": keys});
+        mycol.setAllValidators(clist);
+        return True;
 
     #https://www.datacamp.com/tutorial/decorators-python
     #https://stackoverflow.com/questions/961048/get-class-that-defined-method
     #
     #this is a decorator whose only purpose is to register the validator method
-    #this does not actually call it.
+    #this does not actually call the validator function, so one of them returns the function.
     #the run methods below call the validator after it is registered.
     #also due to how to get the name of the function,
     #we restrict the version to python version 3 or above
@@ -249,27 +270,6 @@ class mycol:
             #this also prevents getattr seeing the function name and thinking that it is None.
             return myvfunc;
         return myAddVDator;
-
-    #this adds a validator method to the list of all validators.
-    #the validator dict needs a classname, a methodref, and the keys or colnames
-    #that are being validated
-    #the methodref is actually just the method name it is a string.
-    #the dict that it creates has classname, methodref, and keys for its keys
-    #it returns True, but the return value only means that the method completed.
-    @classmethod
-    def addValidator(cls, classname, methodref, keys):
-        #mycol.addValidator("Camper", isvalidage, ["age"]);
-        print(f"classname = {classname}");
-        print(f"methodref = {methodref}");
-        print(f"keys = {keys}");
-        myvalidator.varmustnotbeempty(keys, varnm="keys");
-        myvalidator.stringMustHaveAtMinNumChars(classname, 1, varnm="classname");
-        myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(classname, varnm="classname");
-        mlist = cls.getAllValidators();
-        clist = ([] if (myvalidator.isvaremptyornull(mlist)) else [item for item in mlist]);
-        clist.append({"classname": classname, "methodref": methodref, "keys": keys});
-        cls.setAllValidators(clist);
-        return True;
     
     #removes the validator from the given class from the list of validators via its keys
     #if the list of keys is empty or None or null, then it does nothing.
@@ -281,10 +281,10 @@ class mycol:
         myvalidator.stringMustHavaAtMinNumChars(classname, 1, varnm="classname");
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(classname, varnm="classname");
         if (myvalidator.isvaremptyornull(keys)): return True;
-        nlist = [item for item in cls.getAllValidators()
+        nlist = [item for item in mycol.getAllValidators()
                  if (not (item["classname"] == classname and myvalidator.doTwoListsContainTheSameData(
                      keys, item["keys"])))];
-        cls.setAllValidators(nlist);
+        mycol.setAllValidators(nlist);
         return True;
     
     #this runs the given validators (mvs) for the given class (mcnm) against the object (mobj)
@@ -318,6 +318,16 @@ class mycol:
                 else: raise ValueError(finerrmsgpta + (", ".join(mv["keys"])) + errmsgptb);
         return True;
 
+    #this method gets the list of validator methods that validate the give keys or cols and runs them.
+    #mcnm is short for my class name is the class name that has the specific validator methods to be run.
+    #mobj is short for my object. This is the data object whose type is of my class name.
+    #this object contains the new data that the validator methods need to check.
+    #mkys is short for my keys or my colnames
+    #if there are no keys it just returns True skipping execution
+    #if there is one key, it sorts the list of validators with them and runs them all.
+    #if there are more than one key(s), it just executes them directly.
+    #it executes them via (above):
+    #return mycol.runGivenValidatorsForClass(mcnm, mobj, finmvslist);
     @classmethod
     def runValidatorsByKeysForClass(cls, mcnm, mobj, mkys):
         #if mkys has multiple items on it, then just stick it as is into the runValidators method.
@@ -325,7 +335,7 @@ class mycol:
         #need sorted to run individuals first.
         #if empty skip execution altogether.
         if (myvalidator.isvaremptyornull(mkys)): return True;
-        initmvs = cls.getMyValidatorsThatContainKeys(mcnm, mkys);
+        initmvs = mycol.getMyValidatorsThatContainKeys(mcnm, mkys);
         finmvslist = None;
         if (len(mkys) == 1):
             #split the validators list into individuals if any and then those with multiple
@@ -340,40 +350,49 @@ class mycol:
                 else: mmcvs.append(vobj);
             finmvslist = myvalidator.combineTwoLists(micvs, mmcvs);
         else: finmvslist = initmvs;
-        return cls.runGivenValidatorsForClass(mcnm, mobj, finmvslist);
+        return mycol.runGivenValidatorsForClass(mcnm, mobj, finmvslist);
 
+    #this method runs all validators for a given classname against the new data on the data object given.
+    #mcnm is short for my class name is the class name that has the specific validator methods to be run.
+    #mobj is short for my object. This is the data object whose type is of my class name.
+    #this object contains the new data that the validator methods need to check.
     @classmethod
     def runAllValidatorsForClass(cls, mcnm, mobj):
-        micvs = cls.getMyIndividualColumnValidators(mcnm);
-        mmcvs = cls.getMyMultiColumnValidators(mcnm);
-        return cls.runGivenValidatorsForClass(mcnm, mobj, myvalidator.combineTwoLists(micvs, mmcvs));
+        micvs = mycol.getMyIndividualColumnValidators(mcnm);
+        mmcvs = mycol.getMyMultiColumnValidators(mcnm);
+        return mycol.runGivenValidatorsForClass(mcnm, mobj, myvalidator.combineTwoLists(micvs, mmcvs));
 
     
     #has setup run yet methods
 
+    #this asks if the DB model classes (subclasses of the mybase class) have been setup
     @classmethod
-    def hasRunSetupYet(cls): return cls.__ransetup__;
+    def hasRunSetupYet(cls): return mycol.__ransetup__;
 
     @classmethod
     def setRanSetup(cls, val):
         myvalidator.varmustbeboolean(val, varnm="nwransetupval");
-        cls.__ransetup__ = val;
+        mycol.__ransetup__ = val;
 
     
     #warn the user about a unique foreign key problem
 
     @classmethod
-    def getWarnUniqueFKey(cls): return cls.__ufkyhandlermthd__;
+    def getWarnUniqueFKey(cls): return mycol.__ufkyhandlermthd__;
     
+    #this sets the variable that tells the program how to handle the unique foreign keys
+    #your options are WARN, ERROR, or DISABLED (WARN is the default).
     @classmethod
     def setWarnUniqueFKeyMethod(cls, val):
         optslist = ["WARN", "ERROR", "DISABLED"];
         errmsg = "the handler method for unique foreign keys must be one of ";
-        if (val in optslist): cls.__ufkyhandlermthd__ = "" + val;
+        if (val in optslist): mycol.__ufkyhandlermthd__ = "" + val;
         else: raise ValueError(errmsg + optslist + ", but it was not!");
 
+    #this gets the unique foreign key warning or error message itself
     @classmethod
     def getUniqueForeignKeyWarningOrErrorMessage(cls, usewarn):
+        myvalidator.varmustbeboolean(usewarn, varnm="usewarn");
         appwmsg = "\n\nThis will apply to all cols on this running instance of the program ";
         appwmsg += "and may apply to all running instances on this machine.\n";
 
@@ -393,19 +412,21 @@ class mycol:
         return (wmsg if (usewarn) else emsg);
     @classmethod
     def getUniqueForeignKeyWarningMessage(cls):
-        return cls.getUniqueForeignKeyWarningOrErrorMessage(True);
+        return mycol.getUniqueForeignKeyWarningOrErrorMessage(True);
     @classmethod
     def getUniqueForeignKeyErrorMessage(cls):
-        return cls.getUniqueForeignKeyWarningOrErrorMessage(False);
+        return mycol.getUniqueForeignKeyWarningOrErrorMessage(False);
 
 
     #my class ref methods
 
+    #this gets a list of classes that the program uses it ignores the built in stuff
+    #this returns what is stored in the class refs list variable
     @classmethod
-    def getMyClassRefs(cls): return cls.__myclassrefs__;
+    def getMyClassRefs(cls): return mycol.__myclassrefs__;
     
     @classmethod
-    def setMyClassRefs(cls, val): cls.__myclassrefs__ = val;
+    def setMyClassRefs(cls, val): mycol.__myclassrefs__ = val;
 
     #https://stackoverflow.com/questions/1796180/
     #how-can-i-get-a-list-of-all-classes-within-current-module-in-python
@@ -415,7 +436,7 @@ class mycol:
     @classmethod
     def getMyClassRefsMain(cls, ftchnw=False):
         myvalidator.varmustbeboolean(ftchnw, varnm="ftchnw");
-        mycrefs = cls.getMyClassRefs();
+        mycrefs = mycol.getMyClassRefs();
         if (ftchnw or myvalidator.isvaremptyornull(mycrefs)):
             print("INSIDE OF MYCOL:");
             print("list of system modules:");
@@ -431,20 +452,25 @@ class mycol:
             myfincrefs = [item[1] for item in inspect.getmembers(mymods, myvalidator.isClass)];
             print(myfincrefs);
 
-            cls.setMyClassRefs(myfincrefs);
+            mycol.setMyClassRefs(myfincrefs);
             return myfincrefs;
         else: return mycrefs;
 
+    #this attempts to get the classref by the name of the class (nmstr)
+    #it errors out if name not found or is empty or null
     @classmethod
     def getMyClassRefFromString(cls, nmstr):
         #print(f"nmstr = {nmstr}");
         myvalidator.varmustnotbeempty(nmstr, varnm="nmstr");
-        for mycls in cls.getMyClassRefsMain(ftchnw=False):
+        for mycls in mycol.getMyClassRefsMain(ftchnw=False):
             #print(f"mycls = {mycls}");
             #print(f"mycls.__name__ = {mycls.__name__}");
             if (mycls.__name__ == nmstr): return mycls;
         raise ValueError(f"NAME {nmstr} NOT FOUND!");
 
+    #this attempts to get the classref by the DB tablename on the class (tablename)
+    #each DB model class (subclass of mybase class) has a tablename
+    #it will error out if the tablename is not valid or not found.
     @classmethod
     def getClassFromTableName(cls, tablename):
         myvalidator.varmustnotbeempty(tablename, varnm="tablename");
@@ -454,7 +480,7 @@ class mycol:
         myvalidator.listMustContainUniqueValuesOnly(mtnms, varnm="mtnms");
         for n in range(len(mtnms)):
             if (mtnms[n] == tablename): return msbclses[n];
-        #for mycls in cls.getMyClassRefsMain(ftchnw=False):
+        #for mycls in mycol.getMyClassRefsMain(ftchnw=False):
         #    if (issubclass(mycls, mybase) and not(mycls == mybase)):
         #        if (mycls.getTableName() == tablename): return mycls;
             #if (hasattr(mycls, "getTableName") and (mycls.getTableName() == tablename)): return mycls;
@@ -528,6 +554,7 @@ class mycol:
         self.setConstraints(constraints);
         self.setIsInitialized(True);
         print("DONE WITH MYCOL CONSTRUCTOR!");
+        return self;
     
     @classmethod
     def genFKeyDict(cls, fclsnm=None, objname=None, refcolnms=None):
@@ -538,8 +565,8 @@ class mycol:
             if (myvalidator.isvaremptyornull(fclsnm)):
                 isfkey = False;
                 if (myvalidator.isvaremptyornull(objname)): pass;
-                else: return cls.genFKeyDict(fclsnm=fclsnm, objname=None, refcolnms=refcolnms);
-            else: return cls.genFKeyDict(fclsnm=None, objname=objname, refcolnms=refcolnms);
+                else: return mycol.genFKeyDict(fclsnm=fclsnm, objname=None, refcolnms=refcolnms);
+            else: return mycol.genFKeyDict(fclsnm=None, objname=objname, refcolnms=refcolnms);
         else:
             if (myvalidator.isvaremptyornull(fclsnm)): raise ValueError(errmsg);
             #else: pass;#valid
@@ -550,9 +577,9 @@ class mycol:
                            isunique=None, issigned=None, autoincrements=False, fkeydict=None,
                            constraints=None):
         if (myvalidator.isvaremptyornull(fkeydict)):
-            return cls.newColFromFKeyDict(colname, datatype, defaultvalue, isprimarykey=isprimarykey,
+            return mycol.newColFromFKeyDict(colname, datatype, defaultvalue, isprimarykey=isprimarykey,
                                           isnonnull=isnonnull, isunique=isunique, issigned=issigned,
-                                          autoincrements=autoincrements, fkeydict=cls.genFKeyDict(),
+                                          autoincrements=autoincrements, fkeydict=mycol.genFKeyDict(),
                                           constraints=constraints);
         return mycol(colname, datatype, defaultvalue, isprimarykey=isprimarykey, isnonnull=isnonnull,
                      isunique=isunique, issigned=issigned, autoincrements=autoincrements,
@@ -563,6 +590,36 @@ class mycol:
 
     #non-constructor methods are below this point
 
+    #sets the private variable is intialized this is only to handle initializing of the DB col
+    def getIsInitialized(self): return self.__isinitialized;
+    def setIsInitialized(self, mval):
+        myvalidator.varmustbeboolean(mval, varnm="mval");
+        self.__isinitialized = mval;
+    
+    _isinitialialized = property(getIsInitialized, setIsInitialized);
+
+    #this is the context object or container class object getters and setters methods
+    def getContext(self): return self._context;
+    def getContainer(self): return self.getContext();
+    def setContext(self, val): self._context = val;
+    def setContainer(self, val): self.setContext(val);
+
+    context = property(getContext, setContext);
+
+    #this method gets the value of the col on the containing class object
+    def getValue(self, mobj):
+        from myorm.mybase import mybase;
+        myvalidator.varmustbethetypeonly(mobj, mybase, varnm="mobj (aka the context object)");
+        return mobj.getValueForColName(self.getColName());
+
+    #this method sets the vale of the col on the containg class object with the new val
+    def setValue(self, mobj, val):
+        from myorm.mybase import mybase;
+        myvalidator.varmustbethetypeonly(mobj, mybase, varnm="mobj (aka the context object)");
+        mobj.setValueForColName(self.getColName(), val, self);
+
+    #notes about the value property and context for the mycol class
+    #
     #if you want to do mycolobj.value, then the context must be set correctly:
     #
     #you must first call mycolobj.setContext or setContainer(containerobj);
@@ -581,49 +638,33 @@ class mycol:
     #context should not be relied on and these methods are strongly subjective to it.
     #the context is set in the mybase constructor, but it can be overridden by the user.
     #because the cols are class attributes, one cannot assume the context is correct.
-
-    def getIsInitialized(self): return self.__isinitialized;
-    def setIsInitialized(self, mval):
-        myvalidator.varmustbeboolean(mval, varnm="mval");
-        self.__isinitialized = mval;
-    
-    _isinitialialized = property(getIsInitialized, setIsInitialized);
-
-    def getContext(self): return self._context;
-    def getContainer(self): return self.getContext();
-
-    def setContext(self, val): self._context = val;
-    def setContainer(self, val): self.setContext(val);
-
-    context = property(getContext, setContext);
-
-    def getValue(self, mobj):
-        from myorm.mybase import mybase;
-        myvalidator.varmustbethetypeonly(mobj, mybase, varnm="mobj (aka the context object)");
-        return mobj.getValueForColName(self.getColName());
-
-    def setValue(self, mobj, val):
-        from myorm.mybase import mybase;
-        myvalidator.varmustbethetypeonly(mobj, mybase, varnm="mobj (aka the context object)");
-        mobj.setValueForColName(self.getColName(), val, self);
-
     def getValueFromContext(self): return self.getValue(self.getContext());
-
     def setValueFromContext(self, val): self.setValue(self.getContext(), val);
 
     value = property(getValueFromContext, setValueFromContext);
-
+    
+    #gets the containing class name from the private mycol property
     def getContainingClassNameFromSelf(self): return self._containingclassname;
+    
+    #gets the containing classname from the context object
+    #if the context object is None, it returns None.
     def getContainingClassNameFromContext(self):
         cntxt = self.getContext();
         return (None if (cntxt == None) else cntxt.__class__.__name__);
+    
+    #this calls the above methods for getting the context name
+    #depending on if we are using context or not (usecntxt)
+    #usecntxt is a boolean variable which is false by default.
+    #if it is false, we get it from self; if it is true, we get it from the context object.
     def getContainingClassName(self, usecntxt=False):
         myvalidator.varmustbeboolean(usecntxt, varnm="usecntxt");
         if (usecntxt): return self.getContainingClassNameFromContext();
         else: return self.getContainingClassNameFromSelf();
 
+    #this sets the containing class name property for the mycol class
+    #mval can be empty or null or it must follow the requirements
+    #containing only alnumeric characters including underscores
     def setContainingClassName(self, mval):
-        #mval can be empty or null or it must follow the requirements...
         if (myvalidator.isvaremptyornull(mval)): pass;
         else:
             mvnm = "the containing class name";
@@ -632,8 +673,12 @@ class mycol:
 
     containingclassname = property(getContainingClassName, setContainingClassName);
 
+    #a DB col can have individual constraints, this method gets them
     def getConstraints(self): return self._constraints;
 
+    #this method sets the individual col constraints, but it only sets the property so becareful
+    #changing this weather adding or removing, etc. will also need to effect in the DB.
+    #but this method does not change the DB.
     def setConstraints(self, mlist):
         if (myvalidator.isvaremptyornull(mlist)): pass;
         else:
@@ -643,7 +688,17 @@ class mycol:
                 else: raise ValueError("the constraint must be valid, but it was not!");
         self._constraints = mlist;
     
-    
+    #due to trying to be more widely applicable using the SQL,
+    #I have forced all constraints to have names.
+    #so you can get the constraints by name, this method does that.
+    #if the list of constraints is empty or null, None will be returned instead of erroring out
+    #otherwise it will return the first item on the list.
+    def getConstraintByName(self, mcnstnm):
+        if (myvalidator.isvaremptyornull(mcnstnm)): return None;
+        mcnstsbynm = [cnst for cnst in self.getConstraints()
+                      if myvalidator.getNameFromConstraint(cnst) == mcnstnm];
+        return (None if (myvalidator.isvaremptyornull(mcnstsbynm)) else mcnstsbynm[0]);
+
     #NEED TO ADD A REMOVE CONSTRAINT METHOD problem found 5-6-2025 9:57 PM MST
     #BUT THESE METHODS ARE ALSO SOMEWHAT DEPENDENT ON IF THE TABLE EXISTS IN THE DB.
     #-if we go via class name stored on the mycol object (first we need to store it),
@@ -757,11 +812,8 @@ class mycol:
     def removeAConstraint(self, mval, runbkbfr=False, runbkaftr=False, isinctable=False):
         self.removeConstraint(mval, runbkbfr=runbkbfr, runbkaftr=runbkaftr, isinctable=isinctable);
     
-    def getConstraintByName(self, mcnstnm):
-        mcnstsbynm = [cnst for cnst in self.getConstraints()
-                      if myvalidator.getNameFromConstraint(cnst) == mcnstnm];
-        return (None if (myvalidator.isvaremptyornull(mcnstsbynm)) else mcnstsbynm[0]);
-
+    #this gets the constraint by name for removal instead of actually starting with the constraint
+    #aside from that the variables are the same as remove a constraint.
     def removeAConstraintByName(self, mcnstnm, runbkbfr=False, runbkaftr=False, isinctable=False):
         self.removeAConstraint(self.getConstraintByName(mcnstnm),
                                runbkbfr=runbkbfr, runbkaftr=runbkaftr, isinctable=isinctable);
@@ -771,13 +823,15 @@ class mycol:
 
     constraints = property(getConstraints, setConstraints);
 
-
+    #this method the default value key name for the type object
+    #convenience method that calls the method in the SQL validator class of the same name with
+    #the same parameters a typeobject and the mycol object
     def getDefaultValueKeyNameForDataTypeObj(self, tpobj):
         return myvalidator.getDefaultValueKeyNameForDataTypeObj(tpobj, self);
 
     def getDataType(self): return self._datatype;
 
-    #the problem with these four setters are they depend on the SQL variant
+    #the problem with these four setters are they depend on the SQL VARIANT
     #they need some way inside this class to get the variant by calling a getter.
     #the variant may need to be passed in to the col
     #but the calling class should provide a way to get it?
