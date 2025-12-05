@@ -486,6 +486,9 @@ class mycol:
             #if (hasattr(mycls, "getTableName") and (mycls.getTableName() == tablename)): return mycls;
         raise ValueError("no class has that (" + tablename + ") as the given tablename!");
 
+    #this is the main constructor for the DB col object
+    #this takes in the data that the user passed in and then it calls all of the property setters
+    #it also initializes the context, the containing class name, and the class refs all to None 
     #value needs to be removed because it cannot be stored in a class attribute for multiple objects
     #of the parent (containing) class.
     def __init__(self, colname, datatype, defaultvalue,
@@ -556,6 +559,9 @@ class mycol:
         print("DONE WITH MYCOL CONSTRUCTOR!");
         return self;
     
+    #this builds a foreign key dict with the following keys:
+    #isfkey, classname, objectname, and refcolnames
+    #this is not a constructor method itself, but for one
     @classmethod
     def genFKeyDict(cls, fclsnm=None, objname=None, refcolnms=None):
         isfkey = True;
@@ -572,6 +578,8 @@ class mycol:
             #else: pass;#valid
         return {"isfkey": isfkey, "classname": fclsnm, "objectname": objname, "refcolnames": refcolnms};
 
+    #this takes in all of the variables for the mycol constructor and it takes in an fkeydict instead
+    #of the foreign key variables and it loads them in for the user instead.
     @classmethod
     def newColFromFKeyDict(cls, colname, datatype, defaultvalue, isprimarykey=False, isnonnull=None,
                            isunique=None, issigned=None, autoincrements=False, fkeydict=None,
@@ -581,10 +589,12 @@ class mycol:
                                           isnonnull=isnonnull, isunique=isunique, issigned=issigned,
                                           autoincrements=autoincrements, fkeydict=mycol.genFKeyDict(),
                                           constraints=constraints);
+        rkys = ["isfkey", "classname", "refcolnames", "objectname"];
+        myvalidator.objvarmusthavethesekeysonit(fkeydict, rkys, varnm="fkeydict");
         return mycol(colname, datatype, defaultvalue, isprimarykey=isprimarykey, isnonnull=isnonnull,
                      isunique=isunique, issigned=issigned, autoincrements=autoincrements,
-                     isforeignkey=fkeydict["isfkey"], foreignClass=fkeydict["classname"],
-                     foreignColNames=fkeydict["refcolnames"], foreignObjectName=fkeydict["objectname"],
+                     isforeignkey=fkeydict[rkys[0]], foreignClass=fkeydict[rkys[1]],
+                     foreignColNames=fkeydict[rkys[2]], foreignObjectName=fkeydict[rkys[3]],
                      constraints=constraints);
 
 
@@ -598,7 +608,10 @@ class mycol:
     
     _isinitialialized = property(getIsInitialized, setIsInitialized);
 
-    #this is the context object or container class object getters and setters methods
+
+    #context related properties methods here
+
+    #this is the context object or container class object property getters and setters methods
     def getContext(self): return self._context;
     def getContainer(self): return self.getContext();
     def setContext(self, val): self._context = val;
@@ -672,6 +685,9 @@ class mycol:
         self._containingclassname = mval;
 
     containingclassname = property(getContainingClassName, setContainingClassName);
+
+
+    #constraint methods here
 
     #a DB col can have individual constraints, this method gets them
     def getConstraints(self): return self._constraints;
@@ -839,7 +855,9 @@ class mycol:
     #
     #there is also another piece of missing data for the default value.
 
+    #this sets the data type
     #the type of val can be a string or a list
+    #DEPENDS ON THE SQL VARIANT
     def setDataType(self, val):
         #get data types for the specific variant
         #if the list is empty or null, then assumed valid
@@ -882,11 +900,12 @@ class mycol:
     #this method may at times be unreliable as noted, which may effect these often not the case.
     #types with the same name, tend to have the same nullification defaults and signed defaults.
     #their ranges may differ however, so the issigned may be more likely to be wrong if it varies.
-
+    #
     #if signed is set to None, the default is used or error if no default.
     #if the type can be signed or not, then we take the user's value into account
     #otherwise, we will error out if it does not match the required value
     #somehow get the tpobj from the type.
+    #DEPENDS ON THE SQL VARIANT
     def setIsSigned(self, val):
         varstr = "" + mycol.getMySQLType();#SQLVARIANT
         errmsg = "invalid value set for signed the type has a default and it is the opposite of this!";
@@ -912,8 +931,10 @@ class mycol:
     def getIsNonNull(self): return self._isnonnull;
     def isNonNull(self): return self.getIsNonNull();
 
+    #sets if the col cannot be null
     #if isnonnull is set to None, then the default for the type will be used
     #else it must be true if the nonnull default is true, otherwise it can be either true or false
+    #DEPENDS ON THE SQL VARIANT
     def setIsNonNull(self, val):
         varstr = "" + mycol.getMySQLType();#SQLVARIANT
         errmsg = "invalid value set for nonnull the type has a default and it is the opposite of this!";
@@ -937,6 +958,8 @@ class mycol:
 
     def getDefaultValue(self): return self._defaultvalue;
 
+    #this method gets the default value from the type and sets the user provided default if it is valid
+    #DEPENDS ON THE SQL VARIANT
     def setDefaultValue(self, val):
         #if we get the type object from the validator, then maybe the type will provide a default
         #if however the type is signed, and has two different ranges, then we will need to
@@ -966,15 +989,17 @@ class mycol:
     def getColName(self): return self._colname;
     def getColumnName(self): return self.getColName();
 
+    #this sets the column name here
+    #for consistency this should be the same as the object attribute name in the containing class
+    #but that cannot be enforced here
+    #the colname must be unique on each table
+    #(CANNOT BE ENFORCED HERE, BUT WHEN A NEW OBJECT IS CREATED AND SAVED, ETC)
+    #the colname cannot be null or empty
     def setColName(self, val):
-        #the colname must be unique on each table
-        #(CANNOT BE ENFORCED HERE, BUT WHEN A NEW OBJECT IS CREATED AND SAVED, ETC)
-        #the colname cannot be null or empty
         #myvalidator.varmustnotbeempty(val, varnm="val");
         #myvalidator.varmustbethetypeonly(val, str, varnm="val");
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(val, varnm="val");
         self._colname = val;
-    
     def setColumnName(self, val): self.setColName(val);
     
     colname = property(getColName, setColName);
@@ -989,6 +1014,8 @@ class mycol:
     foreignobjectname = property(getForeignObjectName, setForeignObjectName);
 
 
+    #primary key information and methods
+
     def getAutoIncrements(self): return self._autoincrements;
     def autoIncrements(self): return self.getAutoIncrements();
 
@@ -1001,6 +1028,15 @@ class mycol:
     def getIsUnique(self): return self._isunique;
     def isUnique(self): return self.getIsUnique();
 
+    #this sets the isunique for the col
+    #the val must be a boolean or None is allowed in this case because some types do not require this.
+    #if it is not unique it just sets it. OTHERWISE SEE BELOW:
+    #DEPENDS on if it is a FOREIGN KEY or not
+    #if it is a foreign key, and we want this to be unique, then we consult the handler here
+    #if the handler is set to WARN (by default) we print a warning message and what triggered it
+    #but this is not fatal, but it can cause some errors down the road.
+    #if the handler is set to ERROR it throws an error message.
+    #if the handler is set to DISABLED it ignores the problem and just sets.
     def setIsUnique(self, val):
         myvalidator.varmustbethetypeandornull(val, bool, True, varnm="val");
         if (self.getIsForeignKey() and val):
@@ -1017,7 +1053,13 @@ class mycol:
     def getIsPrimaryKey(self): return self._isprimarykey;
     def isPrimaryKey(self): return self.getIsPrimaryKey();
 
+    #this method sets if is a primary key or not
     #if isprimarykey is true, then it must be unique and non-null.
+    #if isunique is None or isnull is None, we will set them to be what we want here as well.
+    #if you pass something that may not be valid here, this might not error out due to composite keys.
+    #due to other timing issues when the class is created, we cannot be confident on the primary key
+    #nor the foreign key information yet. This must be handled in the base constructor and when the
+    #key information changes. So we do call primaryKeyInformationMustBeValid(self, myclsref);
     def setIsPrimaryKey(self, val):
         #if the primary key is multi-column, then we need to look for the specific
         #unique column constraint on our list of constraints
@@ -1056,15 +1098,24 @@ class mycol:
 
     isprimarykey = property(getIsPrimaryKey, setIsPrimaryKey);
 
+    #this makes sure that the primary key information is correct.
+    #myclsref refers to the subclass of mybase class that contains this col.
+    #the self object is a mycol object.
+    #due to a timing issue, this method cannot be part of isPrimaryKey because
+    #the class ref needed for this does not exist when the mycol object is created
+    #
+    #if the primary key is composite:
+    #composite keys are never null, so we only need to check to see if there is a multi-col
+    #unique constraint with the cols for the primary key
+    #if there is, then valid; otherwise not valid so error
+    #if the primary key is not composite:
+    #make sure that the column is unique and not null
+    #
+    #if isunique is None or isnull is None, we will set them to be what we want here as well.
+    #
+    #the method returns True if it is valid; it will error out if not.
     def primaryKeyInformationMustBeValid(self, myclsref):
         #the fcobj is the calling class's object
-        #need to make sure the primary key information is correct.
-        #if the primary key is composite:
-        #composite keys are never null, so we only need to check to see if there is a multi-col
-        #unique constraint with the cols for the primary key
-        #if there is, then valid; otherwise not valid so error
-        #if the primary key is not composite:
-        #make sure that the column is unique and not null
         pkycols = myclsref.getMyPrimaryKeyCols();
         myvalidator.varmustnotbeempty(pkycols, varnm="pkycols");
 
@@ -1124,19 +1175,27 @@ class mycol:
                 if (self.isunique == None): self.setIsUnique(False);
         return True;
 
+
+    #foreign key information and methods
+
     def getForeignClass(self): return self._foreignClass;
 
+    #this sets the foreign class name variable called val by the user
+    #it then updates all of the foreign key objects for all classes (depends on mybase class)
     def setForeignClass(self, val):
         #if (val == None or myvalidator.isClass(val)): pass;
         #else: raise ValueError("val must be a class not an object!");
         self._foreignClass = val;
         from myorm.mybase import mybase;
-        mybase.updateAllForeignKeyObjectsForAllClasses(not self.getIsInitialized());
+        mybase.updateAllForeignKeyObjectsForAllClasses(ftchnw=not self.getIsInitialized());
 
     foreignClass = property(getForeignClass, setForeignClass);
 
     def getForeignColNames(self): return self._foreignColNames;
 
+    #this sets the foreign col names it also checks the foreign class name
+    #the names in the val list must be unique so this will error out if there is a problem
+    #it then updates all of the foreign key objects for all classes (depends on mybase class)
     def setForeignColNames(self, val):#, fcobj
         #officially this must be one of the columns on the list of the calling class's columns
         #get the foreign class, then get the cols for that foreign class
@@ -1167,7 +1226,7 @@ class mycol:
             myvalidator.listMustContainUniqueValuesOnly(val, ignorelist=None, varnm="val");
             self._foreignColNames = val;
         from myorm.mybase import mybase;
-        mybase.updateAllForeignKeyObjectsForAllClasses(not self.getIsInitialized());
+        mybase.updateAllForeignKeyObjectsForAllClasses(ftchnw=not self.getIsInitialized());
 
     foreignColNames = property(getForeignColNames, setForeignColNames);
 
@@ -1188,7 +1247,7 @@ class mycol:
             else: self.setForeignColNames(None);
         self._isforeignkey = val;
         from myorm.mybase import mybase;
-        mybase.updateAllForeignKeyObjectsForAllClasses(not self.getIsInitialized());
+        mybase.updateAllForeignKeyObjectsForAllClasses(ftchnw=not self.getIsInitialized());
 
     isforeignkey = property(getIsForeignKey, setIsForeignKey);
 
@@ -1204,7 +1263,10 @@ class mycol:
     #a word of warning: the context is set in the mybase class constructor
     #however, this should not be relied on as being correct.
     #because the mycol object is a class attribute to many classes that extend mybase class.
-
+    #
+    #this returns a datainfo object dict about the foreign key information
+    #this contains information about the cols and the indexes and other information
+    #this also checks to see if some of the initial foreign key information is correct
     def genForeignKeyDataObjectInfo(self, fcobj=None, usenoclassobj=False):
         myvalidator.varmustbeboolean(usenoclassobj, varnm="usenoclassobj");
         if (fcobj == None):
@@ -1376,25 +1438,23 @@ class mycol:
     def doesForeignKeyValuesExistOnObjectsList(self, fcobj=None):
         return self.doesOrGetObjectThatHasTheForeignKeyValues(False, fcobj);
 
-    
+    #this method takes in the calling class's object and the current column object
+    #the goal of this method is to make sure that the foreign key information is valid
+    #it will look at the list of cols given and make sure that they are unique (handled by set)
+    #it will make sure that the referring class is valid
+    #it will make sure that the referring class has those column names on it
+    #it will make sure that the referring class has a valid primary key
+    #it will make sure that the column names on the link from the calling object
+    #are on the referring class and has the unique data enforced.
+    #
+    #this method only checks the columns and does not check the values used for the foreign key
+    #and sees if a corresponding object exists that is the
+    #doesForeignKeyValuesExistOnObjectsList(self, fcobj=None) that does that.
+    #
+    #we do not call that in here either, due to a timing issue as the above requires the objects to
+    #actually exist in memory with the links more or less, AND the current method is actually
+    #called before that had a chance to be true.
     def foreignKeyInformationMustBeValid(self, fcobj=None, usenoclassobj=True):
-        #this method takes in the calling class's object and the current column object
-        #the goal of this method is to make sure that the foreign key information is valid
-        #it will look at the list of cols given and make sure that they are unique (handled by set)
-        #it will make sure that the referring class is valid
-        #it will make sure that the referring class has those column names on it
-        #it will make sure that the referring class has a valid primary key
-        #it will make sure that the column names on the link from the calling object
-        #are on the referring class and has the unique data enforced.
-        #
-        #this method only checks the columns and does not check the values used for the foreign key
-        #and sees if a corresponding object exists that is the
-        #doesForeignKeyValuesExistOnObjectsList(self, fcobj=None) that does that.
-        #
-        #we do not call that in here either, due to a timing issue as the above requires the objects to
-        #actually exist in memory with the links more or less, AND the current method is actually
-        #called before that had a chance to be true.
-
         myvalidator.varmustbeboolean(usenoclassobj, varnm="usenoclassobj");
         if (fcobj == None):
             if (usenoclassobj): pass;
@@ -1582,15 +1642,18 @@ class mycol:
         #print("DONE WITH FOREIGN KEY VALIDATION METHOD NOW!");
         return True;
 
+    #this method takes in the foreign key class name and the foreign key col names
+    #and makes this col a foreign key
     #can call in init
-    def newForeignKey(self, fkycls, fkycolnm):#, fcobj
+    def newForeignKey(self, fkycls, fkycolnms):#, fcobj
         #print(f"self = {self}");
         #print(f"fkycls = {fkycls}");
         #print(f"fkycolnm = {fkycolnm}");
         self.setForeignClass(fkycls);
-        self.setForeignColNames(fkycolnm);#, fcobj
+        self.setForeignColNames(fkycolnms);#, fcobj
         self.setIsForeignKey(True);
 
+    #returns a string of what this mycol object looks like
     def __repr__(self):
         mystr = f"<MyCol {self.colname} type: {self._datatype}";#" value: {self._value}"
         mystr += f" default: {self._defaultvalue} isprimarykey: {self.isprimarykey}";

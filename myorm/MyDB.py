@@ -2,6 +2,11 @@
 #then we can use it like my_db_obj.CURSOR
 from myorm.myvalidator import myvalidator;
 class MyDB:
+    #this creates a new MyDB object with information about the DB and how to access library methods
+    #this takes in the DB Name (mydbname),
+    #the library ref class that was imported itself (mylibref),
+    #the SQL VARIANT (mysqlvar), the connection to it (myconn),
+    #and the cursor to do operations on it (mycursor)
     def __init__(self, mydbname=None, mylibref=None, mysqlvar=None, myconn=None, mycursor=None):
         self.setDBName(mydbname);
         self.setLibRef(mylibref);
@@ -9,6 +14,13 @@ class MyDB:
         self.setConn(myconn);
         self.setCursor(mycursor);
     
+    #this creates a new MyDB object with information about the DB and how to access library methods
+    #this takes in the DB Name (mydbname),
+    #the library ref class that was imported itself (mylibref),
+    #the SQL VARIANT (mysqlvar or sqltp)
+    #it first creates a conn by calling libtp or libref.connect(mydbname + ".db");
+    #it then gets the cursor via the cursor() method on the conn
+    #it then calls the main constructors
     @classmethod
     def newDBFromNameAndLib(cls, mydbname, libtp, sqltp):
         myvalidator.varmustbethetypeonly(mydbname, str, varnm="mydbname");
@@ -18,10 +30,12 @@ class MyDB:
         return MyDB(mydbname=mydbname, mylibref=libtp, mysqlvar=sqltp,
                     myconn=tmpconn, mycursor=tmpconn.cursor());
 
+    #this returns the libref class that was imported
     def getLibRef(self): return self._libref;
     def setLibRef(self, val): self._libref = val;
     libref = property(getLibRef, setLibRef);
 
+    #this method returns either the DB_NAME, CONFIGFNAME, or the SQLVARIANT property values
     def getMyStrType(self, tpstr):
         myvalidator.varmustbethetypeonly(tpstr, str, varnm="tpstr");
         if (tpstr == "DB_NAME"): return self._DB_NAME;
@@ -34,6 +48,8 @@ class MyDB:
     def getConfigFileName(self): return self.getMyStrType("CONFIGFNAME");
     def getSQLType(self): return self.getMyStrType("SQLVARIANT");
     
+    #this sets the value of either the DB_NAME, CONFIGFNAME, or the SQLVARIANT properties
+    #to the given value.
     def setMyStrTypeVal(self, val, tpstr):
         myvalidator.varmustbethetypeonly(tpstr, str, varnm="tpstr");
         finvarnm = None;
@@ -61,6 +77,9 @@ class MyDB:
     CONFIGFNAME = property(getConfigFileName, setConfigFileName);
     SQLVARIANT = property(getSQLType, setSQLType);
 
+    #this gets the attribute names from the DB config file
+    #well actually this does not interact with the DB config file at all,
+    #but the setup method handles setting this information
     def getConfigAttrNames(self): return self._CONFIGATTRNAMES;
     def setConfigAttrNames(self, val):
         if (myvalidator.isvaremptyornull(val)): self._CONFIGATTRNAMES = None;
@@ -71,6 +90,9 @@ class MyDB:
             self._CONFIGFNAME = ["" + nm for nm in val];
     CONFIGATTRNAMES = property(getConfigAttrNames, setConfigAttrNames);
 
+    #this gets the attribute values from the DB config file
+    #well actually this does not interact with the DB config file at all,
+    #but the setup method handles setting this information
     def getConfigAttrValues(self): return self._CONFIGATTRVALS;
     def setConfigAttrValues(self, vals): self._CONFIGATTRVALS = vals;
     CONFIGATTRVALUES = property(getConfigAttrValues, setConfigAttrValues);
@@ -83,6 +105,9 @@ class MyDB:
     def setCursor(self, val): self._CURSOR = val;
     CURSOR = property(getCursor, setCursor);
 
+    #this gets the value for a given attribute name from the DB config file
+    #well actually this does not interact with the DB config file at all,
+    #but the setup method handles setting this information
     def getConfigValueForName(self, attrnm):
         myvalidator.varmustnotbeempty(attrnm, varnm="attrnm");
         myvalidator.twoListsMustBeTheSameSize(self.CONFIGATTRNAMES, self.CONFIGATTRVALUES,
@@ -90,6 +115,9 @@ class MyDB:
         myattrnmi = self.CONFIGATTRNAMES.index(attrnm);
         return self.CONFIGATTRVALUES[myattrnmi];
 
+    #this gets the DB config attribute names for the given value type
+    #well actually this does not interact with the DB config file at all,
+    #but the setup method handles setting this information
     def getConfigNamesForValType(self, tpcls):
         myvalidator.twoListsMustBeTheSameSize(self.CONFIGATTRNAMES, self.CONFIGATTRVALUES,
                                               arranm="CONFIGATTRNAMES", arrbnm="CONFIGATTRVALUES");
