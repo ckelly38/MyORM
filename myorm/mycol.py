@@ -557,7 +557,6 @@ class mycol:
         self.setConstraints(constraints);
         self.setIsInitialized(True);
         print("DONE WITH MYCOL CONSTRUCTOR!");
-        return self;
     
     #this builds a foreign key dict with the following keys:
     #isfkey, classname, objectname, and refcolnames

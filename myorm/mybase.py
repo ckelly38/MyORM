@@ -480,7 +480,6 @@ class mybase:
 
         #do something here...
         print("DONE WITH THE BASE CONSTRUCTOR!\n");
-        return self;
     
 
     #uses alphabetic order for colnames
@@ -752,7 +751,7 @@ class mybase:
         return cls.getNameOrValueOfVarIfPresentOnTable(True, ilist=ilist, varnm=varnm);
     @classmethod
     def getNameOfVarIfPresentOnTableMain(cls, varnm="varnm"):
-        return cls.getNameOrValueOfVarIfPresentOnTableMain(True, ilist=None, varnm=varnm);
+        return cls.getNameOrValueOfVarIfPresentOnTableMain(True, varnm=varnm);
     
     #this calls the method above, but telling it we are using a value only.
     #the class matters it must be a subclass of mybase.
@@ -761,20 +760,20 @@ class mybase:
         return cls.getNameOrValueOfVarIfPresentOnTable(False, ilist=ilist, varnm=varnm);
     @classmethod
     def getValueOfVarIfPresentOnTableMain(cls, varnm="varnm"):
-        return cls.getNameOrValueOfVarIfPresentOnTableMain(False, ilist=None, varnm=varnm);
+        return cls.getNameOrValueOfVarIfPresentOnTableMain(False, varnm=varnm);
     
     #this gets the value of the attribute that stores the tablename on the given class
     #the class cls must be a subclass of mybase and it must have a tablename attribute present.
     #if not, then this errors out (during setup or object instance creation).
     @classmethod
-    def getTableName(cls): return cls.getValueOfVarIfPresentOnTableMain("tablename");
+    def getTableName(cls): return cls.getValueOfVarIfPresentOnTableMain(varnm="tablename");
     
     #this is similar to cls.getTableName() except it is for multi_column_constraints_list
     #the class cls must be a subclass of mybase and it must have a multicolumnagrs attribute present.
     #if not, then this errors out (during setup or object instance creation).
     @classmethod
     def getMultiColumnConstraints(cls):
-        return cls.getValueOfVarIfPresentOnTableMain("multi_column_constraints_list");
+        return cls.getValueOfVarIfPresentOnTableMain(varnm="multi_column_constraints_list");
     
     #this is a convenience method that calls cls.getTableName()
     #it returns a string that says "the table " <tname> " on class " <classname>;

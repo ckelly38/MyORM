@@ -2,11 +2,54 @@ import traceback;
 import types;
 class myvalidator:
     @classmethod
-    def varmustbethetypeandornull(cls, val, tpcls, canbenull, varnm="varname"):
-        if (varnm == None or (type(varnm) == str and len(varnm) < 1)):
-            return myvalidator.varmustbethetypeornull(val, tpcls, varnm="varname");
-        elif (type(varnm) == str): pass;
+    def isvarnull(cls, val): return (val == None);
+    @classmethod
+    def varisnull(cls, val): return myvalidator.isvarnull(val);
+    
+    #if the var is None or len(val) < 1 it returns True otherwise it returns False.
+    @classmethod
+    def isvaremptyornull(cls, val): return (val == None or len(val) < 1);
+
+    #this makes sure that the given varnm is valid.
+    #if it is emtpy or null, then it returns the given func with the given args and the varnm varname.
+    #if the type of varnm is a string, then it returns True. Otherwise it errors out.
+    @classmethod
+    def varnameMustBeValid(cls, func, *args, varnm="varname"):
+        if (myvalidator.isvaremptyornull(varnm)): return func(*args, varnm="varname");
+        elif (type(varnm) == str): return True;
         else: raise TypeError("varname must be a string!");
+
+    #this makes sure that a variable is not None.
+    #if the val is None it errors out. if not it returns True.
+    @classmethod
+    def varmustnotbenull(cls, val, varnm="varname"):
+        myvalidator.varnameMustBeValid(myvalidator.varmustnotbenull, val, varnm=varnm);
+        if (val == None): raise ValueError(varnm + " must not be null!");
+        else: return True;
+
+    #this makes sure that a variable is not None or empty.
+    #if it is empty or null, it errors out. Otherwise returns True.
+    @classmethod
+    def varmustnotbeempty(cls, val, varnm="varname"):
+        myvalidator.varnameMustBeValid(myvalidator.varmustnotbeempty, val, varnm=varnm);
+        if (val == None or len(val) < 1): raise ValueError(varnm + " must not be empty!");
+        else: return True;
+
+    #this makes sure that a variable is emtpy or null and if so it returns True otherwise errors out.
+    @classmethod
+    def varmustbeemptyornull(cls, val, varnm="varname"):
+        myvalidator.varnameMustBeValid(myvalidator.varmustbeemptyornull, val, varnm=varnm);
+        if (myvalidator.isvaremptyornull(val)): return True;
+        else: raise ValueError(varnm + " must be empty or null, but it was not!");
+
+    #this makes sure that a variable is the type and or null
+    #if it can be null and the val is None return True; otherwise errors out.
+    #if val is not None then it checks its type to see if that matches the typeref tpcls.
+    #if it does match the type, then returns True; otherwise errors out.
+    @classmethod
+    def varmustbethetypeandornull(cls, val, tpcls, canbenull, varnm="varname"):
+        myvalidator.varnameMustBeValid(myvalidator.varmustbethetypeandornull,
+                                       val, tpcls, canbenull, varnm=varnm);
         if (val == None):
             if (canbenull): return True;
             else: raise TypeError(varnm + " was not the correct type!");
@@ -19,40 +62,9 @@ class myvalidator:
     @classmethod
     def varmustbeboolean(cls, val, varnm="varname"):
         return myvalidator.varmustbethetypeonly(val, bool, varnm=varnm);
-    
-    @classmethod
-    def varmustnotbenull(cls, val, varnm="varname"):
-        if (varnm == None or type(varnm) == str and len(varnm) < 1):
-            return myvalidator.varmustnotbenull(val, varnm="varname");
-        elif (type(varnm) == str): pass;
-        else: raise TypeError("varname must be a string!");
-        if (val == None): raise ValueError(varnm + " must not be null!");
-        else: return True;
 
-    @classmethod
-    def isvaremptyornull(cls, val): return (val == None or len(val) < 1);
-
-    @classmethod
-    def isvarnull(cls, val): return (val == None);
-    @classmethod
-    def varisnull(cls, val): return myvalidator.isvarnull(val);
-
-    @classmethod
-    def varmustnotbeempty(cls, val, varnm="varname"):
-        if (varnm == None or type(varnm) == str and len(varnm) < 1):
-            return myvalidator.varmustnotbeempty(val, varnm="varname");
-        elif (type(varnm) == str): pass;
-        else: raise TypeError("varname must be a string!");
-        if (val == None or len(val) < 1): raise ValueError(varnm + " must not be empty!");
-        else: return True;
-
-    @classmethod
-    def varmustbeemptyornull(cls, val, varnm="varname"):
-        if (myvalidator.isvaremptyornull(varnm)):
-            return myvalidator.varmustbeemptyornull(val, varnm="varname");
-        if (myvalidator.isvaremptyornull(val)): return True;
-        else: raise ValueError(varnm + " must be empty or null, but it was not!");
-
+    #this method makes sure that two bool vars must be the same (if usediff is false) or different
+    #(if usedif is true) it errors out if they do not meet the requirements.
     @classmethod
     def twoBoolVarsMustBeDifferentOrEqual(cls, vala, valb, usediff,
                                           varnma="boolvara", varnmb="boolvarb"):
@@ -81,7 +93,9 @@ class myvalidator:
         return myvalidator.twoBoolVarsMustBeDifferentOrEqual(vala, valb, False,
                                                              varnma=varnma, varnmb=varnmb);
 
-
+    #this checks to see if a string could actually be cast to a number type whether that is float or int.
+    #it includes the negative sign at the start as well.
+    #this of course returns a boolean value.
     @classmethod
     def isstranumber(cls, mstr):
         if (myvalidator.isvaremptyornull(mstr)): return False;
@@ -103,17 +117,24 @@ class myvalidator:
                     else: return False;     
             return True;
 
+    #this checks to see if the var is a number type (int or float only)
+    #if that is true, it returns true otherwise false.
     @classmethod
     def isvaranumber(cls, val): 
         return (False if (val == None) else (type(val) == int or type(val) == float));
 
+    #this makes sure that the var must be a number type.
+    #calls myvalidator.isvaranumber(val) if true, return true; else error out.
     @classmethod
     def varmustbeanumber(cls, val, varnm="varnm"):
-        if (myvalidator.isvaremptyornull(varnm)):
-            return myvalidator.varmustbeanumber(val, varnm="varnm");
+        myvalidator.varnameMustBeValid(myvalidator.varmustbeanumber, val, varnm=varnm);
         if (myvalidator.isvaranumber(val)): return True;
         else: raise ValueError("" + varnm + " must be a number, but it was not!");
 
+    #this checks to make sure that mval is a list of strings that
+    #only contain alphanumeric chars including underscores
+    #mval may be empty or None.
+    #if it is it returns true, if not it returns false.
     @classmethod
     def varIsAListOfColNameStringsOrEmpty(cls, mval):
         if (myvalidator.isvaremptyornull(mval)): pass;
@@ -127,10 +148,16 @@ class myvalidator:
                 else: return False;
         return True;
 
+    #this checks to make sure that mval is a list of strings that
+    #only contain alphanumeric chars including underscores
+    #mval may be empty or None.
+    #if it is it returns true, if not it errors out.
+    #although similar to the above and we could just use the return value to dictate the results of
+    #this method, we actually do strict error enforcement and error out on the first error.
     @classmethod
     def varMustBeAListOfColNameStringsOrEmpty(cls, mval, varnm="varnm"):
-        if (myvalidator.isvaremptyornull(varnm)):
-            return myvalidator.varMustBeAListOfColNameStringsOrEmpty(mval, varnm="varnm");
+        myvalidator.varnameMustBeValid(myvalidator.varMustBeAListOfColNameStringsOrEmpty,
+                                       mval, varnm=varnm);
         if (myvalidator.isvaremptyornull(mval)): pass;
         else:
             myvalidator.varmustbethetypeonly(mval, list, varnm=varnm);
@@ -146,15 +173,25 @@ class myvalidator:
     @classmethod
     def isClassOrModule(cls, val): return (myvalidator.isClass(val) or myvalidator.isModule(val));
 
+    #this gets a list of attribute names from a module, class, or an object
     #note: mdl is for module, but it can be a module, a class, or an object
+    #this excludes those that are modules or classes and anything that starts with double underscores
+    #as these are likely built in
     @classmethod
     def getAttrsFromModule(cls, mdl):
         return [attrnm for attrnm in dir(mdl)
                if not attrnm.startswith("__") and not myvalidator.isClassOrModule(getattr(mdl, attrnm))];
 
+    #this gets the DB attribute name or val from a module, class, or an object
     #note: mdl is for module, but it can be a module, a class, or an object
+    #the myvars is a list of varnms on the given module, class, or object that we want to search from
+    #the useval must be a boolean variable.
+    #if useval is True we will return the last variable that matches the MyDB type.
+    #if useval is False we will return the first attribute name whose value is a MyDB type.
+    #if not found, this will error out as it must be found!
     @classmethod
     def getDBAttrOrValFromConfigModuleMain(cls, mdl, myvars, useval):
+        myvalidator.varmustbeboolean(useval, varnm="useval");
         myvalidator.varmustnotbeempty(myvars, varnm="myvars");
         from myorm.MyDB import MyDB;
         tmpdbobj = None;
@@ -173,6 +210,8 @@ class myvalidator:
     @classmethod
     def getDBValFromConfigModule(cls, mdl, myvars):
         return myvalidator.getDBAttrOrValFromConfigModuleMain(mdl, myvars, True);
+    #this gets the attributes from the given module, class, or object mdl and passes it in for myvars
+    #it then returns myvalidator.getDBAttrOrValFromConfigModuleMain(mdl, myvars, useval);
     @classmethod
     def getDBAttrOrValFromConfigModuleNoVars(cls, mdl, useval):
         myvars = myvalidator.getAttrsFromModule(mdl);
@@ -208,6 +247,9 @@ class myvalidator:
         print("MYVALIDATOR: CONFIG MODULE SETUP SUCCESSFULLY DONE!");
         return True;
 
+    #this makes sure a list mlist contains unique values only
+    #however if you choose to pass in an ignorelist and not leave it empty or null, then these values
+    #are excluded from the uniqueness requirement.
     @classmethod
     def listMustContainUniqueValuesOnly(cls, mlist, ignorelist=None, varnm="varnm"):
         if (myvalidator.isvaremptyornull(varnm)):
@@ -229,6 +271,9 @@ class myvalidator:
         if (len(mlist) == len(mynwlist)): return True;
         else: raise ValueError(f"the list {varnm} must contain unique values, but it did not!");
 
+    #this checks to see for each item if they point to the same thing via reference or
+    #if it is some primitive, if those values they refer to are the same via shallow equals.
+    #if they are the same size this may return True, but if not it returns False.
     @classmethod
     def areTwoListsTheSame(cls, lista, listb):
         if (myvalidator.isvaremptyornull(lista)): return (myvalidator.isvaremptyornull(listb));
@@ -248,6 +293,12 @@ class myvalidator:
                     return True;
                 else: return False;
     
+    #this checks to see if their initial lengths are the same.
+    #if they are both empty or null it returns true;
+    #if one is emtpy or null but the other is not, it returns false.
+    #if both are not empty or null, then it compares the length.
+    #if they are the same true, otherwise false.
+    #this does not look at the items...
     @classmethod
     def areTwoArraysTheSameSize(cls, arra, arrb):
         if (myvalidator.isvaremptyornull(arra)): return myvalidator.isvaremptyornull(arrb);
@@ -255,6 +306,7 @@ class myvalidator:
     @classmethod
     def areTwoListsTheSameSize(cls, arra, arrb): return myvalidator.areTwoArraysTheSameSize(arra, arrb);
 
+    #this calls the above areTwoArraysTheSameSize method if it is True, returns True else errors.
     @classmethod
     def twoArraysMustBeTheSameSize(cls, arra, arrb, arranm="arranm", arrbnm="arrbnm"):
         if (myvalidator.isvaremptyornull(arranm)):
@@ -268,6 +320,10 @@ class myvalidator:
     def twoListsMustBeTheSameSize(cls, arra, arrb, arranm="arranm", arrbnm="arrbnm"):
         return myvalidator.twoArraysMustBeTheSameSize(arra, arrb, arranm=arranm, arrbnm=arrbnm);
 
+    #this method combines two lists.
+    #this does a shallow copy of both lists to combine them into a new one
+    #if nodups is True, then it ignores the duplicates and does not add them
+    #by default to make merging faster, we allow the duplicates.
     @classmethod
     def combineTwoLists(cls, lista, listb, nodups=False):
         myvalidator.varmustbeboolean(nodups, varnm="nodups");
@@ -287,6 +343,8 @@ class myvalidator:
                     for mstr in listb: mynwlist.append(mstr);
                 return mynwlist;
 
+    #this method removes duplicates from a list by converting it to a set and then back.
+    #if the list is empty or null, then it returns it as it is.
     @classmethod
     def removeDuplicatesFromList(cls, mlist):
         return (mlist if (myvalidator.isvaremptyornull(mlist)) else list(set(mlist)));
@@ -307,8 +365,7 @@ class myvalidator:
     @classmethod
     def itemMustBeOneOf(cls, item, mvals, varnm="varnm"):
         myvalidator.varmustnotbeempty(mvals, varnm="mvals");
-        if (myvalidator.isvaremptyornull(varnm)):
-            return myvalidator.itemMustBeOneOf(item, mvals, varnm="varnm");
+        myvalidator.varnameMustBeValid(myvalidator.itemMustBeOneOf, item, mvals, varnm=varnm);
         errmsg = "the item " + varnm + " must be one of the following ";
         errmsg += myvalidator.myjoin(", ", mvals) + ", but it was not!";
         if (type(item) in [list, tuple]):
@@ -348,8 +405,8 @@ class myvalidator:
 
     @classmethod
     def stringMustContainOnlyAlnumCharsIncludingUnderscores(cls, mstr, varnm="varnm"):
-        if (myvalidator.isvaremptyornull(varnm)):
-            return myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mstr, varnm="varnm");
+        myvalidator.varnameMustBeValid(myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores,
+                                       mstr, varnm=varnm);
         if (myvalidator.stringContainsOnlyAlnumCharsIncludingUnderscores(mstr)): return True;
         else: raise ValueError(varnm + " must contain alpha-numeric characters only!");
 
@@ -380,9 +437,8 @@ class myvalidator:
         myvalidator.varmustbeboolean(usemax, varnm="usemax");
         myvalidator.varmustbethetypeonly(mxormnlen, int, varnm="mxormnlen");
         if (mxormnlen < 0): raise ValueError("mxormnlen must be at least zero, but it was not!");
-        if (myvalidator.isvaremptyornull(varnm)):
-            return myvalidator.stringMustHaveAtMaxOrAtMinNumChars(mstr, mxormnlen, usemax,
-                                                                  varnm="varnm");
+        myvalidator.varnameMustBeValid(myvalidator.stringMustHaveAtMaxOrAtMinNumChars,
+                                       mstr, mxormnlen, usemax, varnm=varnm);
         fpterrstr = "the string " + varnm + " must ";
         mnomxstr = ("most " if usemax else "minimum ");
         myerrmsgbase = fpterrstr + "have at " + mnomxstr + str(mxormnlen) + " characters on it, but it ";
@@ -416,9 +472,8 @@ class myvalidator:
     def stringMustStartOrEndOrBothWith(cls, mstr, estr, usestart, useboth, varnm="varnm"):
         myvalidator.varmustbeboolean(usestart, varnm="usestart");
         myvalidator.stringMustHaveAtMinNumChars(mstr, 1, varnm="mstr");
-        if (estr == None): return myvalidator.stringMustEndWith(mstr, "", varnm="varnm");
-        if (myvalidator.isvaremptyornull(varnm)):
-            return myvalidator.stringMustEndWith(mstr, estr, varnm="varnm");
+        if (estr == None): return myvalidator.stringMustEndWith(mstr, "", varnm=varnm);
+        myvalidator.varnameMustBeValid(myvalidator.stringMustEndWith, mstr, estr, varnm=varnm);
         sorewstr = ("start and end" if (useboth) else ("start" if (usestart) else "end"));
         errmsg = "the string " + mstr + " called " + varnm + " does not " + sorewstr + " with " + estr;
         errmsg += ", but it must!";
@@ -484,8 +539,8 @@ class myvalidator:
 
     @classmethod
     def valueMustBeInRange(cls, val, minval, maxval, hasmin, hasmax, varnm="varnm"):
-        if (myvalidator.isvaremptyornull(varnm)):
-            return myvalidator.valueMustBeInRange(val, minval, maxval, hasmin, hasmax, varnm="varnm");
+        myvalidator.varnameMustBeValid(myvalidator.valueMustBeInRange,
+                                       val, minval, maxval, hasmin, hasmax, varnm=varnm);
         if (myvalidator.isValueInRange(val, minval, maxval, hasmin, hasmax)): return True;
         else:
             if (hasmin or hasmax): pass;
@@ -608,7 +663,7 @@ class myvalidator:
     
     @classmethod
     def listOfBoolsMustHaveXNumTrueYNumFalse(cls, blsarr, rqnumt, rqnumf, tpnumt=None, tpnumf=None,
-                                             varnm="varnm"):
+                                             varnm="blsarrnm"):
         myvalidator.varmustbethetypeonly(rqnumt, int, varnm="rqnumt");
         myvalidator.varmustbethetypeonly(rqnumf, int, varnm="rqnumf");
         mintpopts = ["MIN", "min", "MINIMUM", "minimum", ">"];

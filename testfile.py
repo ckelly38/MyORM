@@ -51,6 +51,9 @@ print("INSIDE OF TEST FILE!");
 mybase.setupMain();#setup line required
 
 print();
+#print(myvalidator.varmustnotbenull("hi", varnm=None));
+#print(myvalidator.varmustbeboolean(True, varnm=None));
+#print(myvalidator.varmustbeboolean(None, varnm=None));#errors out
 raise ValueError("NEED TO CHECK THE RESULTS HERE...!");
 
 runresviapscpttsta = False;
