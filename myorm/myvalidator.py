@@ -349,6 +349,9 @@ class myvalidator:
     def removeDuplicatesFromList(cls, mlist):
         return (mlist if (myvalidator.isvaremptyornull(mlist)) else list(set(mlist)));
 
+    #if both lists are empty or null, True; if one is returns False; otherwise:
+    #it checks to see if the items in lista are present in list b
+    #if they all are return True, otherwise False.
     @classmethod
     def isListAInListB(cls, lista, listb):
         if (myvalidator.isvaremptyornull(lista)): return myvalidator.isvaremptyornull(listb);
@@ -357,11 +360,13 @@ class myvalidator:
             else: return False;
         return True;
 
+    #calls areTwoArraysTheSameSize(lista, listb) and isListAInListB(lista, listb) both above
     @classmethod
     def doTwoListsContainTheSameData(cls, lista, listb):
         return (myvalidator.areTwoArraysTheSameSize(lista, listb) and
                 myvalidator.isListAInListB(lista, listb));
 
+    #forces the litem to be on the mvals list if it is not, it errors out otherwise returns true.
     @classmethod
     def itemMustBeOneOf(cls, item, mvals, varnm="varnm"):
         myvalidator.varmustnotbeempty(mvals, varnm="mvals");
@@ -375,6 +380,8 @@ class myvalidator:
             if (item in mvals): return True;
             else: raise ValueError(errmsg);
 
+    #forces the given object mobj to have keys rkys on the object. if no keys given return true.
+    #if all of the keys are found, returns true, otherwise errors out.
     @classmethod
     def objvarmusthavethesekeysonit(cls, mobj, rkys, varnm="mobj"):
         if (myvalidator.isvaremptyornull(rkys)): return True;
@@ -386,13 +393,20 @@ class myvalidator:
         if (myvalidator.isListAInListB(rkys, mobj.keys())): return True;
         else: raise ValueError(errmsg);
 
+    #this asks does the case of both strings match perfectly meaning all upper and all lower case matchs
+    #if the strings are both empty or null it returns true,
+    #if one is but the other is not it returns false
     @classmethod
     def doesCaseMatch(cls, stra, strb):
         myvalidator.varmustbethetypeandornull(stra, str, True, varnm="stra");
         myvalidator.varmustbethetypeandornull(strb, str, True, varnm="strb");
         if (myvalidator.isvaremptyornull(stra)): return myvalidator.isvaremptyornull(strb);
+        elif (myvalidator.isvaremptyornull(strb)): return False;
         else: return (stra.isupper() == strb.isupper() and stra.islower() == strb.islower());
 
+    #enforces that this must be a string. if not a string, it errors out.
+    #it asks and returns a boolean accordingly to if the string is alphanumeric or has underscores
+    #otherwise it returns false.
     @classmethod
     def stringContainsOnlyAlnumCharsIncludingUnderscores(cls, mstr):
         if (myvalidator.isvaremptyornull(mstr)): return True;
@@ -403,6 +417,8 @@ class myvalidator:
                 else: return False;
         return True;
 
+    #calls the above mstr must be a string that contains alphanumeric characters or underscores only.
+    #if it does not, it errors out.
     @classmethod
     def stringMustContainOnlyAlnumCharsIncludingUnderscores(cls, mstr, varnm="varnm"):
         myvalidator.varnameMustBeValid(myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores,
@@ -410,6 +426,11 @@ class myvalidator:
         if (myvalidator.stringContainsOnlyAlnumCharsIncludingUnderscores(mstr)): return True;
         else: raise ValueError(varnm + " must contain alpha-numeric characters only!");
 
+    #this is used to force that the variable of unknown type has at most or at min number of items
+    #or characters on it. Despite its name mstr does not need to be a string.
+    #mstr can be a string or a list...
+    #mxormnlen is an integer representing the required minimum or maximum length
+    #usemax is a boolean that determines if we are using the maximum if true, if false minimum.
     @classmethod
     def stringHasAtMaxOrAtMinNumChars(cls, mstr, mxormnlen, usemax):
         myvalidator.varmustbeboolean(usemax, varnm="usemax");
@@ -432,10 +453,13 @@ class myvalidator:
     def stringHasAtMinNumChars(cls, mstr, mxormnlen):
         return myvalidator.stringHasAtMaxOrAtMinNumChars(mstr, mxormnlen, False);
 
+    #it then checks to make sure that it has at min or max number of characters on the string.
+    #this actually enforces that mstr is a string.
     @classmethod
     def stringMustHaveAtMaxOrAtMinNumChars(cls, mstr, mxormnlen, usemax, varnm="varnm"):
         myvalidator.varmustbeboolean(usemax, varnm="usemax");
         myvalidator.varmustbethetypeonly(mxormnlen, int, varnm="mxormnlen");
+        #myvalidator.varmustbethetypeandornull(mstr, str, True, varnm="mstr");
         if (mxormnlen < 0): raise ValueError("mxormnlen must be at least zero, but it was not!");
         myvalidator.varnameMustBeValid(myvalidator.stringMustHaveAtMaxOrAtMinNumChars,
                                        mstr, mxormnlen, usemax, varnm=varnm);
@@ -468,6 +492,14 @@ class myvalidator:
     def stringMustHaveAtMinNumChars(cls, mstr, mxormnlen, varnm="varnm"):
         return myvalidator.stringMustHaveAtMaxOrAtMinNumChars(mstr, mxormnlen, False, varnm=varnm);
 
+    #this makes sure that the string mstr start with, ends with, or both estr (also a string). 
+    #calls the startswith or endswith methods of the str class so it requires that both mstr and estr
+    #are strings.
+    #usestart and useboth are boolean variables.
+    #if we want mstr to start and end with estr we can set useboth to be true.
+    #if we want mstr to start with or to end with estr useboth must be false and usestart will dominate.
+    #mstr is not allowed to be None, but can be empty.
+    #however if this is not true, it errors out.
     @classmethod
     def stringMustStartOrEndOrBothWith(cls, mstr, estr, usestart, useboth, varnm="varnm"):
         myvalidator.varmustbeboolean(usestart, varnm="usestart");
@@ -495,6 +527,12 @@ class myvalidator:
     def stringMustEndWith(cls, mstr, estr, varnm="varnm"):
         return myvalidator.stringMustStartOrEndWith(mstr, estr, False, varnm=varnm);
 
+    #this makes sure that mstr is on line and starts at the first index indexval
+    #indexval must be an integer otherwise this will always return False.
+    #this will error out if the index is clearly illegal.
+    #mstr and line can be empty or null, otherwise they must be strings because it calls the index
+    #method so if it is an array or a list... it might work, but may error out.
+    #calls valueMustBeInRange method for the indexval (see below on that)
     @classmethod
     def doesLineHaveStringOnItAtIndex(cls, mstr, line, indxval):
         mstrisemptyornull = myvalidator.isvaremptyornull(mstr);
@@ -512,6 +550,11 @@ class myvalidator:
     def lineHasMSTROnItAtIndex(cls, mstr, line, indxval):
         return myvalidator.doesLineHaveStringOnItAtIndex(mstr, line, indxval);
 
+    #this gets a list of line indexes if the line has mstr on it at the index 0.
+    #can call, but does not call doesLineHaveStringOnItAtIndex method.
+    #if the list of lines mlines is empty or null, then it returns an empty array.
+    #otherwise mlines is assumed to be a list of strings.
+    #mstr is assumed to have at least 1 character on it and is required to be a string.
     @classmethod
     def getLineIndexesWithStringOnIt(cls, mstr, mlines):
         myvalidator.stringMustHaveAtMinNumChars(mstr, 1, varnm="mstr");
@@ -519,6 +562,11 @@ class myvalidator:
         #                                    if (cls.doesLineHaveStringOnItAtIndex(mstr, mlines[n], 0))
         return [n for n in range(len(mlines)) if (mstr in mlines[n] and mlines[n].index(mstr) == 0)];
 
+    #asks is value in range and after verifying the data types it returns this.
+    #val, minval, and maxval are all numbers
+    #hasmin, hasmax are booleans
+    #val is the value we are checking minval and maxval are inclusive... if it has one or the other.
+    #this will return a boolean.
     @classmethod
     def isValueInRange(cls, val, minval, maxval, hasmin, hasmax):
         myvalidator.varmustbeboolean(hasmin, varnm="hasmin");
@@ -537,6 +585,10 @@ class myvalidator:
     def isValueLessThanOrAtTheMaxOnly(cls, val, maxval):
         return myvalidator.isValueInRange(val, 0, maxval, False, True);
 
+    #enforces that val must be in the given range, if not it errors out.
+    #val, minval, and maxval are all numbers
+    #hasmin, hasmax are booleans
+    #val is the value we are checking minval and maxval are inclusive... if it has one or the other.
     @classmethod
     def valueMustBeInRange(cls, val, minval, maxval, hasmin, hasmax, varnm="varnm"):
         myvalidator.varnameMustBeValid(myvalidator.valueMustBeInRange,
@@ -562,6 +614,9 @@ class myvalidator:
     def valueMustBeAtMaxOnly(cls, val, maxval, varnm="varnm"):
         return myvalidator.valueMustBeInRange(val, 0, maxval, False, True, varnm=varnm);
 
+    #this allows for the separator string sepstr to be empty or null and how to handle it
+    #otherwise it calls normal join method for the strings.
+    #mlist is assumed to be a list of strings, but if not then it is cast to a string
     @classmethod
     def myjoin(cls, sepstr, mlist):
         if (myvalidator.isvaremptyornull(mlist)): return "";
@@ -575,6 +630,19 @@ class myvalidator:
             return mystr;
         else: return sepstr.join(mlist);
 
+    #this is a more powerful split method than the standard split method
+    #it takes in a string if mystr is None, it returns None.
+    #if mystr is not a string and not None, it errors out.
+    #delimis are the delimeter indexes array or list
+    #delimlens are the delimeter lengths array or list
+    #note, you can provide one length and multiple indexes... so the length is constant...
+    #it must still be in a list form though.
+    #this allows for different delimeters to be used at different spots
+    #it also takes in an offset integer (this can be negative, but is often zero).
+    #a negative offset means the delimeter index will also be split before...
+    #when using a negative offset you must be using the original string and it can have interesting
+    #consequences so be careful. I have made sure that a negative offset does not accidentally
+    #reverse the string. But it will error out if there is some sort of problem like that.
     @classmethod
     def mysplit(cls, mystr, delimis, delimlens, offset=0):
         myvalidator.varmustbeanumber(offset, varnm="offset");
@@ -632,17 +700,25 @@ class myvalidator:
 
         myvalidator.stringMustHaveAtMostNumChars(resstr, len(mystr), varnm="resstr");
         return myresarr;
+    #calls mysplit, but uses one length for multiple indexes...
     @classmethod
     def mysplitWithLen(cls, mystr, delimis, delimlen, offset=0):
         myvalidator.varmustbeanumber(delimlen, varnm="delimlen");
-        return myvalidator.mysplit(mystr, delimis, [delimlen], offset);
+        return myvalidator.mysplit(mystr, delimis, [delimlen], offset=offset);
+    #this can be similar if not the same as the normal split method but I did not use it here
+    #to handle the casting and other stuff here.
+    #this gets all of the indexes of the delimeter string and then passes it into the mysplitWithLen
+    #if the delimeter string is None we make it empty before proceeding.
     @classmethod
     def mysplitWithDelimeter(cls, mystr, delimstr, offset=0):
         if (delimstr == None): return myvalidator.mysplitWithDelimeter(mystr, "", offset=offset);
         else: myvalidator.varmustbethetypeonly(delimstr, str, varnm="delimstr");
         delimis = [i for i in range(len(mystr)) if mystr.startswith(delimstr, i)];
-        return myvalidator.mysplitWithLen(mystr, delimis, len(delimstr), offset);
+        return myvalidator.mysplitWithLen(mystr, delimis, len(delimstr), offset=offset);
 
+    #prints ones place index string for the number of chars.
+    #for example if the number of chars is 20 assuming the modval is 10 by default:
+    #01234567890123456789 is what you would get as a string.
     @classmethod
     def genStringWithNumberText(cls, numchars, modval=10):
         if (myvalidator.isValueMoreThanOrAtTheMinOnly(numchars, 0)): pass;
@@ -654,6 +730,7 @@ class myvalidator:
         for n in range(numchars): mystr += str(n % modval);
         return mystr;
 
+    #creates a list-comprehension of the val with as many as numvals given...
     @classmethod
     def genListOfSameVals(cls, numvals, val): return [val for n in range(numvals)];
     @classmethod
@@ -661,6 +738,17 @@ class myvalidator:
         myvalidator.varmustbeboolean(boolval, varnm="boolval");
         return myvalidator.genListOfSameVals(numbools, boolval);
     
+    #this takes in a list of bools and enforces limits on them
+    #rqnumt is the requested number that is true
+    #rqnumf is the requested number that is false
+    #tpnumt is the type for the number that is true
+    #tpnumf is the type for the number that is false
+    #the types can be None or empty for no min or no max
+    #we get the actual number of true and the actual number that is false
+    #tpnumt can be min, max, exact, same, equal, etc...
+    #if same then the number that is true/false must be exactly the same as the required amount
+    #if min then the number that is true/false must be at minimum the required amount
+    #if max then the number that is true/false must be at most the required amount (inclusive)
     @classmethod
     def listOfBoolsMustHaveXNumTrueYNumFalse(cls, blsarr, rqnumt, rqnumf, tpnumt=None, tpnumf=None,
                                              varnm="blsarrnm"):
@@ -718,6 +806,8 @@ class myvalidator:
 
     #compare arrays methods and sorting of two arrays of numbers
 
+    #this does insertion sort for an array of numbers needed for comparisons
+    #it takes in two arrays arra and arrb and it combines and sorts them
     @classmethod
     def insertionSortNums(cls, arra, arrb):
         #insertion sort here:
@@ -836,9 +926,8 @@ class myvalidator:
         if (len(resarr) == len(arra) + len(arrb)): return resarr;
         else:
             raise ValueError("the length of the resarr (" + str(len(resarr)) + ") must be the " +
-                             "sum of the lengths of the two original arrays, " +
-                             "len(arra) = " + str(len(arra)) + " len(arrb) = " + str(len(arrb)) +
-                             ", but it was not!");
+                             "sum of the lengths of the two original arrays, len(arra) = " +
+                             str(len(arra)) + " len(arrb) = " + str(len(arrb)) + ", but it was not!");
 
     #list of indexes for adding will be first array (assumed ints sorted in ascending order)
     #list of indexes for deleting will be second array (assumed ints sorted in ascending order)
@@ -885,21 +974,27 @@ class myvalidator:
 
     #convenience methods since the validators list (and all of these methods) reside in the mycol class
 
+    #gets all of the validators from the mycol class where they are stored
     @classmethod
     def getAllValidators(cls):
         from myorm.mycol import mycol;
         return mycol.getAllValidators();
 
+    #gets the validators for the given class name from the mycol class where they are stored
     @classmethod
     def getMyValidators(cls, mcnm):
         from myorm.mycol import mycol;
         return mycol.getMyValidators(mcnm);
 
+    #gets myvalidators for a given class name that contains the following keys or colnames from the
+    #mycol class where the validators are stored.
     @classmethod
     def getMyValidatorsThatContainKeys(cls, mcnm, mkys):
         from myorm.mycol import mycol;
         return mycol.getMyValidatorsThatContainKeys(mcnm, mkys);
 
+    #gets my individual or multi-column validators for the given myclassname mcnm and if useindividual
+    #is true we will be using the individuals ones (the validators are stored in the mycol class)
     @classmethod
     def getMyIndividualOrMultiColumnValidators(cls, mcnm, useindiv):
         from myorm.mycol import mycol;
@@ -911,6 +1006,7 @@ class myvalidator:
     def getMyMultiColumnValidators(cls, mcnm):
         return myvalidator.getMyIndividualOrMultiColumnValidators(mcnm, False);
 
+    #this sets the list of all validators which is stored in the mycol class
     @classmethod
     def setAllValidators(cls, vlist):
         from myorm.mycol import mycol;
@@ -918,31 +1014,43 @@ class myvalidator:
 
     #This is a decorator. This actually calls a decorator.
     #https://www.datacamp.com/tutorial/decorators-python
+    #this calls the method in the mycol class.
     #@classmethod
     def validates(*args):#cls, 
         from myorm.mycol import mycol;
         return mycol.validates(args);
 
+    #this adds a validator method for the classname and the method ref for the colnames keys
+    #this calls the method in the mycol class.
     @classmethod
     def addValidator(cls, classname, methodref, keys):
         from myorm.mycol import mycol;
         return mycol.addValidator(classname, methodref, keys);
 
+    #this method removes a validator from a class with the given colnames or keys
+    #this calls the method in the mycol class.
     @classmethod
     def removeValidator(cls, classname, keys):
         from myorm.mycol import mycol;
         return mycol.removeValidator(classname, keys);
 
+    #this method runs the given validators on mvs against the data object mobj for the classname mcnm
+    #and it calls the run method in mycol class.
     @classmethod
     def runGivenValidatorsForClass(cls, mcnm, mobj, mvs):
         from myorm.mycol import mycol;
         return mycol.runGivenValidatorsForClass(mcnm, mobj, mvs);
 
+    #this method runs all of the validators for the given class name with the given colnames keys
+    #against the data object mobj
+    #this calls the method in the mycol class.
     @classmethod
     def runValidatorsByKeysForClass(cls, mcnm, mobj, mkys):
         from myorm.mycol import mycol;
         return mycol.runValidatorsByKeysForClass(mcnm, mobj, mkys);
 
+    #this method runs all of the validators for the given class name against the data object mobj.
+    #this calls the method in the mycol class.
     @classmethod
     def runAllValidatorsForClass(cls, mcnm, mobj):
         from myorm.mycol import mycol;
@@ -998,6 +1106,14 @@ class myvalidator:
         myvalidator.varmustnotbeempty(mcolnm, varnm="mcolnm");
         return myvalidator.colNamesMustBeOnTheTable(ctablename, [mcolnm]);
 
+    #the idea is we return one of two things:
+    #tablenamea.colnamea, tablenamea.colnameb, ... tablenamez.colnamez
+    #or only one tablename it could be:
+    #tablenamea.colnamea, tablenamea.colnameb ... tablenamea.colnamez
+    #or just the colnames joined:
+    #colnamea, colnameb ... colnamez
+    #if singleinctname single include table name is true we get version b, otherwise version c
+    #if multiple tablenames, then version a.
     @classmethod
     def combineTableNamesWithColNames(cls, mcolnames, mtablenames, singleinctname):
         #if there is only one tablename, do we still do tablename.mcolname, ... or just mcolname...
