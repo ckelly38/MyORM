@@ -41,6 +41,14 @@ class mybase:
     @classmethod
     def setMyConn(cls, val): return mycol.setMyConn(val);
 
+    #checks to see if it is a subclass of itself mybase class or not
+    @classmethod
+    def iskidclassofself(cls, val): return myvalidator.iskidclass(val, mybase);
+    
+    #forces this to be a kidclass of self
+    @classmethod
+    def varmustbeakidclassofself(cls, val, varnm="varnm"):
+        return myvalidator.varmustbeakidclass(val, mybase, varnm=varnm);
 
     #setup methods section
 
@@ -119,7 +127,7 @@ class mybase:
     @classmethod
     def setupPartB(cls, calledinmain=False):
         myvalidator.varmustbeboolean(calledinmain, varnm="calledinmain");
-        if (issubclass(cls, mybase) and not (cls == mybase)):
+        if (mybase.iskidclassofself(cls)):
             #print(f"BEGIN THE SETUP PART B METHOD FOR {cls.__name__}!\n");
             for myrefcolobj in cls.getMyRefCols():
                 mynwattrnm = myrefcolobj.getListColName();
@@ -154,7 +162,7 @@ class mybase:
     #if the col is a foreign key, it makes sure that the foreign key information is valid
     @classmethod
     def setupPartC(cls):
-        if (issubclass(cls, mybase) and not (cls == mybase)):
+        if (mybase.iskidclassofself(cls)):
             print(f"BEGIN THE SETUP PART C METHOD FOR {cls.__name__}!\n");
             for mc in cls.getMyCols():
                 mc.setContainingClassName(cls.__name__);
@@ -184,7 +192,7 @@ class mybase:
             mbclses = [];
             mtnms = [];
             for mclsref in mlist:
-                if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
+                if (mybase.iskidclassofself(mclsref)):
                     mbclses.append(mclsref);
                     mtnms.append(mclsref.getTableName());
                     mclsref.setupPartA();
@@ -196,7 +204,7 @@ class mybase:
             #therefore it must be done in a separate loop after all of part A has finished running.
 
             for mclsref in mbclses:
-                #if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
+                #if (mybase.iskidclassofself(mclsref)):
                     mclsref.setupPartB(calledinmain=True);
                     mclsref.setupPartC();
         mycol.setRanSetup(not isempty);
@@ -1438,7 +1446,6 @@ class mybase:
     #this method actually guarantees that the lists all shared are the same.
     @classmethod
     def updateAllForeignKeyObjectsForMyClass(cls):
-        #from myorm.mybase import mybase;
         if (issubclass(cls, mybase)):
             if (myvalidator.isvaremptyornull(cls.all)): pass;
             else:
@@ -1457,9 +1464,7 @@ class mybase:
         if (myvalidator.isvaremptyornull(mlist)): pass;
         else:
             for mclsref in mlist:
-                #from myorm.mybase import mybase;
-                if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
-                    mclsref.updateAllForeignKeyObjectsForMyClass();   
+                if (mybase.iskidclassofself(mclsref)): mclsref.updateAllForeignKeyObjectsForMyClass();   
         print("DONE UPDATING ALL OBJECT REFS FROM FOREIGN KEYS NOW!");
 
     #this method updates all of the link refs for all classes
@@ -1473,8 +1478,7 @@ class mybase:
         if (myvalidator.isvaremptyornull(mlist)): pass;
         else:
             for mclsref in mlist:
-                #from myorm.mybase import mybase;
-                if (issubclass(mclsref, mybase) and not (mclsref == mybase)):
+                if (mybase.iskidclassofself(mclsref)):
                     mclsref.updateAllLinkRefsForMyClass();#mclsref.setupPartB(True);
         print("DONE UPDATING ALL LINK REFS FROM FOREIGN KEYS NOW!");
 
@@ -1608,7 +1612,7 @@ class mybase:
     def getTableClasses(cls, ftchnow=False):
         myvalidator.varmustbeboolean(ftchnow, varnm="ftchnow");
         return [mclsref for mclsref in mycol.getMyClassRefsMain(ftchnw=ftchnow)
-                     if (issubclass(mclsref, mybase) and not (mclsref == mybase))];
+                     if (mybase.iskidclassofself(mclsref))];
 
     #this method gets exists, create table statement, and data for all tables info dict object
     #this gets a data info dict object that houses

@@ -173,6 +173,53 @@ class myvalidator:
     @classmethod
     def isClassOrModule(cls, val): return (myvalidator.isClass(val) or myvalidator.isModule(val));
 
+    #this method asks if val is class, a module, or both forces the val to be the one required or errors.
+    #val is what we are comparing
+    #tp must be either CLASS, MODULE, or BOTH
+    @classmethod
+    def varmustbeaclassmoduleorboth(cls, val, tp, varnm="varnm"):
+        myvalidator.varnameMustBeValid(myvalidator.varmustbeaclassmoduleorboth, val, tp, varnm=varnm);
+        fintpstr = None;
+        if (tp == "CLASS"): fintpstr = "class";
+        elif (tp == "MODULE"): fintpstr = "module";
+        else: fintpstr = "class or a module";
+        res = None;
+        if (fintpstr == "class"): res = myvalidator.isClass(val);
+        elif (fintpstr == "module"): res = myvalidator.isModule(val);
+        else: res = myvalidator.isClassOrModule(val);
+        if (res): return True;
+        else: raise TypeError("" + varnm + " must be a " + fintpstr + ", but it was not!");
+    @classmethod
+    def varmustbeaclass(cls, val, varnm="varnm"):
+        return myvalidator.varmustbeaclassmoduleorboth(val, "CLASS", varnm=varnm);
+    @classmethod
+    def varmustbeamodule(cls, val, varnm="varnm"):
+        return myvalidator.varmustbeaclassmoduleorboth(val, "MODULE", varnm=varnm);
+    @classmethod
+    def varmustbeaclassoramodule(cls, val, varnm="varnm"):
+        return myvalidator.varmustbeaclassmoduleorboth(val, "BOTH", varnm=varnm);   
+
+    #this method takes in two classes and see if the first is a subclass, but not the same as the other
+    @classmethod
+    def iskidclass(cls, mclsref, tpclsref):
+        myvalidator.varmustbeaclass(mclsref, varnm="mclsref");
+        myvalidator.varmustbeaclass(tpclsref, varnm="tpclsref");
+        return issubclass(mclsref, tpclsref) and not (mclsref == tpclsref);
+    
+    #this makes sure mclsref is a kid class of the tpclsref, if not it errors out
+    #both mclsref and tpclsref must be classes
+    @classmethod
+    def varmustbeakidclass(cls, mclsref, tpclsref, varnm="mclsref"):
+        if (myvalidator.isvaremptyornull(varnm)):
+            return myvalidator.varmustbeakidclass(mclsref, tpclsref, varnm="mclsref");
+        myvalidator.varmustbeaclass(mclsref, varnm=varnm);
+        myvalidator.varmustbeaclass(tpclsref, varnm="tpclsref");
+        tpclsnm = tpclsref.__name__;
+        errmsg = "" + varnm + " must be a subclass of " + tpclsnm + " class and not " + tpclsnm;
+        errmsg += ", but it was not!";
+        if (myvalidator.iskidclass(mclsref, tpclsref)): return True;
+        else: raise TypeError(errmsg);
+
     #this gets a list of attribute names from a module, class, or an object
     #note: mdl is for module, but it can be a module, a class, or an object
     #this excludes those that are modules or classes and anything that starts with double underscores
@@ -1206,8 +1253,14 @@ class myvalidator:
 
     #SQL methods might get removed from the validator class
 
+    #this asks is the constraint valid
     #will raise a value error if the constraint is not valid unless it is empty or null
     #in that case it will return false if it is valid it will return true;
+    #for the constraint to be valid it is in the following format:
+    #CONSTRAINT name TYPE(value)
+    #the only valid constraint TYPEs are: PRIMARY KEY, FOREIGN KEY, UNIQUE, CHECK
+    #the name cannot include spaces newlines tabs etc and
+    #is only alphanumeric with underscores.
     @classmethod
     def isConstraintValid(cls, mval):
         if (myvalidator.isvaremptyornull(mval)): return False;
@@ -1259,6 +1312,11 @@ class myvalidator:
             #?;
             return True;
 
+    #if the constraint is valid, get the name from it, otherwise error out.
+    #each constraint must be named.
+    #all constraints start with the word CONSTRAINT and has a space after that.
+    #that is how the 11 index character start got calculated.
+    #the name ends when the first space after that is found and it must be present before the type.
     @classmethod
     def getNameFromConstraint(cls, cnst):
         if (myvalidator.isConstraintValid(cnst)): pass;
@@ -1266,7 +1324,13 @@ class myvalidator:
         nmstr = cnst[11:];
         return nmstr[0: nmstr.index(" ")];
 
-
+    #this method returns many SQL named constraints except foreign keys.
+    #val what the actual constraint is for example: LENGTH(colnm) > 4.
+    #consnm is what you want to call your constraint
+    #it must only include alphanumeric characters including underscores.
+    #constpnm is for the constraint type name the only valid options are: CHECK, UNIQUE, and PRIMARY KEY.
+    #there is a separate method below that generates foreign key constraints.
+    #the final return value is in the format: CONSTRAINT consnm constpnm(val)
     @classmethod
     def genSQLConstraint(cls, consnm, constpnm, val):
         if (myvalidator.isvaremptyornull(constpnm)):
@@ -1319,6 +1383,17 @@ class myvalidator:
     
     #this method does not assume that the foreign class has already been initialized
     #however, it is assumed that when CREATE TABLE is run that at least one object already exists
+    #consnm is what you want to call your constraint
+    #(all col and tablenames must be in this format)
+    #it must only include alphanumeric characters including underscores.
+    #colnm is the colname that you want to call the foreign key column in the table.
+    #ftblnm is the foreign table name.
+    #refcolnames is the array of colnames that are on the foreign table that are refereced.
+    #there is no validation for the colnames and the tablenames in this method other than the format.
+    #this is so you can generate the constraints without the DB model classes existing yet in memory.
+    #the foreign key constraints are in the format:
+    #CONSTRAINT consnm FOREIGN KEY(colnm) REFERENECES ftblnm(refcolnms)
+    #this does not end with a semi-colon so be careful.
     @classmethod
     def genSQLForeignKeyConstraint(cls, consnm, colnm, ftblnm, refcolnames):
         #this method assumes that the colnm and recolnames and ref table name is valid.
@@ -1343,19 +1418,26 @@ class myvalidator:
         if (myvalidator.isvaremptyornull(ftblnm)):
             fclsref = type(mcolobj).getMyClassRefFromString(mcolobj.getForeignClass());
             finftblnm = fclsref.getTableName();
-            
             myvalidator.colNamesMustBeOnTheTableFromMyColObj(mcolobj);
-        
         else: finftblnm = ftblnm;
         return myvalidator.genSQLForeignKeyConstraint(consnm, mcolobj.getColName(), finftblnm, fcolnms);
 
+    #this generates the length constraint.
     #DOES NOT VALIDATE THE TABLE NAME, DOES NOT DEPEND ON IT, BUT THE OTHER LENGTH METHODS DO.
+    #colname is the colname that we want and it must have at minimum 1 character on it
+    #it must also be string that has alphanumeric characters including underscores on it.
+    #returns LENGTH(colname)
+    #there is no semi-colon at the end because this can be part of another constraint
+    #if this is not the case, you might want to add it in yourself so be careful.
     @classmethod
     def genSQLLength(cls, colname):
         myvalidator.stringMustHaveAtMinNumChars(colname, 1, varnm="colname");
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(colname, varnm="colname");
         return "LENGTH(" + colname + ")";
-
+    #this is a convenience length method but it verifies the colname and the tablename.
+    #this verifies that the colname is on the given table
+    #the class must exist in memory at the time of calling this
+    #this calls the length method as well.
     @classmethod
     def genLengthCol(cls, colname, mtablename):
         myvalidator.colNameMustBeOnTheTable(mtablename, colname);
@@ -1366,7 +1448,14 @@ class myvalidator:
     #therefore, since SELECTs only run after the class has been initialized
     #we can assume the table name is defined already for these:
 
+    #this generates the MIN or MAX SQL COMMAND HERE
     #DOES NOT VALIDATE THE TABLE NAME, DOES NOT DEPEND ON IT, BUT THE OTHER MIN OR MAXS DO.
+    #usemin is a boolean parameter
+    #the valorvals is either a string or an array of colnames that are then converted to a string...
+    #if using min (usemin is true): MIN(valorvals)
+    #if using max (usemin is false): MAX(valorvals)
+    #this does not end with a semi-colon incase it is used in something else like sorting.
+    #so you as the caller are responsible for adding the semi-colon at the end if needed
     @classmethod
     def genSQLMinOrMax(cls, usemin, valorvals):
         myvalidator.varmustbeboolean(usemin, varnm="usemin");
@@ -1377,6 +1466,15 @@ class myvalidator:
         else: raise ValueError("valorvals must be either a string or a list!");
         return "M" + ("IN" if usemin else "AX") + "(" + finval + ")";
 
+    #this convenience method is for the SQL MIN OR MAX
+    #often using MIN or MAX aggergate functions already exist in memory
+    #so these are often not part of constraints, but needed for general queries.
+    #so this method validates that the colname is on the tablename
+    #singleinctname is short for single include tablename is a boolean parameter
+    #if we include the tablename (true) we do tablename.colname
+    #otherwise (false) we just keep the colname
+    #usemin is another boolean parameter needed for determining which function we want
+    #lastly we return myvalidator.genSQLMinORMax(usemin, tablename.colname or colname);
     @classmethod
     def genSQLMinOrMaxFromTable(cls, colname, tablename, singleinctname, usemin):
         myvalidator.varmustbeboolean(usemin, varnm="usemin");
@@ -1437,6 +1535,7 @@ class myvalidator:
                 if (n + 1 < len(colnames)): mystr += ", ";
             return basestr + mystr;
     
+    #this gets the bool val order array
     #ascending or descending all bool vals list of the same bool val
     @classmethod
     def genSortOrderByAscVal(cls, numcols, boolval):
@@ -1624,25 +1723,32 @@ class myvalidator:
         retstr = "CREATE TABLE " + name + (" IF NOT EXISTS " if (onlyifnot) else "") + "(";
         return retstr + (", ".join(mstrs)) + ");";
     
+    #this is a convenience method for calling the genSQLCreateTable function above
+    #mclsref is the subclass of mybase, but not mybase class reference
+    #the tablename, col information, and constraints are pulled from the reference
     #depends on the table name
-    #
     #varstr is the SQL VARIANT.
     #DEPENDS ON THE SQL VARIANT.
+    #the onlyifnot is a boolean variable to create the table only if it does not exist.
+    #by default we create the table only if it does not exist otherwise we do not.
     @classmethod
-    def genSQLCreateTableFromRef(cls, myclsref, varstr, onlyifnot=True):
-        myvalidator.varmustnotbenull(myclsref, varnm="myclsref");
-        errmsg = "myclsref must be a subclass of mybase class and not mybase, but it was not!";
+    def genSQLCreateTableFromRef(cls, mclsref, varstr, onlyifnot=True):
         from myorm.mybase import mybase;#may need to change or get removed
-        if (issubclass(myclsref, mybase) and not myclsref == mybase): pass;
-        else: raise TypeError(errmsg);
-        return myvalidator.genSQLCreateTable(myclsref.getTableName(), varstr, myclsref.getMyCols(),
-                                             myclsref.getMultiColumnConstraints(),
-                                             myclsref.getAllTableConstraints(), onlyifnot=onlyifnot);
+        mybase.varmustbeakidclassofself(mclsref, varnm="mclsref");
+        return myvalidator.genSQLCreateTable(mclsref.getTableName(), varstr, mclsref.getMyCols(),
+                                             mclsref.getMultiColumnConstraints(),
+                                             mclsref.getAllTableConstraints(), onlyifnot=onlyifnot);
     
+    #this is a convenience method for calling the genSQLCreateTableFromRef function above
+    #the isclsnm is a boolean variable that tells us if the name is a classname or a table name
+    #from there, we get the mclsref from the mycol class from the memory based on what name was given
+    #mclsref is the subclass of mybase, but not mybase class reference (derrived not a parameter)
+    #the tablename, col information, and constraints are pulled from the reference
     #depends on the table name
-    #
     #varstr is the SQL VARIANT.
     #DEPENDS ON THE SQL VARIANT.
+    #the onlyifnot is a boolean variable to create the table only if it does not exist.
+    #by default we create the table only if it does not exist otherwise we do not.
     @classmethod
     def genSQLCreateTableFromTableOrClassName(cls, name, varstr, isclsnm, onlyifnot=True):
         #if name is classname get class ref from the name then call the other method
@@ -1667,19 +1773,39 @@ class myvalidator:
         return myvalidator.genSQLCreateTableFromTableOrClassName(name, varstr, True,
                                                                  onlyifnot=onlyifnot);
     
+    #drop or delete or clear table methods are here
+
+    #this is the delete or remove table from a DB completely erases it SQL command
+    #tname is DB table name that we want to get rid of completely from the DB
+    #the tablename must contain only alphanumeric characters including underscores.
+    #onlyifnot is a boolean variable that means if true, we say DROP TABLE IF EXISTS tname; otherwise
+    #DROP TABLE tname;
+    #this returns the final SQL command but does not execute it,
+    #the execution is done by the mybase class.
     @classmethod
     def genSQLDropTable(cls, tname, onlyifnot=False):
         myvalidator.varmustbeboolean(onlyifnot, varnm="onlyifnot");
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, varnm="tname");
         return "DROP TABLE " + ("IF EXISTS " if (onlyifnot) else "") + tname + ";";
 
+    #this method generates the SQL truncate command and returns it.
+    #this truncates the table IE clears the data, but does not remove it from the DB.
     #IF EXISTS IS NOT SUPPORTED ON THE TRUNCATE NOR IS IT SUPPORTED ON THE DELETE COMMANDS
+    #tname is DB table name that we want to clear in the DB
+    #the tablename must contain only alphanumeric characters including underscores.
+    #returns TRUNCATE TABLE tname;
     @classmethod
     def genSQLTruncateTable(cls, tname):
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(tname, varnm="tname");
         return "TRUNCATE TABLE " + tname + ";";
 
+    #this generates the SQL DELETE with no where attached to it.
+    #the DELETE command is used to clear the data from the DB table, and remove row(s).
+    #this does not execute the command it just generates the text
     #does not end with a semi-colon.
+    #mtname is the DB table name it must contain alphanumeric characters including underscores.
+    #the command will be in the following format:
+    #DELETE FROM mtname
     @classmethod
     def genSQLDeleteNoWhere(cls, mtname):
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, varnm="mtname");
@@ -1687,17 +1813,41 @@ class myvalidator:
     @classmethod
     def genSQLClearTable(cls, mtname): return myvalidator.genSQLDeleteNoWhere(mtname);
     
+    #this generates the SQL command to clear or DELETE a specific row.
+    #the command will remove the row from the DB table.
+    #mtname is the DB table name it must contain alphanumeric characters including underscores.
+    #colnms is a list of colnames to get a specific row
+    #the full command will be in the following format:
+    #DELETE FROM mtname WHERE colnma = ?, colnmb = ? ... ;
+    #it is important to note that it calls genColNameEqualsValString(colnms, nvals=None) below.
     @classmethod
     def genSQLDelete(cls, mtname, colnms):
         myretstr = myvalidator.genSQLDeleteNoWhere(mtname) + " WHERE ";
         return myretstr + myvalidator.genColNameEqualsValString(colnms, nvals=None) + ";";
     
 
+    #methods for saving the data is here
+    
     #NOT TESTED WELL YET AND NOT NECESSARILY DONE YET 5-8-2025 3:50 AM MST...
 
     #possible bug found 5-8-2025 3:50 AM MST in the UPDATE and INSERT INTO command methods:
     #the values if they are strings must include quotes of some kind, but probably will not...
 
+    #this generates the colnames = vals or colnames = ?s string
+    #this string is needed for saving data on the DB or updating it on the DB.
+    #inccolnms is a boolean variable that means include the colnames
+    #we will be including the vals if nvals is not empty or None.
+    #if we are including the vals, then the colnames and the nvals must be the same size
+    #if we are including the colnames then it will look like this: colnamea = ?, colnameb = ?, ...
+    #if we are not including the colnames then it will look like: vala or ?, valb or ?, ...
+    #if we use the vals or the ?s is determined by if they are empty or not...
+    #so it could look like:
+    #colnamea = vala, colnameb = valb, ... colnamez = valz
+    #colnamea = ?, colnameb = ?, ... colnamez = ?
+    #this will error out if colnames is empty or None.
+    #the colnames are assumed to be strings with alphanumeric characters including underscores on them
+    #but this assumption is not enforced.
+    #let us just say if it is empty then it would look really weird, but you would get a return value.
     @classmethod
     def genColNameEqualsValOrQuestionString(cls, colnames, inccolnms, nvals=None):
         myvalidator.varmustbeboolean(inccolnms, varnm="inccolnms");
@@ -1717,6 +1867,13 @@ class myvalidator:
     def genQuestionString(cls, colnames):
         return myvalidator.genColNameEqualsValOrQuestionString(colnames, False, nvals=None);
 
+    #this generates the command for saving data on the DB the INSERT INTO command.
+    #mtname is the DB table name it must contain alphanumeric characters including underscores.
+    #colnames are the colnames on the DB table.
+    #vals is a list of values that need to be saved
+    #if the vals are empty or None, then it generates the question string
+    #this returns the command in the following format:
+    #INSERT INTO mtname(colnames) VALUES (valstr)
     @classmethod
     def genSQLInsertInto(cls, mtname, colnames, vals=None):
         #the colnames are all of the required col names at minimum,
@@ -1728,15 +1885,27 @@ class myvalidator:
         if (myvalidator.isvaremptyornull(vals)): mstr = myvalidator.genQuestionString(colnames);
         else: mstr = myvalidator.myjoin(", ", vals);
         return "INSERT INTO " + mtname + "(" + (", ".join(colnames)) + ") VALUES (" + mstr + ");";
+    #convenience method that calls genSQLInsertInto above
+    #it gets the tablename and the colnames from the mclsref reference class given
+    #this reference class given must be a subclass of mybase and not mybase class
     @classmethod
-    def genSQLInsertIntoFromClsRef(cls, myclsrf, vals=None):
-        return myvalidator.genSQLInsertInto(myclsrf.getTableName(), myclsrf.getMyColNames(), vals=vals);
+    def genSQLInsertIntoFromClsRef(cls, mclsref, vals=None):
+        from myorm.mybase import mybase;#may need to change or get removed
+        mybase.varmustbeakidclassofself(mclsref, varnm="mclsref");
+        return myvalidator.genSQLInsertInto(mclsref.getTableName(), mclsref.getMyColNames(), vals=vals);
 
+    #this generates the SQL UPDATE commands
+    #mtname is the DB table name it must contain alphanumeric characters including underscores.
+    #colnames are the colnames on the DB table.
+    #vals is a list of values that need to be updated
+    #wrval is the where val string or clause after this, but before the ;
+    #the command will be in the following format:
+    #UPDATE tablename SET colnamea = ?, colnameb = ?, ... WHERE pkycolname = ?;
+    #UPDATE tablename SET colnamea = newvalue, colnameb = newvalue, ...
+    # WHERE colnamea = oldvalue; (or just use the primary key to access it).
+    #this ends with a semicolon after the where val.
     @classmethod
     def genSQLUpdate(cls, mtname, colnames, wrval, nvals=None):
-        #UPDATE tablename SET colnamea = ?, colnameb = ?, ... WHERE pkycolname = ?;
-        #UPDATE tablename SET colnamea = newvalue, colnameb = newvalue, ...
-            # WHERE colnamea = oldvalue; (or just use the primary key to access it).
         myvalidator.stringMustContainOnlyAlnumCharsIncludingUnderscores(mtname, varnm="mtname");
         myvalidator.stringMustHaveAtMinNumChars(wrval, 1, varnm="wrval");
         mstr = myvalidator.genColNameEqualsValString(colnames, nvals=nvals);
@@ -1911,6 +2080,14 @@ class myvalidator:
     #When I say these do not depend on it, they do not need it from the class
     #you may pass it in, but it does not get validated.
 
+    #this method generates the SUM or AVG average SQL commands.
+    #usesum is a boolean variable that if true we will use SUM otherwise (if false) AVG will be used
+    #usedistinct is a boolean that lets us use unique values only
+    #if true this adds DISTINCT to our command, if not it adds nothing to it
+    #val is the val or valstring that is used in the command these are often the values or colnames
+    #possible return values are:
+    #SUM(DISTINCT val), AVG(DISTINCT val), SUM(val), AVG(val)
+    #this does not end in a semi-colon so be aware of this.
     @classmethod
     def genSQLSumOrAvg(cls, val, usedistinct, usesum):
         myvalidator.varmustbeboolean(usesum, varnm="usesum");
@@ -1926,6 +2103,10 @@ class myvalidator:
     @classmethod
     def genSQLAvg(cls, val, usedistinct): return myvalidator.genSQLSumOrAvg(val, usedistinct, False);
 
+    #this returns the SQL LIMIT clause for limiting results of SELECT commands.
+    #if offset is 0 (by default), then this will return LIMIT num
+    #otherwise it returns LIMIT num OFFSET offset
+    #this does not end with a semi-colon, so be aware of the consequences of that.
     @classmethod
     def genSQLimit(cls, num, offset=0):
         if (num == None or offset == None): raise ValueError("illegal number or offset used!");
@@ -1934,12 +2115,20 @@ class myvalidator:
         if (num < 1 or offset < 0): raise ValueError("illegal number or offset used!");
         return (f"LIMIT {num}" if (offset == 0) else f"LIMIT {num} OFFSET {offset}");
     
+    #this generates the SQL GROUP BY clause command used for sorting results too.
+    #the val is the valstr that is to be sorted by this could be:
+    #tablenamea.colnamea, tablenameb.colnameb ... OR COUNT(CustomerID)
+    #this returns GROUP BY(val)
     @classmethod
     def genGroupBy(cls, val):
         #GROUP BY(tablenamea.colnamea, tablenameb.colnameb ...);#GROUP BY(COUNT(CustomerID))
         myvalidator.varmustnotbeempty(val, varnm="val");
         return "GROUP BY(" + val + ")";
 
+    #this generates the SQL BETWEEN clause used in conditionals or constraints
+    #vala is one string, valb is another string
+    #returns BETWEEN vala AND valb
+    #this does not end in semi-colon so be aware of the consequences of that.
     @classmethod
     def genBetween(cls, vala, valb):
         myvalidator.varmustnotbenull(vala, varnm="vala");
@@ -1957,14 +2146,16 @@ class myvalidator:
                 ("NULL" + (", " if (0 < len(mvals)) else "")  if incnull else "") +
                 myvalidator.myjoin(", ", mvals) + ")");
     
+    #this generates the SQL WHERE or HAVING clauses commands.
+    #note: WHERE does not allow agragate functions where as HAVING does,
+    #but this is not easily enforced because the mval may have it elsewhere...
+    #so no validation other than type will be preformed and the error will propogate down to the DB.
+    #this does not end in semi-colon so be aware of the consequences of that.
     @classmethod
     def genWhereOrHaving(cls, mval, usewhere):
         myvalidator.varmustbeboolean(usewhere, varnm="usewhere");
         myvalidator.varmustbethetypeonly(mval, str, varnm="mval");
         myvalidator.varmustnotbeempty(mval, varnm="mval");
-        #note: WHERE does not allow agragate functions where as HAVING does,
-        #but this is not easily enforced because the mval may have it elsewhere...
-        #so no validation other than type will be preformed and the error will propogate down to the DB.
         return ("WHERE " if usewhere else "HAVING ") + mval;
     @classmethod
     def genWhere(cls, mval): return myvalidator.genWhereOrHaving(mval, True);
