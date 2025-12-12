@@ -1830,7 +1830,8 @@ class myvalidator:
     
     #NOT TESTED WELL YET AND NOT NECESSARILY DONE YET 5-8-2025 3:50 AM MST...
 
-    #possible bug found 5-8-2025 3:50 AM MST in the UPDATE and INSERT INTO command methods:
+    #possible bug found 5-8-2025 3:50 AM MST (12-12-2025 3:35 AM MST) in the
+    #SQL UPDATE, INSERT INTO, and IN command methods:
     #the values if they are strings must include quotes of some kind, but probably will not...
 
     #this generates the colnames = vals or colnames = ?s string
@@ -1910,6 +1911,27 @@ class myvalidator:
         myvalidator.stringMustHaveAtMinNumChars(wrval, 1, varnm="wrval");
         mstr = myvalidator.genColNameEqualsValString(colnames, nvals=nvals);
         return "UPDATE " + mtname + " SET " + mstr + " WHERE " + wrval + ";";
+
+    #this generates the SQL IN clause as in a list of values
+    #incnull is a boolean that is false by default.
+    #what it means is IN(NULL, mvals) if it is true. otherwise it just does IN(mvals)
+    #if mvals are empty or null, then it returns IN(NULL) regardless of include null
+    #otherwise if a val is None, then it will generate a new vals array removing it
+    #and then telling it to include null (incnull)
+    #the final return looks like: IN(NULL, mvals) or IN(mvals)
+    #so we can only get: IN(NULL), IN(NULL, mvals) or IN(mvals)
+    #this does not end with a semi-colon.
+    #the first one IN(NULL) may automatically have a programmed result in SQL or it may auto-fail.
+    @classmethod
+    def genSQLIn(cls, mvals, incnull=False):
+        myvalidator.varmustbeboolean(incnull, varnm="incnull");
+        if (myvalidator.isvaremptyornull(mvals)): return "IN(NULL)";
+        for val in mvals:
+            if (val == None):
+                return myvalidator.genSQLIn([oval for oval in mvals if not (oval == None)],
+                                            incnull=True);
+        return ("IN(" + ("NULL" + (", " if (0 < len(mvals)) else "") if incnull else "") +
+                myvalidator.myjoin(", ", mvals) + ")");
 
 
     #SELECT whatval/tablenames.colnames/* FROM whereval/tablenames
@@ -2102,6 +2124,8 @@ class myvalidator:
     def genSQLSum(cls, val, usedistinct): return myvalidator.genSQLSumOrAvg(val, usedistinct, True);
     @classmethod
     def genSQLAvg(cls, val, usedistinct): return myvalidator.genSQLSumOrAvg(val, usedistinct, False);
+    @classmethod
+    def genSQLAverage(cls, val, usedistinct): return myvalidator.genSQLAvg(val, usedistinct);
 
     #this returns the SQL LIMIT clause for limiting results of SELECT commands.
     #if offset is 0 (by default), then this will return LIMIT num
@@ -2134,17 +2158,6 @@ class myvalidator:
         myvalidator.varmustnotbenull(vala, varnm="vala");
         myvalidator.varmustnotbenull(valb, varnm="valb");
         return f"BETWEEN {vala} AND {valb}";
-
-    @classmethod
-    def genSQLIn(cls, mvals, incnull=False):
-        myvalidator.varmustbeboolean(incnull, varnm="incnull");
-        for val in mvals:
-            if (val == None):
-                return myvalidator.genSQLIn([oval for oval in mvals if not (oval == None)],
-                                            incnull=True);
-        return ("IN(NULL)" if (myvalidator.isvaremptyornull(mvals)) else "IN(" +
-                ("NULL" + (", " if (0 < len(mvals)) else "")  if incnull else "") +
-                myvalidator.myjoin(", ", mvals) + ")");
     
     #this generates the SQL WHERE or HAVING clauses commands.
     #note: WHERE does not allow agragate functions where as HAVING does,
@@ -2193,6 +2206,17 @@ class myvalidator:
     def genSQLSwitchCaseNoName(cls, condsarr, resarr, defres=None):
         return myvalidator.genSQLSwitchCase(condsarr, resarr, defres, None);
 
+    #this takes the items in a set and generates the full all possible combinations for said set.
+    #if it is None it returns None, if empty it returns [], if one item it returns [mlist[0]]
+    #if it has two items a, b on it then it returns: a; b; a,b; b,a
+    #if not it: then copies the initial array or list, then for each item on the original list:
+    #it creates a new list that does not include the current item
+    #then this list is passed into the same method (recursive call),
+    #then for each item on the templist it adds the current item, item in the temp list
+    #to the return list and returns the return list.
+    #example: a, b, c, d, e, f
+    #a,b, a,c, a,d, a,e, a,f ...
+    #a,b,c, a,b,d, a,b,e, a,b,f, a,c,d, a,c,e, a,c,f, ...
     @classmethod
     def getCompleteSetListFromList(cls, mlist):
         #print(f"mlist = {mlist}");
@@ -2212,7 +2236,7 @@ class myvalidator:
             #then repeat for the other items
             #example: a, b, c, d, e, f
             #a,b, a,c, a,d, a,e, a,f
-            #a,b,c, a,b,d, a,b,e, a,b,f, a,c,d, a,c,e, a,c,f, 
+            #a,b,c, a,b,d, a,b,e, a,b,f, a,c,d, a,c,e, a,c,f, ...
             retlist = [mitem for mitem in mlist];
             for mitem in mlist:
                 tmplist = myvalidator.getCompleteSetListFromList([item for item in mlist
@@ -2494,19 +2518,32 @@ class myvalidator:
                     "TIMESTAMP", "SQL_VARIANT", "UNIQUEIDENTIFIER", "XML", "CURSOR", "TABLE"];
         else: return [];
 
-    #p, s -> ?;
-    #what if no range can be specified, but we have a name
-    #add default values for the parameter (if they have one)
-    #what if they do not have any default values?
-    #I guess we need a parameter that says if they have a default value or not.
-    #paramobj: paramname
-    #canspecifyrange: val
-    #maxval: max
-    #minval: min
-    #note: default value may or may not be in the specified range because it might be an exception
-    #often the default value is in the range, but not always the case.
+    #creates a range data dict object with:
+    #the param name, minval, maxval, mdefval, hasadefault, canspecifyrange
+    #hasadefault is a boolean parameter for has a default value
+    #if this is true, then you must specify a value for mdefval (my default value)
+    #the default value does not necessarily have to be in the range to be valid
+    #it can be an additonal valid value
+    #canspecifyrange is a boolean parameter for can specify a range of values
+    #if this is true, then you must specify both a max and a minval
+    #often for data types they have some finite max...
+    #depending on how this object and information is treated you may not need to specify a max or a min.
+    #the param name must be alphabetic only as for SQL that is often required. It must not be empty.
+    #the keys are: paramname, canspecifyrange, hasadefault, min, max, and defaultval
+    #note: this method might be subject to change.
     @classmethod
     def genRangeDataDict(cls, name, canspecifyrange, hasadefault, minval, maxval, mdefval):
+        #p, s -> ?;
+        #what if no range can be specified, but we have a name
+        #add default values for the parameter (if they have one)
+        #what if they do not have any default values?
+        #I guess we need a parameter that says if they have a default value or not.
+        #paramobj: paramname
+        #canspecifyrange: val
+        #maxval: max
+        #minval: min
+        #note: default value may or may not be in the specified range because it might be an exception
+        #often the default value is in the range, but not always the case.
         myvalidator.varmustbeboolean(hasadefault, varnm="hasadefault");
         myvalidator.varmustbeboolean(canspecifyrange, varnm="canspecifyrange");
         #myvalidator.varmustbeanumber(minval, varnm="minval");#can be a number or a string
@@ -2526,13 +2563,31 @@ class myvalidator:
     def genRangeDataDictNoDefault(cls, name, canspecifyrange, minval, maxval):
         return myvalidator.genRangeDataDict(name, canspecifyrange, False, minval, maxval, None);
 
-    #if type can be signed or unsigned
-    #if type is some kind of value
-    #the base type name
-    #the parameter names if required
-    #ranges on parameters if parameters are given or if range can be specified
+    #this generates a type info dict object that holds the parameters and some other information
+    #for the SQL type here
+    #
+    #this method also is used to generate data objects about the type so the value validator can
+    #verify if the value is in the required range faster by refering to this.
+    #
+    #if type can be signed or unsigned (boolean parameter canbesignedornot)
+    #if type is some kind of value (isval) if this is true the type is only one value.
+    #the base type name (that is what is held in the names parameter)
+    #the parameter names if required (are held in the pnmsranges)
+    #ranges on parameters if parameters are given or if range can be specified (pnmsranges)
     #can range on values be specified
-    #range on the values if can be specified (just a max and a min)
+    #the parameters for the types can have a range of values that is contained in pnmsranges
+    #oddly enough it is also a range data dict objects list
+    #range on the values if can be specified (just a max and a min) (valsranges)
+    #the valsranges are multiple range data dict objects in a list
+    #
+    #here is an example call of a convenience method below for this method:
+    #the method genNonValueTypeInfoDict passes false for isval into this method as well as the other
+    #parameters that are seen below in the header.
+    #myvalidator.genNonValueTypeInfoDict(["DECIMAL", "DEC", "FLOAT", "DOUBLE", "DOUBLE PRECISION"],
+    # True, [myvalidator.genRangeDataDict("size", True, True, 0, 65, 10),
+    # myvalidator.genRangeDataDict("d", True, True, 0, 30, 0)], [
+    # myvalidator.genRangeDataDict("values", True, True, -decmxmg, decmxmg, 0)])
+    #
     @classmethod
     def genTypeInfoDict(cls, names, isval, canbesignedornot, pnmsranges, valsranges):
         myvalidator.varmustbeboolean(isval, varnm="isval");
@@ -2586,9 +2641,9 @@ class myvalidator:
             #print(f"names = {names}");
             #print(f"valsranges = {valsranges}");
             
-            sp = False;
-            usp = False;
-            valsp = False;
+            sp = False;#signed present
+            usp = False;#unsigned present
+            valsp = False;#vals present
             minsp = 0;
             minusp = 0;
             for rngobj in valsranges:
@@ -2657,6 +2712,9 @@ class myvalidator:
     def genNonNumNonValNoParamsTypeInfoDict(cls, names, valsranges):
         return myvalidator.genNonValueTypeInfoDict(names, False, [], valsranges);
 
+    #this method generates all of the SQL data types info dicts for a specific version VARIANT
+    #according to the variant specifications that long comment above.
+    #
     #note: range or values is used as the default range name
     #note: length is used for the length allowed for either the values or of the values
     #note: for number types like integer:
@@ -2964,6 +3022,12 @@ class myvalidator:
             #        "CURSOR", "TABLE"];
         else: return [];
 
+    #this method gets the key that holds the range for the type object
+    #
+    #the type object is the info type object for the SQL VARIANT
+    #mycolobj is the current mycol object that houses the data about the types for a DB col
+    #the mycolobj will tell us if the values are signed or unsigned or generically values
+    #those above are the only possible return values: values, signed, or unsigned
     @classmethod
     def getDefaultValueKeyNameForDataTypeObj(cls, tpobj, mycolobj):
         #values works if the type is not signed
@@ -2978,8 +3042,7 @@ class myvalidator:
                 #this means that the ranges agreed on the minimum and if it was less than 0 or not
                 #there may still be signed and unsigned here or just values
                 mynms = [vrobj["paramname"] for vrobj in tpobj["valuesranges"]];
-                if ("signed" in mynms):
-                    mykynm = ("signed" if (mycolobj.getIsSigned()) else "unsigned");
+                if ("signed" in mynms): mykynm = ("signed" if (mycolobj.getIsSigned()) else "unsigned");
                 else: mykynm = "values";
             else:
                 #now need to pick from signed or unsigned
@@ -2989,6 +3052,10 @@ class myvalidator:
         #print(f"mykynm = {mykynm}");
         return mykynm;
 
+    #this gets the default value from the given type object (tpobj)
+    #we are allowed to search param name objects as well
+    #that is what the isparam boolean parameter is for (by default (false) we are searching values)
+    #nm is the name of the data type object like INTEGER for example that we are searching for.
     @classmethod
     def getDefaultValueForDataTypeObjWithName(cls, tpobj, nm="values", isparam=False):
         myvalidator.varmustbeboolean(isparam, varnm="isparam");
@@ -2996,15 +3063,15 @@ class myvalidator:
         myvalidator.stringMustHaveAtMinNumChars(nm, 1, varnm="nm");
         mlist = tpobj[("paramnameswith" if (isparam) else "values") + "ranges"];
         vrlist = ["values", "range"];
+        errmsgpta = "data type object with name (" + nm + ") and isparam (" + str(isparam);
         for mobj in mlist:
             ismatch = ((mobj["paramname"] in vrlist) if (nm in vrlist) else (mobj["paramname"] == nm));
             if (ismatch):
                 if (mobj["hasadefault"]): return mobj["defaultval"];
                 else: break;
-        raise ValueError("data type object with name (" + nm + ") and isparam (" + str(isparam) +
-                         ") type not found or has no default value!");
+        raise ValueError(errmsgpta + ") type not found or has no default value!");
 
-    #this method identifies all of the type names by variant that has
+    #this method identifies all of the type names by SQL VARIANT that has
     #total number of digits and the number of digits after the decimal point
     #
     #varnm is the SQL VARIANT
@@ -3015,7 +3082,9 @@ class myvalidator:
         elif (varnm == "MYSQL"): return ["DECIMAL", "DEC", "FLOAT", "DOUBLE", "DOUBLE PRECISION"];
         else: return [];
 
-    #what data types for the variants controls how many digits are allowed after the decimal point?
+    #this method identifies what data types have a set number of digits allowed after the decimal point
+    #only (and they only have one parameter on their type).
+    #what data types for the SQL VARIANTs controls how many digits are allowed after the decimal point?
     #these only have one parameter. unlike the method above.
     #
     #varnm is the SQL VARIANT
@@ -3024,16 +3093,21 @@ class myvalidator:
         return (["FLOAT"] if (varnm == "SQLSERVER") else
                 (["DATETIME", "TIMESTAMP", "TIME"] if (varnm == "MYSQL") else []));
 
+    #this gets the SQL DATA TYPE names for a specific SQL VARIANT that has LISTS as the parameter
     #varnm is the SQL VARIANT
     @classmethod
     def getAllDataTypesWithAListAsTheParameter(cls, varnm):
         return (["ENUM", "SET"] if (varnm == "MYSQL") else []);
     
+    #this method tells us which types have a byte related length by the number of parameters required
+    #by the user specified type parameter and the SQL VARIANT.
+    #
     #the BINARY(n)s on sql server (n is byte related so maybe not quite)
     #so maybe take nmax multiply by 8 for bit length IE actual length stored???
     #the BLOB(size)s on my sql are similar.
     #the BINARY(size)s on my sql are similar, but not sure on the max???.
     #
+    #tp is the type ALL, PSONLY, or NOPSONLY for all parameters, parameters only, or no parameters only.
     #varstr is the SQL VARIANT
     @classmethod
     def getTypesThatHaveAByteRelatedLength(cls, varstr, tp="ALL"):
@@ -3053,14 +3127,17 @@ class myvalidator:
         else: return [];
     @classmethod
     def getTypesThatHaveAByteRelatedLengthAsTheParam(cls, varstr):
-        return myvalidator.getTypesThatHaveAByteRelatedLength(varstr, "PSONLY");
+        return myvalidator.getTypesThatHaveAByteRelatedLength(varstr, tp="PSONLY");
     @classmethod
     def getTypesThatHaveAByteRelatedLengthNoParams(cls, varstr):
-        return myvalidator.getTypesThatHaveAByteRelatedLength(varstr, "NOPSONLY");
+        return myvalidator.getTypesThatHaveAByteRelatedLength(varstr, tp="NOPSONLY");
     @classmethod
     def getAllTypesThatHaveAByteRelatedLength(cls, varstr):
-        return myvalidator.getTypesThatHaveAByteRelatedLength(varstr, "ALL");
+        return myvalidator.getTypesThatHaveAByteRelatedLength(varstr, tp="ALL");
 
+    #this method gets the SQL DATA TYPES that have length as the parameter in them
+    #for a specific SQL VARIANT.
+    #
     #we need to know if something has a parameter that dictates the length and maybe which it is
     #we need to know when size as a parameter is length, and when it is not relevant
     #
@@ -3073,6 +3150,10 @@ class myvalidator:
         return (["CHAR", "VARCHAR", "NCHAR", "NVARCHAR"] if (varstr == "SQLSERVER") else
                 (["CHAR", "VARCHAR", "TEXT", "BIT"] if (varstr == "MYSQL") else []));
     
+    #this method gets the SQL DATA TYPES for a specific SQL VAIRANT that have a display width parameter
+    #the display width parameter does not specify how the value is stored at all and it may be
+    #phased out later on...
+    #
     #all INTs on mysql have the size parameter being the display width.
     #this does not effect how the value is stored at all.
     #"TINYINT", "SMALLINT", "MEDIUMINT", "INTEGER", "INT", "BIGINT"
@@ -3086,22 +3167,30 @@ class myvalidator:
 
     #begin date time methods section here...
 
+    #this method gets the months names fully spelled out and with the first letter only capitalized
     @classmethod
     def getMonthNames(cls):
         return ["January", "February", "March", "April", "May", "June", "July", "August",
                 "September", "October", "November", "December"];
+    
+    #this method gets the three letter abbreviations for the month names
     @classmethod
     def getAllThreeLetterAbbreviationsForMonthNames(cls):
         return [mnth[0:3] for mnth in myvalidator.getMonthNames()];
+    
+    #this method gets the four letter abbreviations (or three if four not possible) for the month names
     @classmethod
     def getAllFourLetterAbbreviationsForMonthNames(cls):
         return [(mnth[0:4] if (3 < len(mnth)) else mnth) for mnth in myvalidator.getMonthNames()];
+    #this method calls the abbreviation methods above usefrltrs (bool) for 4 letters if true otherwise 3.
     @classmethod
     def getAllThreeOrFourLetterAbbreviationsForMonthNames(cls, usefrltrs):
         myvalidator.varmustbeboolean(usefrltrs, varnm="usefrltrs");
         if (usefrltrs): return myvalidator.getAllFourLetterAbbreviationsForMonthNames();
         else: return myvalidator.getAllThreeLetterAbbreviationsForMonthNames();
 
+    #this takes the month name (mnthnm) and usefrltrs (boolean for using 4 letters if true)
+    #and it gets the month abbreviation using a different strategy
     @classmethod
     def getThreeOrFourLetterAbbreviationForMonthName(cls, mnthnm, usefrltrs):
         myvalidator.varmustbeboolean(usefrltrs, varnm="usefrltrs");
@@ -3119,8 +3208,13 @@ class myvalidator:
     def getFourLetterAbbreviationForMonthName(cls, mnthnm):
         return myvalidator.getThreeOrFourLetterAbbreviationForMonthName(mnthnm, True);
 
+    #gets the full month name from the abbreviation expected that the string has at least 3 letters.
+    #this looks for the abbreviation in the full month names and returns the first match
+    #the abbreviation is assumed to be the first 3 or 4 letters, if it is not, you will not get a match.
+    #if no match is found, it errors out.
     @classmethod
     def getFullMonthNameFromAbreviation(cls, abbr):
+        myvalidator.varmustbethetypeonly(abbr, str, varnm="abbr");
         lwrmnthnm = abbr.lower();
         finmnthnm = lwrmnthnm[0].upper() + lwrmnthnm[1:];
         mnthnms = myvalidator.getMonthNames();
@@ -3128,6 +3222,9 @@ class myvalidator:
             if finmnthnm in mtnm: return mtnm;
         raise ValueError("illegal abbreviated month name used (" + abbr + ")");
 
+    #this method gets the number (not index) from the month name
+    #it first makes sure that monthnm matches the required format on the list
+    #then it searches the months list, when it finds it returns index plus 1 or errors out.
     @classmethod
     def getMonthNumFromName(cls, mnthnm):
         myvalidator.varmustbethetypeonly(mnthnm, str, varnm="mnthnm");
@@ -3138,18 +3235,21 @@ class myvalidator:
             if (mnthnms[n] == finmnthnm): return n + 1;
         raise ValueError("illegal month name used (" + mnthnm + ")");
 
+    #this method takes in the monthnum which should be an integer
+    #the on the list of month names it takes the number - 1 = index and then uses it to get the name.
     @classmethod
     def getMonthNameFromNum(cls, mnthnum):
         myvalidator.valueMustBeInRange(mnthnum, 1, 12, True, True, varnm="mnthnum");
         mnthnms = myvalidator.getMonthNames();
         return mnthnms[mnthnum - 1];
 
+    #this gets the number of days in a month from the month num and if the year is a leap year or not.
+    #(30 days has (9)September, (4)April, (6)June, and (11)November, all the rest have 31 except
+    #(2)February which has 28 or 29 if it is a leap year)
     @classmethod
     def getNumDaysInMonth(cls, mnthnum, islpyr):
         myvalidator.varmustbeboolean(islpyr, varnm="islpyr");
         myvalidator.valueMustBeInRange(mnthnum, 1, 12, True, True, varnm="mnthnum");
-        #(30 days has (9)September, (4)April, (6)June, and (11)November, all the rest have 31 except
-        #(2)February which has 28 or 29 if leap year)
         if (mnthnum in [4, 6, 9, 11]): return 30;
         elif (mnthnum == 2): return (29 if islpyr else 28);
         else: return 31;
