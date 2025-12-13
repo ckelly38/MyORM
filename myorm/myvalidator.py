@@ -3173,12 +3173,12 @@ class myvalidator:
         return ["January", "February", "March", "April", "May", "June", "July", "August",
                 "September", "October", "November", "December"];
     
-    #this method gets the three letter abbreviations for the month names
+    #this method gets all of the 3 letter abbreviations for the month names
     @classmethod
     def getAllThreeLetterAbbreviationsForMonthNames(cls):
         return [mnth[0:3] for mnth in myvalidator.getMonthNames()];
     
-    #this method gets the four letter abbreviations (or three if four not possible) for the month names
+    #this method gets all of the 4 letter abbreviations (or 3 if 4 not possible) for the month names
     @classmethod
     def getAllFourLetterAbbreviationsForMonthNames(cls):
         return [(mnth[0:4] if (3 < len(mnth)) else mnth) for mnth in myvalidator.getMonthNames()];
@@ -3239,6 +3239,7 @@ class myvalidator:
     #the on the list of month names it takes the number - 1 = index and then uses it to get the name.
     @classmethod
     def getMonthNameFromNum(cls, mnthnum):
+        myvalidator.varmustbethetypeonly(mnthnum, int, varnm="mnthnum");
         myvalidator.valueMustBeInRange(mnthnum, 1, 12, True, True, varnm="mnthnum");
         mnthnms = myvalidator.getMonthNames();
         return mnthnms[mnthnum - 1];
@@ -3249,11 +3250,17 @@ class myvalidator:
     @classmethod
     def getNumDaysInMonth(cls, mnthnum, islpyr):
         myvalidator.varmustbeboolean(islpyr, varnm="islpyr");
+        myvalidator.varmustbethetypeonly(mnthnum, int, varnm="mnthnum");
         myvalidator.valueMustBeInRange(mnthnum, 1, 12, True, True, varnm="mnthnum");
         if (mnthnum in [4, 6, 9, 11]): return 30;
         elif (mnthnum == 2): return (29 if islpyr else 28);
         else: return 31;
 
+    #this method adds leading zeros to the valstr or number and returns a string
+    #the number of digits must be at minimum 1 digit.
+    #this will also work with negative numbers
+    #the resulting string will have the required number of digits
+    #if the valstr starts out with more, it is automatically returned unchanged (instead of errors).
     @classmethod
     def addLeadingZeros(cls, val, numdgts):
         myvalidator.varmustbeanumber(val, varnm="val");
@@ -3272,29 +3279,39 @@ class myvalidator:
             #                 "), but it was not!");
             return valstr;
 
+    #asks is the year a leap year
+    #if the year is divisibly by 4 then it might be otherwise it is not;
+    #if it might be, if the year is divisible by 100, then it might be otherwise for sure it is.
+    #if it is by 100, it is on the 400 only otherwise not.
+    #every 4 years is a leap year except (if divisible by 400 it is otherwise not on the 100s)
     #https://en.wikipedia.org/wiki/Leap_year
     @classmethod
     def isLeapYear(cls, yrnum):
         myvalidator.varmustbethetypeonly(yrnum, int, varnm="yrnum");
         myvalidator.valueMustBeInRange(yrnum, 1, 0, True, False, varnm="yrnum");
-        #every 4 years except (if divisible by 400 it is otherwise not on the 100s)
         return (((yrnum % 400 == 0) if (yrnum % 100 == 0) else True) if (yrnum % 4 == 0) else False);
 
+    #this makes sure the month has the correct number of days for the year and that the day is correct
+    #this returns a boolean if the types are all correct for if valid or not.
     @classmethod
     def isValidDate(cls, mnthnum, daynum, yrnum):
         if (myvalidator.isValueInRangeWithMaxAndMin(mnthnum, 1, 12)):
             dysinmnth = myvalidator.getNumDaysInMonth(mnthnum, myvalidator.isLeapYear(yrnum));
             if (myvalidator.isValueInRangeWithMaxAndMin(daynum, 1, dysinmnth)): return True;
         return False;
+    #this method takes in an object dict with the monthnum, daynum, and yearnum
+    #and passes the values to isValidDate above.
     @classmethod
     def isValidDateFromObj(cls, mdyrobj):
         myvalidator.varmustnotbenull(mdyrobj, varnm="mdyrobj");
         return myvalidator.isValidDate(mdyrobj["monthnum"], mdyrobj["daynum"], mdyrobj["yearnum"]);
+    #this method takes a datestring and then gets the month day year dict object and then passes
+    #that object into isValidDateFromObj method above.
     @classmethod
     def isValidDateFromString(cls, datestr):
         mdyrobj = None;
         try:
-            mdyrobj = myvalidator.getMonthDayYearFromDateString(datestr);
+            mdyrobj = myvalidator.getMonthDayYearObjFromDateString(datestr);
         except Exception as ex:
             #print(dir(ex));
             #print(ex);
@@ -3303,6 +3320,16 @@ class myvalidator:
             return False;
         return myvalidator.isValidDateFromObj(mdyrobj);
     
+    #this method takes the monthnum, daynum, yrnum, and if using dashes or slashes and the monthdyyrfmt
+    #and then it generates the date string.
+    #for example: if usemthdyyr is true: 12-31-2025 is possible if usedshs (use dashes) is true
+    #if usemthdyyr is true: 12/31/2025 is possible if usedshs (use dashes) is false
+    #if usemthdyyr is false (year month day): 2025-12-31 is possible if usedshs (use dashes) is true
+    #if the day or the month is in single digits it will add leading zeros to make it the correct length
+    #this will always return a string that is length 10
+    #to keep the length 10 a year inclusive max of 9999 is imposed SQL also has this limit
+    #note: this max may change or need to in the future,
+    #but unless I live forever that is not my problem.
     @classmethod
     def genDateString(cls, mnthnum, daynum, yrnum, usemthdyyr, usedshs):
         dysinmnth = myvalidator.getNumDaysInMonth(mnthnum, myvalidator.isLeapYear(yrnum));
@@ -3325,10 +3352,20 @@ class myvalidator:
             myretstr += myvalidator.addLeadingZeros(daynum, 2);
         return myretstr;
     @classmethod
-    def genDateStringFromObj(cls, mdyrobj, usedshs):
+    def genDateStringFromObjDashesMnthDyYrFMT(cls, mdyrobj, usemthdyyr, usedshs):
         myvalidator.varmustnotbenull(mdyrobj, varnm="mdyrobj");
         return myvalidator.genDateString(mdyrobj["monthnum"], mdyrobj["daynum"], mdyrobj["yearnum"],
-                                         (list(mdyrobj.keys())[0] == "monthnum"), usedshs);
+                                         usemthdyyr, usedshs);
+    @classmethod
+    def genDateStringFromObjWithDashes(cls, mdyrobj, usedshs):
+        myvalidator.varmustnotbenull(mdyrobj, varnm="mdyrobj");
+        return myvalidator.genDateStringFromObjDashesMnthDyYrFMT(mdyrobj,
+                                                                 mdyrobj["usemonthdayyear"], usedshs);
+    @classmethod
+    def genDateStringFromObjOnly(cls, mdyrobj):
+        myvalidator.varmustnotbenull(mdyrobj, varnm="mdyrobj");
+        return myvalidator.genDateString(mdyrobj["monthnum"], mdyrobj["daynum"], mdyrobj["yearnum"],
+                                         mdyrobj["usemonthdayyear"], mdyrobj["usedashes"]);
     @classmethod
     def genDateStringUseMonthDayYear(cls, mnthnum, daynum, yrnum, usedshs):
         return myvalidator.genDateString(mnthnum, daynum, yrnum, True, usedshs);
@@ -3342,36 +3379,57 @@ class myvalidator:
     def genDateStringUseDashes(cls, mnthnum, daynum, yrnum, usemthdyyr):
         return myvalidator.genDateString(mnthnum, daynum, yrnum, usemthdyyr, True);
     
+    #this gets the delimeter indexes on a date string with 10 characters 4 digits for the year
+    #this assumes that the date string is in one of the formats:
+    #MM-DD-YYYY
+    #YYYY-MM-DD
+    #0123456789
+    #if using month day year (usemthdyyr bool parameter is true) it returns [2, 5]
+    #otherwise it returns [4, 7] (these characters lines up with the -s)
     @classmethod
     def getDelimeterIndexesForDateStrings(cls, usemthdyyr):
-        #MM-DD-YYYY
-        #YYYY-MM-DD
-        #0123456789
         myvalidator.varmustbeboolean(usemthdyyr, varnm="usemthdyyr");
         return ([2, 5] if (usemthdyyr) else [4, 7]);
 
+    #this method takes a datestring and then it generates a dict object with:
+    #yearnum, monthnum, and daynum keys
+    #it will error out if the datestring was not in the correct format
+    #the datestring must have 10 characters on it: 00-00-0000 or 0000-00-00
+    #note: -s or /s are accepted as the delimeter for the date string.
+    #but the delimeter must be the same whichever you use.
     @classmethod
-    def getMonthDayYearFromDateString(cls, datestr):
+    def getMonthDayYearObjFromDateString(cls, datestr):
         if (myvalidator.isvaremptyornull(datestr)): return None;
         if (len(datestr) == 10): pass;
         else: raise ValueError("datestring must have exactly 10 characters on it, but it did not!");
-        dimdyr = myvalidator.getDelimeterIndexesForDateStrings(True);
-        diyrmd = myvalidator.getDelimeterIndexesForDateStrings(False);
+        dimdyr = myvalidator.getDelimeterIndexesForDateStrings(True);#delimeter indexes month day year
+        diyrmd = myvalidator.getDelimeterIndexesForDateStrings(False);#delimeter indexes year month day
+        marr = None;
+        mxlen = -1;
+        errmsgpta = "invalid date string not in the correct format";
+        usdshs = False;
         if ((datestr[dimdyr[0]] == datestr[dimdyr[1]]) and (datestr[dimdyr[0]] in ["-", "/"])):
-            #MM-DD-YYYY
-            marr = myvalidator.mysplitWithLen(datestr, dimdyr, 1, 0);
-            if (len(marr[2]) == 4): pass;
-            else: raise ValueError("invalid date string not in the correct format!");
-            return {"monthnum": int(marr[0]), "daynum": int(marr[1]), "yearnum": int(marr[2])};
+            marr = myvalidator.mysplitWithLen(datestr, dimdyr, 1, offset=0);
+            mxlen = 4;#MM-DD-YYYY
+            usdshs = (datestr[dimdyr[0]] == '-');
         else:
             if ((datestr[diyrmd[0]] == datestr[diyrmd[1]]) and (datestr[diyrmd[0]] in ["-", "/"])):
-                #YYYY-MM-DD
-                marr = myvalidator.mysplitWithLen(datestr, diyrmd, 1, 0);
-                if (len(marr[2]) == 2): pass;
-                else: raise ValueError("invalid date string not in the correct format!");
-                return {"yearnum": int(marr[0]), "monthnum": int(marr[1]), "daynum": int(marr[2])};
-            else: raise ValueError("invalid date string not in the correct format!");
+                marr = myvalidator.mysplitWithLen(datestr, diyrmd, 1, offset=0);
+                mxlen = 2;#YYYY-MM-DD
+                usdshs = (datestr[diyrmd[0]] == '-');
+            else: raise ValueError(errmsgpta + " (delimeters were not the same)!");
+        if (len(marr[2]) == mxlen): pass;
+        else: raise ValueError(errmsgpta + " (mxlen: " + str(mxlen) + ")!");
+        return {"monthnum": int(marr[0]), "daynum": int(marr[1]), "yearnum": int(marr[2]),
+                "usemonthdayyear": (mxlen == 4), "usedashes": usdshs};
 
+    #this takes the hours num, minutes num, and secs num, and including hrs num, mins num, and secs num
+    #and then it generates the time string in the format HHH:MM.mmmmmmm:SS.sssssss
+    #the seconds and the minutes can be a decimal, but the hours cannot.
+    #oddly enough the hours has -838 to 838 range for SQL and I do not know why.
+    #probably to count up how much time since something...
+    #inchrnum, incminnum, and incsecs are all boolean variables and defaulted to true.
+    #leading zeros will be added on the hours and the minutes to 2 digits.
     @classmethod
     def genTimeString(cls, hrnum, minnum, secs, inchrnum=True, incminnum=True, incsecs=True):
         myvalidator.varmustbeboolean(inchrnum, varnm="inchrnum");
@@ -3381,20 +3439,23 @@ class myvalidator:
         #no idea why on the hour range
         myvalidator.valueMustBeInRange(minnum, 0, 59.9999999, True, True, varnm="minnum");
         myvalidator.valueMustBeInRange(secs, 0, 59.9999999, True, True, varnm="secs");
-        if (incsecs):
-            if (inchrnum):
-                if (incminnum): pass;
-                else: raise ValueError("if including seconds and hours, minutes must be included!");
+        if (incsecs and inchrnum):
+            if (incminnum): pass;
+            else: raise ValueError("if including seconds and hours, minutes must be included!");
         mystr = "";
         if (inchrnum): mystr += myvalidator.addLeadingZeros(hrnum, 2);
         if (incminnum): mystr += (":" if inchrnum else "") + myvalidator.addLeadingZeros(minnum, 2);
         if (incsecs): mystr += (":" if incminnum else "") + str(secs);
         return mystr;
+
+    #this takes the time mhrsobj and gets the data from it and returns the time string
+    #the hours object is allowed to be None and it will return whatever the genTimeString wants to
+    #for that case where the hours, minutes, seconds are all 0 and not included. Likely an empty string.
     @classmethod
     def genTimeStringFromObj(cls, mhrsobj):
         if (mhrsobj == None):
             return myvalidator.genTimeString(0, 0, 0, inchrnum=False, incminnum=False, incsecs=False);
-        mkys = mhrsobj.keys();
+        mkys = list(mhrsobj.keys());
         #if not on the keys list then not included in the resulting string that gets generated
         inchrnum = (mhrsobj["hoursnuminstr"] if "hoursnum" in mkys else False);
         #inchrnum = ("hoursnum" in mkys);
@@ -3409,6 +3470,7 @@ class myvalidator:
         return myvalidator.genTimeString(hrnum, minnum, secs,
                                          inchrnum=inchrnum, incminnum=incminnum, incsecs=incsecs);
 
+    #this method takes a time string and the include hours boolean and it generates a time object
     #inchrs tells us if we include hours or not when we just have one colon on the string
     #this tells us to use hours:minutes for the format if true,
     #else it will use minutes:seconds.fractionalsecondsnum
@@ -3476,7 +3538,6 @@ class myvalidator:
         if (pfnd): pass;
         else:
             if (usehms or not(inchrs)): marr.append(0);
-            
         #print(f"mydelimis = {mydelimis}");
         #print(f"mkys = {mkys}");
         #print(f"finkys = {finkys}");
@@ -3495,9 +3556,9 @@ class myvalidator:
                 mdict[ky] = 0;
                 mdict[ky + "instr"] = False;
         #print(f"FINAL mdict = {mdict}");
-
         return mdict;
 
+    #this compares two date time objects and returns an integer result -1, 0, 1
     #none is older than not none.
     #returns 0 if equal, if a is less older than b then -1, else if b is less than a 1
     @classmethod
@@ -3536,25 +3597,28 @@ class myvalidator:
     def compareTwoTimeObjsOnly(cls, timeaobj, timebobj):
         return myvalidator.compareTwoDateTimeObjs(None, timeaobj, None, timebobj);
 
+    #this method tells us if the the string is a date-time, a date-only, or a time-only string
+    #based on the formatting.
+    #need to tell if we have a:
+    #date-time string, just a date string, or just a time string
+    #if the string is longer than 10 characters and has a space at index 10, then date-time
+    #if the string is longer than 10 characters and does not have a space at index 10,
+    # then time only
+    #else: if the character length is less than 10: time only
+    #else if the character length is exactly 10 it could be either date only or time only.
+    #now check to see if the string is a date string...
+    #check the delimeter indexes for either format if it matches, then this is a date string
+    #if not, then time only.
+    #YYYY-MM-DD HHH:MM:SS.NNNNNNNNNNN
+    #MM-DD-YYYY HHH:MM:SS.NNNNNNNNNNN
+    #012345678901234567890123456789012
+    #0         1         2         3
     @classmethod
     def getDateTimeStringType(cls, mstr):
         myvalidator.varmustbethetypeandornull(mstr, str, True, varnm="mstr");
         if (myvalidator.isvaremptyornull(mstr)): return "DATE-TIME";
         myvalidator.stringMustHaveAtMaxNumChars(mstr, 32, varnm="mstr");
-        #need to tell if we have a:
-        #date-time string, just a date string, or just a time string
-        #if the string is longer than 10 characters and has a space at index 10, then date-time
-        #if the string is longer than 10 characters and does not have a space at index 10,
-        # then time only
-        #else: if the character length is less than 10: time only
-        #else if the character length is exactly 10 it could be either date only or time only.
-        #now check to see if the string is a date string...
-        #check the delimeter indexes for either format if it matches, then this is a date string
-        #if not, then time only.
-        #YYYY-MM-DD HHH:MM:SS.NNNNNNNNNNN
-        #MM-DD-YYYY HHH:MM:SS.NNNNNNNNNNN
-        #012345678901234567890123456789012
-        #0         1         2         3
+
         if (10 < len(mstr)): return ("DATE-TIME" if (mstr[10] == ' ') else "TIME-ONLY");
         elif (len(mstr) < 10): return "TIME-ONLY";
         else:#len(mstr) == 10
@@ -3565,6 +3629,15 @@ class myvalidator:
                     return "DATE-ONLY";
             else: return "TIME-ONLY";
 
+    #this gets if the date time string includes hours or not.
+    #if it is a DATE-ONLY type, then obviously not.
+    #otherwise it notes where the :s and the .s are then asks
+    #if there are 2 colons, then yes.
+    #if there are less than 1 or more than 2, do not include the hours
+    #(string may not be in the correct format anyways)
+    #if no colons now get the periods.
+    #if there are any periods, not including the hours
+    #if no periods, then we use the default value of usehrs.
     @classmethod
     def dateTimeStringIncludesHours(cls, mstr, usehrs):
         myvalidator.varmustbethetypeandornull(mstr, str, True, varnm="mstr");
@@ -3579,11 +3652,13 @@ class myvalidator:
             elif (len(clis) < 1 or 2 < len(clis)): inchrsa = False;
             else:
                 pis = [n for n in range(len(mstr)) if mstr[n:].startswith(".")];
-                if (len(pis) == 1): inchrsa = False;
-                elif (1 < len(pis)): inchrsa = False;
-                else: inchrsa = usehrs;
+                inchrsa = (usehrs if (len(pis) < 1) else False);
         return inchrsa;
 
+    #this method builds a date and a time dict object from the date-time string and usehrs boolean
+    #it will determing the type of time string we are working with
+    #then it separates the two strings and gets the object information
+    #it then builds the final info dict object with all of the information.
     @classmethod
     def getDateAndTimeObjectInfoFromString(cls, mstr, usehrs):
         myvalidator.varmustbeboolean(usehrs, varnm="usehrs");
@@ -3607,12 +3682,13 @@ class myvalidator:
             timestra = "" + mstr;#TIME-ONLY
             datestra = "";
         inchrsa = myvalidator.dateTimeStringIncludesHours(mstr, usehrs);
-        dateaobj = myvalidator.getMonthDayYearFromDateString(datestra);
+        dateaobj = myvalidator.getMonthDayYearObjFromDateString(datestra);
         timeaobj = myvalidator.getTimeObject(timestra, inchrsa);
 
         return {"datestr": datestra, "timestr": timestra, "dateobj": dateaobj, "timeobj": timeaobj,
                 "inchours": inchrsa, "userhours": usehrs};
 
+    #this takes a time offset string and converts it to a time string by
     #if the string is invalid, it just returns it unchanged
     #otherwise it removes the space at 1 and ignores the plus entirely
     @classmethod
@@ -3627,6 +3703,8 @@ class myvalidator:
             else: return mstr;#invalid string
         else: return mstr;#invalid starting character
 
+    #this method compares two date time strings
+    #usehrsa and usehrsb are both booleans for use hours for the strings mstra and mstrb
     #FORMATS SUPPORTED:
     #YYYY-MM-DD HHH:MM:SS.NNNNNNNNNNN
     #MM-DD-YYYY HHH:MM:SS.NNNNNNNNNNN
@@ -3666,13 +3744,19 @@ class myvalidator:
 
     #end of date time methods section
 
-
+    #this method takes a list of objects and it prints them to the screen.
+    #this is meant for objects that do not have a special way to print them
     @classmethod
     def printSQLDataTypesInfoObj(cls, mlistobjs):
         if (myvalidator.isvaremptyornull(mlistobjs)): print("list is empty or null!");
         else:
             for mobj in mlistobjs: print(f"{mobj}\n");
 
+    #this method gets the param names from the info list dict object
+    #it looks for those data types that require a specific parameter like: size, length, display width
+    #then once it has those names it puts them in a list and joins them and then returns
+    #(pnames)
+    #or the return string could be empty if no parameters are present
     @classmethod
     def getParamNamesFromInfoListObj(cls, mobj):
         #if no param names return an empty string else
@@ -3685,9 +3769,18 @@ class myvalidator:
                       if (myvalidator.objvarmusthavethesekeysonit(pobj, ["paramname"], varnm="pobj"))];
             return "(" + (", ".join(pnames)) + ")";
 
+    #this method gets if we are using parameters or not or all
+    #mpobjlist is for my params object list or my types with params for the SQL VARIANT
+    #the type string actually indicates what came in for the SQL VARIANT.
+    #this method does not take in the SQL VARIANT, but the mpobjlist is dependent on it-ish.
+    #the ptpstr is short for parameter type string
     #ptpstr is PSONLY means parameters only
     #ptpstr is NOPSONLY means no parameters only
     #ptpstr is anything else ALL
+    #if the param type is ALL it returns true we will be using parameters
+    #if the params only type is being used then we take the type object list that is given and if
+    #that is not empty we return true, otherwise false.
+    #if no params type, then if the objects list is empty we return true.
     @classmethod
     def getUseParamsOrNotOrAll(cls, mpobjlist, ptpstr="ALL"):
         #need to know if getting everything
@@ -3701,6 +3794,11 @@ class myvalidator:
         elif (ptpstr == "NOPSONLY"): return (myvalidator.isvaremptyornull(mpobjlist));
         else: return True;#use all
 
+    #this method generates the full cannon name of a SQL DATA TYPE from the SQL VARIANT from the list
+    #of data types for that SQL VARIANT given on mlist.
+    #the ptype also indicates what parameter types we gave to this method: ALL, PSONLY, or NOPSONLY.
+    #this returns a list with the full name as it type name like:
+    #INTEGER(intparams), INT(intparams), ...
     @classmethod
     def getValidSQLDataTypesFromInfoList(cls, mlist, ptype="ALL"):
         if (mlist == None): return None;
@@ -3721,7 +3819,7 @@ class myvalidator:
     #this is meant more for the test file and not meant for production
     #this helps me know what data types have been classified and what are remaining
     #what is classified and the number of parameters for each goes in
-    #a list of all for the variant also goes in
+    #a list of all data types (alllist) for the SQL VARIANT also goes in
     #then using this we can get what we still need to classify
     @classmethod
     def getRemainingParameters(cls, alllist, objlistsfvar, numrpslist):
@@ -3773,11 +3871,14 @@ class myvalidator:
         #print(f"myexlist = {myexlist}");
         return [itemnm for itemnm in alllist if itemnm not in myexlist];
 
+    #this method gets the data type objects with the given tpnm (type name)
+    #it will return None if mlist is None.
     @classmethod
     def getDataTypesObjsWithNameFromList(cls, mlist, tpnm):
         if (mlist == None): return None;
         else: return [mobj for mobj in mlist for nm in mobj["names"] if (nm == tpnm)];
     
+    #this checks the levels and it returns an info dict object with the results including error messages
     @classmethod
     def errorCheckAndReturnTheLevels(cls, lvls, val):
         if (myvalidator.isvaremptyornull(val)):
@@ -3883,7 +3984,6 @@ class myvalidator:
                 inclvaset = False;
         #print(f" val = {val}");
         #print(f'lvls = {myvalidator.myjoin("", lvls)}');
-
         return myvalidator.errorCheckAndReturnTheLevels(lvls, val);
 
     @classmethod
