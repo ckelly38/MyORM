@@ -3818,9 +3818,12 @@ class myvalidator:
 
     #this is meant more for the test file and not meant for production
     #this helps me know what data types have been classified and what are remaining
-    #what is classified and the number of parameters for each goes in
+    #what is classified and the number of required parameters (numrpslist list of ints) for each goes in
     #a list of all data types (alllist) for the SQL VARIANT also goes in
+    #the alllist is a list of strings
     #then using this we can get what we still need to classify
+    #the objslistsofvar is the list of the data types that we have used for the SQL VARIANT.
+    #this holds a list of list of strings where the string are the type names like INTEGER
     @classmethod
     def getRemainingParameters(cls, alllist, objlistsfvar, numrpslist):
         #print(f"alllist = {alllist}");
@@ -3879,6 +3882,13 @@ class myvalidator:
         else: return [mobj for mobj in mlist for nm in mobj["names"] if (nm == tpnm)];
     
     #this checks the levels and it returns an info dict object with the results including error messages
+    #this error checking method enforces the following rules:
+    #the levels must start and end with 1,
+    #they must either increase or decrease by 1 at the specific level changing characters defined by
+    #each algorithm see below.
+    #the given starting string val and the lvls array must both
+    #have the same number of characters/elements on them.
+    #this returns an object with the keys: finlvls, origlvs, val, errmsg.
     @classmethod
     def errorCheckAndReturnTheLevels(cls, lvls, val):
         if (myvalidator.isvaremptyornull(val)):
@@ -3911,6 +3921,13 @@ class myvalidator:
             plv = lv;
         return {"finlvs": lvls, "origlvs": lvls, "val": val, "errmsg": errmsg};
 
+    #this is a leveling algorithm for string processing
+    #this takes in a string called val.
+    #the levels starts at 1.
+    #specifically if it finds ( or an open quote not escaped quote of ' or " then the level increases
+    #otherwise if it finds ) or a closing quote not escaped quote of ' or " then the level decreases
+    #this returns an object with the keys: finlvls, origlvs, val, errmsg.
+    #see above for error checking the levels.
     @classmethod
     def getLevelsForValStr(cls, val):
         if (myvalidator.isvaremptyornull(val)):
@@ -3986,6 +4003,15 @@ class myvalidator:
         #print(f'lvls = {myvalidator.myjoin("", lvls)}');
         return myvalidator.errorCheckAndReturnTheLevels(lvls, val);
 
+    #this is a leveling algorithm for string processing
+    #this takes in a string called val.
+    #the levels starts at 1.
+    #specifically if it finds ( or [ or an open quote not escaped quote of ' or ",
+    #then the level increases
+    #otherwise if it finds ) or ] or a closing quote not escaped quote of ' or ",
+    #then the level decreases
+    #this returns an object with the keys: finlvls, origlvs, val, errmsg.
+    #see above for error checking the levels.
     @classmethod
     def oLevelsAlgorithm(cls, valstr):
         if (myvalidator.isvaremptyornull(valstr)):
@@ -4048,6 +4074,9 @@ class myvalidator:
         #print(f"levels = {myvalidator.myjoin('', levels)}");
         return myvalidator.errorCheckAndReturnTheLevels(levels, valstr);
 
+    #this method gets the params from the given full type name string (val)
+    #the val type is like VARCHAR(size, displaywidth) or something along those lines...
+    #the params we are interested in are then: size, displaywidth
     @classmethod
     def getParamsFromValType(cls, val):
         #params are everything after the first ( and the last )
@@ -4115,8 +4144,29 @@ class myvalidator:
             return [mstr for mstr in strssplit if (0 < len(mstr))];
         else: return [];
 
+    #this builds an info dict object with information about parenthesis and commas
+    #from the full type name string
+    @classmethod
+    def getFirstLastPsAndCommasInfoDictObject(cls, mstr):
+        valnmhasps = ("(" in mstr and ")" in mstr);
+        valnmhascma = ("," in mstr);
+        fcmai = (mstr.index(",") if valnmhascma else -1);
+        ofcmai = (mstr.rindex(",") if valnmhascma else -1);
+        valfpi = (mstr.index("(") if valnmhasps else -1);
+        valofpi = (mstr.rindex(")") if valnmhasps else -1);
+        valbgnm = (mstr[0:valfpi] if valnmhasps else "" + mstr);
+        return {"typename": valbgnm, "fulltypename": "" + mstr, "hasparenthesis": valnmhasps,
+                "hascomas": valnmhascma, "firstcommaindex": fcmai, "lastcommaindex": ofcmai,
+                "firstopeningparentheisisindex": valfpi, "lastclosingparenthesisindex": valofpi};
+
+    #this checks to see if the given data type is valid
     #val is the data type value
+    #this is the full data type name string
     #varstr is the SQL VARIANT string
+    #first this finds the type on the list of types for the SQL VARIANT
+    #name must match, values ranges must match, default values must match, parameters must match
+    #second after verifying that, it then then checks to see if the given type data in val is valid
+    #if it is valid it returns true, if not it either errors out or returns false.
     @classmethod
     def isValidDataType(cls, val, varstr):
         #get data types for the specific variant
@@ -4128,47 +4178,62 @@ class myvalidator:
 
         datatypesinfolist = myvalidator.getSQLDataTypesInfo(varstr);
         mvtpslist = myvalidator.getValidSQLDataTypesFromInfoList(datatypesinfolist);
+        #cmanmerrmsg = "the comma in the name must be inside of a set of parenthesis in order for the ";
+        #cmanmerrmsg += "name " + val + " to be valid, but it did not have parenthesis!";
+        firsterrmsgptb = " must be found, but it was not!";
+        firsterrmsgpta = "the first ";
+        lasterrmsgpta = "the last ";
+        firstperrmsg = firsterrmsgpta + "parenthesis" + firsterrmsgptb;
+        lastperrmsg = lasterrmsgpta + "parenthesis" + firsterrmsgptb;
+        firstcmaerrmsg = firsterrmsgpta + "comma" + firsterrmsgptb;
+        lastcmaerrmsg = lasterrmsgpta + "comma" + firsterrmsgptb;
+        vrkys = ["hasparenthesis", "hascomas", "firstopeningparentheisisindex", "typename",
+                "lastclosingparenthesisindex", "firstcommaindex", "lastcommaindex"];
+
         if (myvalidator.isvaremptyornull(mvtpslist)): return True;
         else:
-            valnmhasps = ("(" in val and ")" in val);
-            valnmhascma = ("," in val);
+            valpsdatobj = myvalidator.getFirstLastPsAndCommasInfoDictObject(val);
+            valnmhasps = valpsdatobj[vrkys[0]];
+            valnmhascma = valpsdatobj[vrkys[1]];
             #print(f"valnmhasps = {valnmhasps}");
             #print(f"valnmhascma = {valnmhascma}");
             
-            valfpi = (val.index("(") if valnmhasps else -1);
+            valfpi = valpsdatobj[vrkys[2]];
+            valbgnm = valpsdatobj[vrkys[3]];
+            #print(f"valbgnm = {valbgnm}");
+
+            #check to see if the type name is valid initially
+            #IE if it has parenthesis then it may have a comma
+            #if it has a comma make sure that there is not one after the last parenthesis is found
             if (valnmhasps):
-                valfinpi = val.rindex(")");
+                valfinpi = valpsdatobj[vrkys[4]];
+                if (valfinpi < 0): raise ValueError(lastperrmsg);
                 if (valnmhascma):
-                    valbgcmai = val.index(",");
-                    valfincmai = val.rindex(",");
+                    valbgcmai = valpsdatobj[vrkys[5]];
+                    valfincmai = valpsdatobj[vrkys[6]];
+                    if (valbgcmai < 0): raise ValueError(firstcmaerrmsg);
+                    if (valfincmai < 0): raise ValueError(lastcmaerrmsg);
                     #print(f"valfpi = {valfpi}");
                     #print(f"valbgcmai = {valbgcmai}");
                     #print(f"valfincmai = {valfincmai}");
                     #print(f"valfinpi = {valfinpi}");
 
-                    if (valfpi < valbgcmai and valbgcmai < valfinpi and
-                        valfpi < valfincmai and valfincmai < valfinpi):
-                            pass;
+                    #note a < b < c means a < b and b < c in most languages.
+                    if (valfpi < valbgcmai < valfinpi and valfpi < valfincmai < valfinpi): pass;
                     else:
-                        #raise ValueError("the comma in the name must be inside of a set of " +
-                        #                 "parenthesis in order for the name " + val +
-                        #                 " to be valid, but it did not have parenthesis!");
+                        #raise ValueError(cmanmerrmsg);
                         return False;
             else:
                 if (valnmhascma):
-                    #raise ValueError("the comma in the name must be inside of a set of " +
-                    #                 "parenthesis in order for the name " + val +
-                    #                 " to be valid, but it did not have parenthesis!");
+                    #raise ValueError(cmanmerrmsg);
                     return False;
-
-            valbgnm = (val[0:valfpi] if valnmhasps else "" + val);
-            #print(f"valbgnm = {valbgnm}");
 
             pmtchmsg = "only perfect matchs in the form tpnm(max) are allowed with parentheis, ";
             pmtchmsg += "perfect matchs that only have alphabetic characters A-Z and a-z only ";
             pmtchmsg += "are allowed! The last character can be a number!";
             for mtp in mvtpslist:
-                nmhasps = ("(" in mtp and ")" in mtp);
+                bgpsdatobj = myvalidator.getFirstLastPsAndCommasInfoDictObject(mtp);
+                nmhasps = bgpsdatobj[vrkys[0]];
                 #print(f"mtp = {mtp}");
                 #print(f"nmhasps = {nmhasps}");
 
@@ -4182,10 +4247,11 @@ class myvalidator:
                         #if everything in between is max only
                         #ie only (max) is in there and after that is end of the string immediately
                         #then it is a perfect match...
-                        bgpindx = mtp.index("(");
+                        bgpindx = bgpsdatobj[vrkys[2]];
                         #print(f"bgpindx = {bgpindx}");
-
-                        bgnm = mtp[0:bgpindx];
+                        
+                        if (bgpindx < 0): raise ValueError(firstperrmsg);
+                        bgnm = bgpsdatobj[vrkys[3]];
                         #print(f"bgnm = {bgnm}");
 
                         if (valbgnm == bgnm):
@@ -4222,18 +4288,21 @@ class myvalidator:
                                 numpsonval = (0 if ("(max)" in val) else len(psonval));
                                 tpobjslist = myvalidator.getDataTypesObjsWithNameFromList(
                                     datatypesinfolist, mynm);
+                                stenumerrmsg = "the data type info object was built wrong for (" + mynm;
+                                stenumerrmsg += ") for variant (" + varstr + ")!";
                                 #print(f"mynm = {mynm}");
                                 #print(f"psonval = {psonval}");
                                 #print(f"numpsonval = {numpsonval}");
                                 #print(f"tpobjslist = {tpobjslist}");
                                 
+                                rkys = ["paramnameswithranges", "canspecifyrange", "hasadefault"];
                                 for tpobj in tpobjslist:
-                                    if (len(tpobj["paramnameswithranges"]) == numpsonval):
+                                    if (len(tpobj[rkys[0]]) == numpsonval):
                                         #then we check the values to see if they match or are valid
                                         #if the length is zero no need to check the parameter values
                                         #that one is valid. once a match is found
                                         if (numpsonval == 0): return True;
-                                    elif (len(tpobj["paramnameswithranges"]) < numpsonval):
+                                    elif (len(tpobj[rkys[0]]) < numpsonval):
                                         #if param type is an array or list, this is wrong
                                         #so wrong for ENUMs and SETs for MYSQL for sure.
                                         #print("number of params on val is more than for the type!");
@@ -4243,13 +4312,13 @@ class myvalidator:
                                         #check to see if all of the parameters have a default value
                                         #if they do not move on
                                         getnext = False;
-                                        for n in range(len(tpobj["paramnameswithranges"])):
-                                            cpobj = tpobj["paramnameswithranges"][n];
+                                        for n in range(len(tpobj[rkys[0]])):
+                                            cpobj = tpobj[rkys[0]][n];
                                             #print(f"cpobj = {cpobj}");
 
-                                            if (cpobj["hasadefault"]): pass;
+                                            if (cpobj[rkys[2]]): pass;#it has a default
                                             else:
-                                                getnext = True;
+                                                getnext = True;#no default
                                                 break;
                                         if (getnext): continue;
                                         else: return True;
@@ -4277,13 +4346,12 @@ class myvalidator:
                                         tphasnumparams = tpobj["canbesignedornot"];
                                         if (tphasnumparams): pass;
                                         else:
-                                            if (myvalidator.isvaremptyornull(
-                                                tpobj["paramnameswithranges"])): pass;
+                                            if (myvalidator.isvaremptyornull(tpobj[rkys[0]])): pass;
                                             else: tphasnumparams = True;
-                                            for paramobj in tpobj["paramnameswithranges"]:
-                                                if (paramobj["canspecifyrange"]): pass;
+                                            for paramobj in tpobj[rkys[0]]:
+                                                if (paramobj[rkys[1]]): pass;
                                                 else:
-                                                    tphasnumparams = False;
+                                                    tphasnumparams = False;#cannot specify range
                                                     break;
                                         #print(f"tphasnumparams = {tphasnumparams}");
 
@@ -4326,7 +4394,7 @@ class myvalidator:
                                                 if (getnext): break;
                                                 for k in range(n + 1, len(finpsonval)):
                                                     if (finpsonval[n] == finpsonval[k]):
-                                                        getnext = True;
+                                                        getnext = True;#invalid duplicate value found
                                                         break;
                                             
                                             for valobj in tpobj["valuesranges"]:
@@ -4335,31 +4403,28 @@ class myvalidator:
 
                                                 if (valobj["paramname"] in ["length", "size"]):
                                                     if (numpsonval < 0 or valobj["max"] < numpsonval):
-                                                        getnext = True;
+                                                        getnext = True;#invalid outside of range
                                                         break;
                                                     else: return True;
                                             if (getnext): pass;
-                                            else:
-                                                raise ValueError("the data type info object was " +
-                                                                 "built wrong for (" + mynm +
-                                                                 ") for variant (" + varstr + ")!");
+                                            else: raise ValueError(stenumerrmsg);
                                         else:
-                                            for n in range(len(tpobj["paramnameswithranges"])):
+                                            for n in range(len(tpobj[rkys[0]])):
                                                 isivforbth = (n < numpsonval);
                                                 #print(f"isivforbth = {isivforbth}");
                                                 
-                                                cpobj = tpobj["paramnameswithranges"][n];
+                                                cpobj = tpobj[rkys[0]][n];
                                                 cpval = (finpsonval[n] if isivforbth else None);
                                                 #print(f"cpval = {cpval}");
                                                 #print(f"cpobj = {cpobj}");
 
                                                 if (isivforbth):
-                                                    if (cpobj["canspecifyrange"]):
+                                                    if (cpobj[rkys[1]]):
                                                         if (cpval < cpobj["min"] or
                                                             cpobj["max"] < cpval):
-                                                                getnext = True;#invalid
+                                                                getnext = True;#invalid outside of range
                                                 else:
-                                                    if (cpobj["hasadefault"]): pass;
+                                                    if (cpobj[rkys[2]]): pass;
                                                     else: getnext = True;#invalid must have a default
                                                 if (getnext): break;
                                         if (getnext): continue;
@@ -4374,8 +4439,8 @@ class myvalidator:
                             if (val.isalpha()): return True;
                             else:
                                 if (1 < len(val)):
-                                    return (val[0:len(val) - 1].isalpha() and
-                                            val[len(val) - 1].isalnum()); 
+                                    mxincindx = len(val) - 1;
+                                    return (val[0:mxincindx].isalpha() and val[mxincindx].isalnum()); 
                                 else: return val.isalpha();
             #print("data type is not valid!");
             return False;
